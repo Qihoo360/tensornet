@@ -22,7 +22,7 @@
 #include <functional>
 
 #include <butil/iobuf.h>
-#include <butil/hash.h>
+#include <butil/logging.h>
 #include <Eigen/Dense>
 
 #include "core/utility/file_io.h"
@@ -126,8 +126,7 @@ public:
         , value_(std::move(other.value_))
     { }
 
-    DenseKernelBlock& operator=(DenseKernelBlock&& other)
-    {
+    DenseKernelBlock& operator=(DenseKernelBlock&& other) {
         mu_ = std::move(other.mu_);
         block_size_ = other.block_size_;
         opt_ = other.opt_;
@@ -264,8 +263,8 @@ private:
 };
 
 auto sparse_key_hasher = [](const uint64_t& sign) {
-    // going to this shard sign always same remainder of sign % shard_num,
-    // we flip high and low bit to avoid hash map bucket conflict probability.
+    // going to this shard sign always have same remainder of sign % shard_num,
+    // we flip high and low bit to avoid hashmap bucket conflict probability.
     return std::hash<uint64_t>()(sign >> 32 | sign << 32);
 };
 
@@ -273,8 +272,7 @@ template <typename OptType, typename ValueType>
 class SparseKernelBlock {
 public:
     SparseKernelBlock(const OptimizerBase* opt)
-        : values_(16 * 1024 * 1024, sparse_key_hasher)
-    {
+        : values_(16 * 1024 * 1024, sparse_key_hasher) {
         opt_ = dynamic_cast<const OptType*>(opt);
         mutex_ = std::make_unique<std::mutex>();
     }
@@ -452,7 +450,7 @@ public:
 
 private:
     int GetBlockId_(uint64_t sign) {
-        return butil::Hash((char*)&sign, sizeof(sign)) % SPARSE_KERNEL_BLOCK_NUM;
+        return sparse_key_hasher(sign);
     }
 
 private:
