@@ -1,0 +1,7 @@
+data/
+*.json
+*.h5
+*.log
+*.txt
+logs/
+model/

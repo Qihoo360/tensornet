@@ -1,0 +1,182 @@
+# Copyright (c) 2020, Qihoo, Inc.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import os
+import json
+
+import tensornet as tn
+import tensorflow as tf
+from tensorflow.python.eager import backprop
+from tensorflow.python.keras.engine import data_adapter
+from tensorflow.python.framework import ops
+
+
+def load_done_info(cp_dir):
+    done_file = os.path.join(cp_dir, '_checkpoint')
+    if not tf.io.gfile.exists(done_file):
+        return
+
+    last_done_info = tf.io.read_file(done_file)
+
+    try:
+        return json.loads(last_done_info.numpy())
+    except:
+        return
+
+
+def save_done_info(cp_dir, dt):
+    done_file = os.path.join(cp_dir, '_checkpoint')
+    done_info = {
+        "dt": dt,
+    }
+
+    if tf.io.gfile.exists(done_file):
+        tf.io.gfile.remove(done_file)
+
+    tf.io.write_file(done_file, json.dumps(done_info))
+
+
+def read_last_train_dt(filepath):
+    done_info = load_done_info(filepath)
+
+    if not done_info or 'dt' not in done_info:
+        return
+
+    return done_info['dt']
+
+
+class Model(tf.keras.Model):
+    def __init__(self, *args, **kwargs):
+        super(Model, self).__init__(*args, **kwargs)
+
+        # used by PsWeightCheckpoint. this variable to indicate model have been loaded
+        # when model.fit() is called multiple times through multi days training
+        self.is_loaded_from_checkpoint = False
+
+        self._backward_count = self.add_weight(
+            "backward_count",
+            shape=[],
+            dtype=tf.int64,
+            trainable=False
+        )
+
+    def train_step(self, data):
+        """override parent train_step, see description in parent
+        Arguments:
+          data: A nested structure of `Tensor`s.
+
+        Returns:
+          A `dict` containing values that will be passed to
+          `tf.keras.callbacks.CallbackList.on_train_batch_end`. Typically, the
+          values of the `Model`'s metrics are returned. Example:
+          `{'loss': 0.2, 'accuracy': 0.7}`.
+
+        """
+        # These are the only transformations `Model.fit` applies to user-input
+        # data when a `tf.data.Dataset` is provided. These utilities will be exposed
+        # publicly.
+        data = data_adapter.expand_1d(data)
+        x, y, sample_weight = data_adapter.unpack_x_y_sample_weight(data)
+
+        with backprop.GradientTape() as tape:
+            y_pred = self(x, training=True)
+            loss = self.compiled_loss(
+                y, y_pred, sample_weight, regularization_losses=self.losses)
+
+        gradients = tape.gradient(loss, self.trainable_variables)
+        self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
+
+        self.backwards(list(zip(gradients, self.trainable_variables)))
+
+        self.compiled_metrics.update_state(y, y_pred, sample_weight)
+        return {m.name: m.result() for m in self.metrics}
+
+    def predict_step(self, data):
+        """override parent inference step, support return y label together
+        """
+        data = data_adapter.expand_1d(data)
+        x, y, sample_weight = data_adapter.unpack_x_y_sample_weight(data)
+
+        y_pred = self(x, training=False)
+
+        return y, y_pred, sample_weight
+
+    def backwards(self, grads_and_vars):
+        backward_ops = []
+
+        for layer in self.layers:
+            if not hasattr(layer, 'backwards'):
+                continue
+
+            op = layer.backwards(grads_and_vars)
+            if op:
+                backward_ops.append(op)
+
+        with ops.control_dependencies(backward_ops):
+            # trick, use backward_count tensor add graph dependency
+            self._backward_count.assign_add(1)
+
+        return
+
+    def save_weights(self, filepath, overwrite=True, save_format=None, dt=""):
+        cp_dir = os.path.join(filepath, dt)
+        # sparse weight
+        for layer in self.layers:
+            if not isinstance(layer, tn.layers.EmbeddingFeatures):
+                continue
+
+            layer.save_sparse_table(cp_dir)
+
+        self.optimizer.save_dense_table(cp_dir)
+
+        # only the first node save the model, other node use the first node saved model
+        # when load_weights
+        if tn.core.self_shard_id() == 0:
+
+            # actually, we use tensorflow checkpoint only when system restart, this could be
+            # done by tensornet checkpoint instead, but we need a pull operation to fetch
+            # weight from remote node. TODO use tensornet checkpoint to refine code
+            tf_cp_file = os.path.join(cp_dir, "tf_checkpoint")
+            super(Model, self).save_weights(tf_cp_file, overwrite, save_format='tf')
+
+            #self.save(os.path.join(cp_dir, "model.h5"))
+
+            save_done_info(filepath, dt)
+
+        self.is_loaded_from_checkpoint = True
+
+    def load_weights(self, filepath, by_name=False, skip_mismatch=False):
+        last_train_dt = read_last_train_dt(filepath)
+
+        # not saved model info found
+        if not last_train_dt:
+            return
+
+        cp_dir = os.path.join(filepath, last_train_dt)
+
+        if not self.is_loaded_from_checkpoint:
+            # sparse weight
+            for layer in self.layers:
+                if not isinstance(layer, tn.layers.EmbeddingFeatures):
+                    continue
+
+                layer.load_sparse_table(cp_dir)
+
+            # dense weight
+            self.optimizer.load_dense_table(cp_dir)
+
+            self.is_loaded_from_checkpoint = True
+
+        tf_cp_file = os.path.join(cp_dir, "tf_checkpoint")
+        super(Model, self).load_weights(tf_cp_file, by_name, skip_mismatch)

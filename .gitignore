@@ -1,0 +1,8 @@
+*~
+*.swp
+bazel-*
+workspace/
+__pycache__/
+.vscode/
+.idea/
+*.swo

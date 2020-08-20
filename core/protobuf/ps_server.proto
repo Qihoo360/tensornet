@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package tensornet;
+
+option cc_generic_services = true;
+
+message SparsePullRequest {
+    uint32 table_handle = 1;
+    uint32 dim = 2;
+
+    repeated uint64 signs = 3;
+};
+
+message VariableWeight {
+    uint64 sign = 1;
+    repeated float w = 2;
+    int32 show = 3;
+    uint32 version = 4;
+};
+
+message SparsePullResponse {
+    uint32 table_handle = 1;
+    uint32 dim = 2;
+
+    repeated VariableWeight weight = 3;
+};
+
+message SparsePushRequest {
+    uint32 table_handle = 1;
+    uint32 dim = 2;
+
+    repeated VariableWeight weight = 3;
+};
+
+message SparsePushResponse {
+    uint32 table_handle = 1;
+};
+
+message DensePushPullRequest {
+    uint32 table_handle = 1;
+};
+
+message DensePushPullResponse {
+};
+
+message DatasetPullRequest {
+    uint32 req_shard_id = 1;
+    uint32 balance_handle = 2;
+};
+
+message DatasetPullResponse {
+    uint32 resp_shard_id = 1;
+    bool end_of_sequence = 2;
+    bytes dataset_info = 3;
+};
+
+service PsService {
+    rpc SparsePull(SparsePullRequest) returns (SparsePullResponse);
+    rpc SparsePush(SparsePushRequest) returns (SparsePushResponse);
+    rpc DensePushPull(DensePushPullRequest) returns (DensePushPullResponse);
+    rpc DatasetPull(DatasetPullRequest) returns (DatasetPullResponse);
+};
