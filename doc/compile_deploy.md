@@ -16,7 +16,7 @@
 3. 安装bazel。
 
     bazel的版本最好使用2.2.0，tensorflow每个版本使用的bazel版本不一样，具体版本请看：[https://github.com/tensorflow/tensorflow/blob/master/.bazelversion](https://github.com/tensorflow/tensorflow/blob/master/.bazelversion)。
-    bazel的安装最好使用github中已经release预编译好的binary，具体请参考：[https://docs.bazel.build/versions/master/install-os-x.html](https://docs.bazel.build/versions/master/install-os-x.html)
+    bazel的安装最好使用github中已经release预编译好的binary，具体请参考：[https://docs.bazel.build/versions/master/install-os-x.html](https://docs.bazel.build/versions/master/install-ubuntu.html#install-with-installer-ubuntu)
 
 4. 安装Open MPI。
 

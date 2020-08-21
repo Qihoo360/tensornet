@@ -37,6 +37,10 @@ PYBIND11_MODULE(_pywrap_tn, m) {
     m.def("init", []() {
         PsCluster* cluster = PsCluster::Instance();
 
+        if (cluster->IsInitialized()) {
+            return true;
+        }
+
         if (cluster->Init() < 0) {
             throw py::value_error("Init tensornet fail");
         }

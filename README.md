@@ -33,9 +33,7 @@
 
 ## tutorial
 
-1. [quick-start](doc/tutorial/01-quick-start.md)
-2. [split-sub-graph](doc/tutorial/01-quick-start.md)
-3. [inference](doc/tutorial/01-quick-start.md)
+1. [quick start with wide deep](doc/tutorial/01-begin-with-wide-deep.ipynb)
 
 
 ## License
