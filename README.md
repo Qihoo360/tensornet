@@ -1,4 +1,4 @@
-# TensorNet
+![TensorNet](doc/logo.png)
 
 在广告、搜索、推荐等场景下的深度模型都会存在大量的高维离散稀疏特征，这些模型通常都需要一个大的embedding矩阵，模型训练的时候需要从这个embedding矩阵中查找具体特征的embedding值，在embedding值之上构造不同结构的模型，比如最典型的wide_deep模型。训练这样一个模型有两个基本问题：
 
@@ -21,7 +21,7 @@
 3. tensornet sparse embedding数据不会做allreduce，每个节点只拉取自身相关的数据。
 
 
-在360广告真实场景下，训练样本过百亿，参数几十亿，使用TensorFlow基本不能完成训练，tensornet完成了从无到有的跨越，在使用CPU搭建的HPC集群（网卡速度统一为10GbE）上我们测试的性能结果如下：
+在360广告真实场景下，训练样本过百亿，参数几十亿，使用TensorFlow基本不能完成训练，TensorNet完成了从无到有的跨越，在使用CPU搭建的HPC集群（网卡速度统一为10GbE）上我们测试的性能结果如下：
 
 | 节点数 | 单节点core size | 样本量 | 训练速度 |
 | ------ | --------------- | ------ | -------- |
