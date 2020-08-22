@@ -271,8 +271,9 @@ auto sparse_key_hasher = [](const uint64_t& sign) {
 template <typename OptType, typename ValueType>
 class SparseKernelBlock {
 public:
+    // here must be gurantee that hashmap reserve bucket size is a prime number
     SparseKernelBlock(const OptimizerBase* opt)
-        : values_(16 * 1024 * 1024, sparse_key_hasher) {
+        : values_(15485863., sparse_key_hasher) {
         opt_ = dynamic_cast<const OptType*>(opt);
         mutex_ = std::make_unique<std::mutex>();
     }
