@@ -271,9 +271,14 @@ auto sparse_key_hasher = [](const uint64_t& sign) {
 template <typename OptType, typename ValueType>
 class SparseKernelBlock {
 public:
-    // here must be gurantee that hashmap reserve bucket size is a prime number
+    // here must be gurantee that hashmap reserve bucket size is a prime number,
+    // 15485863 is close to 16M, its mean that we can store sparse parameter size
+    // in one single node is 16M * SPARSE_KERNEL_BLOCK_NUM, in which setting we can
+    // supporting close to 5B parameter with 50 node run together without rehash.
+    // TODO the initial bucket size maybe expose to user by a configure.
     SparseKernelBlock(const OptimizerBase* opt)
         : values_(15485863., sparse_key_hasher) {
+        values_.max_load_factor(0.75);
         opt_ = dynamic_cast<const OptType*>(opt);
         mutex_ = std::make_unique<std::mutex>();
     }
