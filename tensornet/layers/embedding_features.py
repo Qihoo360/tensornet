@@ -171,6 +171,22 @@ class EmbeddingFeatures(Layer):
                  name=None,
                  is_concat=False,
                  **kwargs):
+        """create a embedding feature layer.
+        when this layer is been called, all the embedding data of `feature_columns` will be
+        pulled from ps server and return as a tensor list.
+
+        Args:
+            feature_columns: An iterable containing the FeatureColumns to use as
+                inputs to your model. All items should be instances of classes derived
+                from `embedding_column`.
+            sparse_opt: the sparse optimizer of this embedding layer.
+            trainable:  Boolean, whether the layer's variables will be updated via
+                gradient descent during training.
+            name: Name to give to the EmbeddingFeatures.
+            is_concat: when this parameter is True, all the tensor of pulled will be concat
+                with axis=-1 and returned.
+
+        """
         super(EmbeddingFeatures, self).__init__(
             name=name, trainable=trainable, dynamic=False, **kwargs)
 

@@ -29,5 +29,7 @@ TensorNet按照sparse feature key的**哈希值**均匀分隔参数到每个节�
 [Apache License 2.0](LICENSE)
 
 ## concat us
+
 QQ群号：1146192156
+
 ![TensorNet](doc/TensorNet-QR-code.png)
