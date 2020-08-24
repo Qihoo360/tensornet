@@ -17,8 +17,6 @@ class Config(object):
 
     TRAIN_DAYS = ['2020-05-10', '2020-05-11']
 
-    NUM_PARALLEL_INPUT_READ = 3
-
     SAVE_MODEL_INTERVAL_DAYS = 3
 
     DEEP_HIDDEN_UNITS = [512, 256, 256]
@@ -83,9 +81,8 @@ def read_dataset(data_path, days, match_pattern, num_parallel_calls = 12):
 
     return dataset
 
-
-def create_model(wide_columns, deep_columns):
-    wide, deep = None, None
+def create_emb_model(wide_columns, deep_columns):
+    wide_embs, deep_embs = [], []
 
     inputs = {}
     for slot in set(C.WIDE_SLOTS + C.DEEP_SLOTS):
@@ -94,23 +91,61 @@ def create_model(wide_columns, deep_columns):
     sparse_opt = tn.core.AdaGrad(learning_rate=0.01, initial_g2sum=0.1, initial_scale=0.1)
 
     if wide_columns:
-        wide = tn.layers.EmbeddingFeatures(wide_columns, sparse_opt, name='wide_inputs', is_concat=True)(inputs)
+        wide_embs = tn.layers.EmbeddingFeatures(wide_columns, sparse_opt, name='wide_inputs')(inputs)
 
     if deep_columns:
-        deep = tn.layers.EmbeddingFeatures(deep_columns, sparse_opt, name='deep_inputs', is_concat=True)(inputs)
+        deep_embs = tn.layers.EmbeddingFeatures(deep_columns, sparse_opt, name='deep_inputs')(inputs)
+
+    # must put wide embs at front of outputs list
+    emb_model = tf.keras.Model(inputs=inputs, outputs=[wide_embs, deep_embs], name="emb_model")
+
+    return emb_model
+
+def create_sub_model(wide_emb_input_shapes, deep_emb_input_shapes):
+    wide, deep = None, None
+
+    wide_inputs = [tf.keras.layers.Input(name="wide_emb_{}".format(i), dtype="float32", shape=shape[1:])
+                    for i, shape in enumerate(wide_emb_input_shapes)]
+
+    deep_inputs = [tf.keras.layers.Input(name="deep_emb_{}".format(i), dtype="float32", shape=shape[1:])
+                    for i, shape in enumerate(deep_emb_input_shapes)]
+
+    if wide_inputs:
+        wide = tf.keras.layers.Concatenate(name='wide_concact', axis=-1)(wide_inputs)
+
+    if deep_inputs:
+        deep = tf.keras.layers.Concatenate(name='deep_concact', axis=-1)(deep_inputs)
 
         for i, unit in enumerate(C.DEEP_HIDDEN_UNITS):
             deep = tf.keras.layers.Dense(unit, activation='relu', name='dnn_{}'.format(i))(deep)
 
-    if wide_columns and not deep_columns:
+    if wide_inputs and not deep_inputs:
         output = tf.keras.layers.Dense(1, activation='sigmoid', name='pred')(wide)
-    elif deep_columns and not wide_columns:
+    elif deep_inputs and not wide_inputs:
         output = tf.keras.layers.Dense(1, activation='sigmoid', name='pred')(deep)
     else:
         both = tf.keras.layers.concatenate([deep, wide], name='both')
         output = tf.keras.layers.Dense(1, activation='sigmoid', name='pred')(both)
 
-    model = tn.model.Model(inputs, output)
+    model = tn.model.Model(inputs=[wide_inputs, deep_inputs], outputs=output, name="sub_model")
+
+    return model
+
+def create_model(wide_columns, deep_columns):
+    inputs = {}
+    for slot in set(C.WIDE_SLOTS + C.DEEP_SLOTS):
+        inputs[slot] = tf.keras.layers.Input(name=slot, shape=(None,), dtype="int64", sparse=True)
+
+    emb_model = create_emb_model(wide_columns, deep_columns)
+
+    assert len(emb_model.output) == 2, "expected emb_model output length is 2 but {}".format(emb_model.output)
+    wide_emb_input_shapes = [emb.shape for emb in emb_model.output[0]]
+    deep_emb_input_shapes = [emb.shape for emb in emb_model.output[1]]
+
+    wide_embs, deep_embs = emb_model(inputs)
+    sub_model = create_sub_model(wide_emb_input_shapes, deep_emb_input_shapes)
+    output = sub_model([wide_embs, deep_embs])
+    model = tn.model.Model(inputs=inputs, outputs=output, name="full_model")
 
     dense_opt = tn.core.Adam(learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8)
     model.compile(optimizer=tn.optimizer.Optimizer(dense_opt),
@@ -118,7 +153,7 @@ def create_model(wide_columns, deep_columns):
                   metrics=['acc', "mse", "mae", 'mape', tf.keras.metrics.AUC(),
                            tn.metric.CTR(), tn.metric.PCTR(), tn.metric.COPC()])
 
-    return model
+    return model, sub_model
 
 
 def trained_delta_days(cur_dt):
@@ -150,7 +185,7 @@ def main():
 
     with strategy.scope():
         wide_column, deep_column = columns_builder()
-        model = create_model(wide_column, deep_column)
+        model, sub_model = create_model(wide_column, deep_column)
 
         logdir = os.path.join(C.MODEL_DIR, "log", datetime.now().strftime("%Y%m%d-%H%M%S"))
         tb_cb = tf.keras.callbacks.TensorBoard(log_dir=logdir,
@@ -175,6 +210,12 @@ def main():
             model.fit(train_dataset, epochs=1, verbose=1, callbacks=[cp_cb])
 
             days = []
+
+            infer_batch_size = 100
+            for tensor in sub_model.inputs:
+                tensor.set_shape([infer_batch_size] + list(tensor.shape)[1:])
+
+            sub_model.save('model/tmp')
 
         if C.PREDICT_DT:
             dataset = read_dataset(C.DATA_DIR, [C.PREDICT_DT], C.FILE_MATCH_PATTERN)
