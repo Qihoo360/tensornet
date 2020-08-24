@@ -22,6 +22,7 @@ TensorNet按照sparse feature key的**哈希值**均匀分隔参数到每个节�
 
 1. [编译与部署](doc/compile_deploy.md)
 2. [quick start with wide deep](doc/tutorial/01-begin-with-wide-deep.ipynb)
+3. [在集群上运行](doc/tutorial/02-run-in-cluster.ipynb)
 
 ## License
 
