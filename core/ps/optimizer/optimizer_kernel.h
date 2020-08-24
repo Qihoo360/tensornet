@@ -456,7 +456,7 @@ public:
 
 private:
     int GetBlockId_(uint64_t sign) {
-        return sparse_key_hasher(sign);
+        return sparse_key_hasher(sign) % SPARSE_KERNEL_BLOCK_NUM;
     }
 
 private:
