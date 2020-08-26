@@ -104,6 +104,8 @@ public:
     virtual void Serialized(const std::string& filepath) = 0;
 
     virtual void DeSerialized(const std::string& filepath) = 0;
+
+    virtual size_t KeyCount() const = 0;
 };
 
 template <typename OptType, typename ValueType>
@@ -395,6 +397,10 @@ public:
         }
     }
 
+    size_t Size() const {
+        return values_.size();
+    }
+
 private:
     const OptType* opt_ = nullptr;
     std::unordered_map<uint64_t, ValueType*, decltype(sparse_key_hasher)> values_;
@@ -454,6 +460,15 @@ public:
             }
             blocks_[i].DeSerialized(buf);
         }
+    }
+
+    size_t KeyCount() const {
+        size_t key_count = 0;
+        for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
+            key_count += blocks_[i].Size();
+        }
+
+        return key_count;
     }
 
 private:
