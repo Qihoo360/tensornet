@@ -1,4 +1,5 @@
 import random
+import os
 import tensorflow as tf
 
 def serialize_example(slots, sign_pool):
@@ -24,7 +25,7 @@ def serialize_example(slots, sign_pool):
 
     return example_proto.SerializeToString()
 
-def generate_data(name):
+def generate_data(dt, name):
     slots = [("1", 1), ("2", 1), ("3", 1), ("4", 3)]
     count = 12000
 
@@ -36,9 +37,15 @@ def generate_data(name):
     # test slot 1 as dense feature
     sign_pool["1"] = [1, 2, 3]
 
-    with tf.io.TFRecordWriter("./data/tf-part.%s" % name) as writer:
+    with tf.io.TFRecordWriter("./data/{}/tf-part.{}".format(dt, name)) as writer:
         for i in range(count):
             example = serialize_example(slots, sign_pool)
             writer.write(example)
 
-generate_data('00002')
+os.makedirs("data/2020-05-10")
+generate_data("2020-05-10", '00001')
+generate_data("2020-05-10", '00002')
+
+os.makedirs("data/2020-05-11")
+generate_data("2020-05-11", '00001')
+generate_data("2020-05-11", '00002')
