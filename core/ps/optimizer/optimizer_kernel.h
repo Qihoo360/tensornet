@@ -328,6 +328,8 @@ public:
     bool NewSignWithWeight(uint64_t sign, SparseWeightInfo& weight_info) {
         const std::lock_guard<std::mutex> lock(*mutex_);
 
+        dim_ = weight_info.dim;
+        
         ValueType* value = new ValueType(weight_info.dim, opt_);
 
         weight_info.weight = value->Weight();

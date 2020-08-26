@@ -133,10 +133,14 @@ class Model(tf.keras.Model):
         cp_dir = os.path.join(filepath, dt)
         # sparse weight
         for layer in self.layers:
-            if not isinstance(layer, tn.layers.EmbeddingFeatures):
+            if isinstance(layer, tn.layers.EmbeddingFeatures):
+                layer.save_sparse_table(cp_dir)
                 continue
 
-            layer.save_sparse_table(cp_dir)
+            if isinstance(layer, tf.keras.Model):
+                for sub_layer in layer.layers:
+                    if isinstance(sub_layer, tn.layers.EmbeddingFeatures):
+                        sub_layer.save_sparse_table(cp_dir)
 
         self.optimizer.save_dense_table(cp_dir)
 
@@ -168,10 +172,15 @@ class Model(tf.keras.Model):
         if not self.is_loaded_from_checkpoint:
             # sparse weight
             for layer in self.layers:
-                if not isinstance(layer, tn.layers.EmbeddingFeatures):
+                if isinstance(layer, tn.layers.EmbeddingFeatures):
+                    layer.load_sparse_table(cp_dir)
                     continue
-
-                layer.load_sparse_table(cp_dir)
+    
+                if isinstance(layer, tf.keras.Model):
+                    for sub_layer in layer.layers:
+                        if isinstance(sub_layer, tn.layers.EmbeddingFeatures):
+                            print("load_sparse_table:",cp_dir)
+                            sub_layer.load_sparse_table(cp_dir)
 
             # dense weight
             self.optimizer.load_dense_table(cp_dir)
