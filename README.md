@@ -24,6 +24,8 @@ TensorNet按照sparse feature key的**哈希值**均匀分隔参数到每个节�
 2. [quick start with wide deep](doc/tutorial/01-begin-with-wide-deep.ipynb)
 3. [在集群上运行](doc/tutorial/02-run-in-cluster.ipynb)
 4. [为inference准备——模型切分](doc/tutorial/03-split-to-sub-graph.ipynb)
+5. [线上inference](doc/tutorial/04-deploy-tf-graph-online.ipynb)
+6. [embedding字典导出](doc/tutorial/05-export-feature-embedding.ipynb)
 
 ## License
 
