@@ -133,16 +133,15 @@ class Model(tf.keras.Model):
         cp_dir = os.path.join(filepath, dt)
         # sparse weight
         for layer in self.layers:
-            if isinstance(layer, tn.layers.EmbeddingFeatures):
+            assert type(layer) != tf.keras.Model, "not support direct use keras.Model, use tn.model.Model instead"
+
+            if isinstance(layer, type(self)):
+                layer.save_weights(filepath, overwrite, save_format, dt)
+            elif isinstance(layer, tn.layers.EmbeddingFeatures):
                 layer.save_sparse_table(cp_dir)
-                continue
 
-            if isinstance(layer, tf.keras.Model):
-                for sub_layer in layer.layers:
-                    if isinstance(sub_layer, tn.layers.EmbeddingFeatures):
-                        sub_layer.save_sparse_table(cp_dir)
-
-        self.optimizer.save_dense_table(cp_dir)
+        if self.optimizer:
+            self.optimizer.save_dense_table(cp_dir)
 
         # only the first node save the model, other node use the first node saved model
         # when load_weights
@@ -172,18 +171,16 @@ class Model(tf.keras.Model):
         if not self.is_loaded_from_checkpoint:
             # sparse weight
             for layer in self.layers:
-                if isinstance(layer, tn.layers.EmbeddingFeatures):
+                assert type(layer) != tf.keras.Model, "not support direct use keras.Model, use tn.model.Model instead"
+
+                if isinstance(layer, type(self)):
+                    layer.load_weights(filepath, by_name, skip_mismatch)
+                elif isinstance(layer, tn.layers.EmbeddingFeatures):
                     layer.load_sparse_table(cp_dir)
-                    continue
-    
-                if isinstance(layer, tf.keras.Model):
-                    for sub_layer in layer.layers:
-                        if isinstance(sub_layer, tn.layers.EmbeddingFeatures):
-                            print("load_sparse_table:",cp_dir)
-                            sub_layer.load_sparse_table(cp_dir)
 
             # dense weight
-            self.optimizer.load_dense_table(cp_dir)
+            if self.optimizer:
+                self.optimizer.load_dense_table(cp_dir)
 
             self.is_loaded_from_checkpoint = True
 

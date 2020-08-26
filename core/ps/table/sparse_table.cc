@@ -105,7 +105,9 @@ void SparseTable::Save(const std::string& filepath) const {
 
     timer.stop();
 
-    LOG(INFO) << "SparseTable save " << GetHandle() << " latency:" << timer.s_elapsed() << "s";
+    LOG(INFO) << "SparseTable save " << GetHandle()
+              << " latency:" << timer.s_elapsed() << "s"
+              << " keys_count:" << op_kernel_->KeyCount();
 }
 
 void SparseTable::Load(const std::string& filepath) const {
@@ -119,7 +121,9 @@ void SparseTable::Load(const std::string& filepath) const {
 
     timer.stop();
 
-    LOG(INFO) << "SparseTable load " << GetHandle() << " latency:" << timer.s_elapsed() << "s";
+    LOG(INFO) << "SparseTable load " << GetHandle()
+              << " latency:" << timer.s_elapsed() << "s"
+              << " keys_count:" << op_kernel_->KeyCount();
 }
 
 SparseTableRegistry* SparseTableRegistry::Instance() {

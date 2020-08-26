@@ -97,7 +97,7 @@ def create_emb_model(wide_columns, deep_columns):
         deep_embs = tn.layers.EmbeddingFeatures(deep_columns, sparse_opt, name='deep_inputs')(inputs)
 
     # must put wide embs at front of outputs list
-    emb_model = tf.keras.Model(inputs=inputs, outputs=[wide_embs, deep_embs], name="emb_model")
+    emb_model = tn.model.Model(inputs=inputs, outputs=[wide_embs, deep_embs], name="emb_model")
 
     return emb_model
 
