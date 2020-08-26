@@ -21,7 +21,7 @@ def gen_code():
     print("""// This file is MACHINE GENERATED! Do not edit.
 // Source file is gen_graph.py
 
-#include "core/graph/graph.h"
+#include "core/tools/graph.h"
 
 #include <vector>
 

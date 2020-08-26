@@ -31,9 +31,9 @@ cc_binary(
 filegroup(
     name = "graph",
     srcs = [
-        "online_serving/graph.cc",
-        "online_serving/graph_c.o",
-        "online_serving/graph.h",
+        "tools/graph.cc",
+        "tools/graph_c.o",
+        "tools/graph.h",
     ],
 )
 
