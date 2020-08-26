@@ -14,6 +14,46 @@ cc_proto_library(
     deps = [":server_proto"],
 )
 
+cc_binary(
+    name = "emb_converter",
+    srcs = [
+        "tools/emb_converter.cc",
+        "utility/file_io.h",
+        "utility/file_io.cc",
+    ],
+    deps = [
+        "@org_tensorflow//tensorflow/core/platform/hadoop:hadoop_file_system",
+        "@brpc//:butil",
+        "@boost//:algorithm",
+    ],
+)
+
+filegroup(
+    name = "graph",
+    srcs = [
+        "online_serving/graph.cc",
+        "online_serving/graph_c.o",
+        "online_serving/graph.h",
+    ],
+)
+
+cc_binary(
+    name = "libmodel.so",
+    srcs = [":graph"],
+    deps = [
+        "@org_tensorflow//tensorflow/compiler/tf2xla:xla_compiled_cpu_function",
+        "@org_tensorflow//tensorflow/core:framework_lite",
+        "@org_tensorflow//tensorflow/compiler/xla/service/cpu:runtime_conv2d",
+        "@org_tensorflow//tensorflow/compiler/xla/service/cpu:runtime_key_value_sort",
+        "@org_tensorflow//tensorflow/compiler/xla/service/cpu:runtime_matmul",
+        "@org_tensorflow//tensorflow/compiler/xla/service/cpu:runtime_single_threaded_conv2d",
+        "@org_tensorflow//tensorflow/compiler/xla/service/cpu:runtime_single_threaded_matmul",
+        "@org_tensorflow//third_party/eigen3:eigen3",
+    ],
+    linkshared = 1,
+    linkopts = ["-lpthread"],
+    copts = ["-fPIC"],
+)
 cc_library(
     name = "sparse_table_ops_kernels",
     srcs = [
