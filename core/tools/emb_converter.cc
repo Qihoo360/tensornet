@@ -78,15 +78,19 @@ int ParseAdaGradParams(const std::string& file, butil::IOBuf& buf) {
         CHECK_EQ(sizeof(uint64_t), buf_in.cutn(&key, sizeof(key)));
         buf.append(std::to_string(key) + "\t" + table_handle);
 
-        size_t no_use_data_len = sizeof(float) + sizeof(uint32_t) + sizeof(int);
-        CHECK(buf_in.size() >= dim * sizeof(float) + no_use_data_len);
+        size_t no_use_data_len = sizeof(float) + sizeof(uint32_t);
+        CHECK(buf_in.size() >= dim * sizeof(float) + no_use_data_len + sizeof(float));
 
         CHECK_EQ(sizeof(float) * dim, buf_in.cutn(weight, sizeof(float) * dim));
         CHECK_EQ(no_use_data_len, buf_in.pop_front(no_use_data_len));
 
+        float show;
+        CHECK_EQ(sizeof(int), buf_in.cutn(&show, sizeof(float)));
+
         for (int i = 0; i < dim; ++i) {
             buf.append("\t" + std::to_string(weight[i]));
         }
+        buf.append("\t" + std::to_string(show));
 
         buf.push_back('\n');
     }

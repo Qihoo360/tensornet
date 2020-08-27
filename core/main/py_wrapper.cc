@@ -60,6 +60,7 @@ PYBIND11_MODULE(_pywrap_tn, m) {
         float epsilon = 1e-8;
         float grad_decay_rate = 1.0;
         float mom_decay_rate = 1.0;
+        float show_decay_rate = 0.98;
 
         PyObject* item = PyDict_GetItemString(kwargs.ptr(), "learning_rate");
         if (NULL != item) {
@@ -87,9 +88,13 @@ PYBIND11_MODULE(_pywrap_tn, m) {
         if (NULL != item) {
             mom_decay_rate = PyFloat_AsDouble(item);
         }
+        item = PyDict_GetItemString(kwargs.ptr(), "show_decay_rate");
+        if (NULL != item) {
+            show_decay_rate = PyFloat_AsDouble(item);
+        }
 
-        auto opt = new AdaGrad(learning_rate, initial_g2sum,
-                initial_scale, epsilon, grad_decay_rate, mom_decay_rate);
+        auto opt = new AdaGrad(learning_rate, initial_g2sum, initial_scale, epsilon, 
+                grad_decay_rate, mom_decay_rate, show_decay_rate);
 
         // NOTICE! opt will not delete until system exist
         PyObject* obj = PyCapsule_New(opt, nullptr, nullptr);
@@ -189,6 +194,10 @@ PYBIND11_MODULE(_pywrap_tn, m) {
         if (data_info->Init(cluster->RankNum(), cluster->Rank()) < 0) {
             throw py::value_error("reset_balance_dataset fail");
         }
+    })
+    .def("show_decay", [](uint32_t table_handle) {
+        SparseTable* table = SparseTableRegistry::Instance()->Get(table_handle);
+        return table->ShowDecay();
     })
     ;
 };

@@ -43,6 +43,7 @@ function link_tf_thirdparty()
     echo "using tensorflow lib path:${tf_lib_path}"
 
     rm thirdparty/tensorflow/lib/*
+    mkdir -p thirdparty/tensorflow/lib/
     ln -s ${tf_lib_path}/lib* thirdparty/tensorflow/lib/
     ln -sf ${tf_lib_path}/python/_pywrap_tensorflow_internal.so thirdparty/tensorflow/lib/lib_pywrap_tensorflow_internal.so
 }

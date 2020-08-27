@@ -50,7 +50,7 @@ public:
         , beta1(b1)
         , beta2(b2)
         , epsilon(eps)
-        , initial_scale(initial_scale){
+        , initial_scale(initial_scale) {
     }
 
     ~Adam() { }
@@ -70,13 +70,15 @@ public:
 class AdaGrad : public OptimizerBase {
 public:
     AdaGrad(float lr, float initial_g2sum, float initial_scale,
-            float epsilon, float grad_decay_rate, float mom_decay_rate)
+            float epsilon, float grad_decay_rate, float mom_decay_rate,
+            float show_decay_rate)
         : OptimizerBase(lr)
         , initial_g2sum(initial_g2sum)
         , initial_scale(initial_scale)
         , epsilon(epsilon)
         , grad_decay_rate(grad_decay_rate)
-        , mom_decay_rate(mom_decay_rate) {
+        , mom_decay_rate(mom_decay_rate)
+        , show_decay_rate(show_decay_rate) {
     }
 
     ~AdaGrad() { }
@@ -92,6 +94,7 @@ public:
     float epsilon = 1e-08;
     float grad_decay_rate = 1.0;
     float mom_decay_rate = 0.9;
+    float show_decay_rate = 0.98;
 };
 
 } // namespace tensornet {

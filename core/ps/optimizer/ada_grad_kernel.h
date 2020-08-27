@@ -89,7 +89,7 @@ public:
         version_++;
     }
 
-    void AddShow(int show) {
+    void AddShow(float show) {
         show_ += show;
     }
 
@@ -99,12 +99,14 @@ public:
 
     void DeSerialized(butil::IOBuf& buf);
 
+    void ShowDecay(const AdaGrad* opt);
+
 private:
     UnionWeight w_;
     float g2sum_;
     int dim_ = 0;
     uint32_t version_ = 0;
-    int show_ = 0;
+    float show_ = 0.0;
 };
 
 typedef SparseKernelBlock<AdaGrad, SparseAdaGradValue> SparseAdaGradKernelBlock;

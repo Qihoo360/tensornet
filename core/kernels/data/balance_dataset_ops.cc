@@ -206,7 +206,8 @@ private:
                 }
             }
 
-            TF_RETURN_IF_ERROR(GetNextManyInternal(ctx, end_of_sequence));
+            bool has_data = false;
+            TF_RETURN_IF_ERROR(GetNextManyInternal(ctx, end_of_sequence, out_tensors, &has_data));
 
             auto* data_info = BalanceInputDataInfo::Instance();
 
@@ -214,14 +215,15 @@ private:
                 data_info->SetFinished(true);
             }
 
+            if (has_data) {
+                *end_of_sequence = false;
+                return Status::OK();
+            }
+
             BufferQueueWithLock* q = data_info->op_elements_[dataset()->balance_handle_];
             if (q->empty() && *end_of_sequence) {
                 GetDataFromBrpcInternal(end_of_sequence, out_tensors);
                 return Status::OK();
-            }
-            if (!q->empty() || !*end_of_sequence) {
-                q->get(out_tensors);
-                *end_of_sequence = false;
             }
 
             return Status::OK();
@@ -255,8 +257,18 @@ private:
         }
 
         Status GetNextManyInternal(IteratorContext* ctx,
-                                 bool* end_of_sequence) {
+                                   bool* end_of_sequence,
+                                   std::vector<Tensor>* out_tensors,
+                                   bool* has_data) {
             mutex_lock l(mu_);
+            
+            TF_RETURN_IF_ERROR(
+                    input_impl_->GetNext(ctx, out_tensors, end_of_sequence));
+            if (*end_of_sequence) {
+                *has_data = false;
+                return Status::OK();
+            }
+            *has_data = true;
 
             auto* data_info = BalanceInputDataInfo::Instance();
             BufferQueueWithLock* q = data_info->op_elements_[dataset()->balance_handle_];

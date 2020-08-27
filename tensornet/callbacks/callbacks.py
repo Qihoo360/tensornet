@@ -57,6 +57,8 @@ class PsWeightCheckpoint(Callback):
     def on_train_end(self, logs=None):
         tn.core.barrier()
 
+        self.model.show_decay()
+
         if not self.need_save_model:
             return
 

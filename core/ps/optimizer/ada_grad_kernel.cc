@@ -122,5 +122,9 @@ void SparseAdaGradValue::DeSerialized(butil::IOBuf& buf) {
     CHECK_EQ(sizeof(show_), buf.cutn(&show_, sizeof(show_)));
 }
 
+void SparseAdaGradValue::ShowDecay(const AdaGrad* opt) {
+    show_ *= opt->show_decay_rate;
+}
+
 } // namespace tensornet
 
