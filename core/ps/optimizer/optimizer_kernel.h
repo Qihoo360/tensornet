@@ -406,7 +406,7 @@ public:
     void ShowDecay() {
         for (auto& iter : values_) {
             ValueType* value = iter.second;
-            value->ShowDecay(_opt);
+            value->ShowDecay(opt_);
         }
     }
 
