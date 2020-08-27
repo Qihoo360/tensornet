@@ -127,7 +127,6 @@ void SparseTable::Load(const std::string& filepath) const {
 }
 
 void SparseTable::ShowDecay() const {
-    int shard_id = PsCluster::Instance()->Rank();
     op_kernel_->ShowDecay();
 }
 

@@ -192,6 +192,6 @@ class Model(tf.keras.Model):
             assert type(layer) != tf.keras.Model, "not support direct use keras.Model, use tn.model.Model instead"
 
             if isinstance(layer, type(self)):
-                layer.show_decay(filepath)
+                layer.show_decay()
             elif isinstance(layer, tn.layers.EmbeddingFeatures):
                 layer.show_decay()
