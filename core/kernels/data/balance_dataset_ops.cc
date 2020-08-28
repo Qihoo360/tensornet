@@ -226,6 +226,12 @@ private:
                 return Status::OK();
             }
 
+            if (!q->empty() || !*end_of_sequence) {
+                q->get(out_tensors);
+                *end_of_sequence = false;
+            }
+
+
             return Status::OK();
         }
 

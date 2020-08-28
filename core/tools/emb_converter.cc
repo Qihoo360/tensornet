@@ -18,6 +18,7 @@
 #include <boost/algorithm/string.hpp>
 
 #include "core/utility/file_io.h"
+#include "core/utility/mpi_manager.h"
 
 #include "tensorflow/core/platform/env.h"
 
@@ -105,10 +106,14 @@ int ParseAdamParams(const std::string& file, butil::IOBuf& buf) {
     return 0;
 }
 
-int Convert(const std::vector<std::string>& files, const std::string& out_file, const std::string& parse_mode) {
+int Convert(const std::vector<std::string>& files, const std::string& out_file, const std::string& parse_mode, int rank) {
     butil::IOBuf buf;
 
     for (auto& file : files) {
+        std::string flag = "/rank_" + std::to_string(rank) + "/";
+        if (file.find(flag) == std::string::npos) {
+            continue;
+        }
         if (parse_mode.compare("AdaGrad") == 0) {
             if (ParseAdaGradParams(file, buf) < 0) {
                 LOG(ERROR) << "ParseAdaGradParams [" << file << "] Failed.";
@@ -136,6 +141,10 @@ int main(int argc, char** argv) {
         return -1;
     }
 
+    if (tensornet::MpiManager::Instance()->Init() != 0) {
+        LOG(ERROR) << "MpiManager Init error.";
+        return -1;
+    }
     std::string input_path = argv[1];
     std::string out_file = argv[2];
     std::string parse_mode = argv[3];
@@ -144,10 +153,13 @@ int main(int argc, char** argv) {
 
     GetAllFiles(input_path, files);
 
-    if (Convert(files, out_file, parse_mode) < 0) {
+    int rank = tensornet::MpiManager::Instance()->Rank();
+    out_file += "/part-" + std::to_string(rank);
+    if (Convert(files, out_file, parse_mode, rank) < 0) {
         LOG(ERROR) << "Convert Failed.";
         return -1;
     }
+    tensornet::MpiManager::Instance()->Barrier();
 
     return 0;
 }
