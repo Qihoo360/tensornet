@@ -20,6 +20,8 @@
 #include <mutex>
 #include <unordered_map>
 #include <functional>
+#include <thread>
+#include <algorithm>
 
 #include <butil/iobuf.h>
 #include <butil/logging.h>
@@ -450,27 +452,43 @@ public:
     }
 
     void Serialized(const std::string& filepath) {
+        std::vector<std::thread> threads;
+
         for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
-            butil::IOBuf buf;
-            blocks_[i].Serialized(buf);
-            std::string file = filepath;
-            file.append("/sparse_block_").append(std::to_string(i));
-            if (!write_to_file(file, buf)) {
-                LOG(ERROR) << "SparseOptimizer Serialized to file " << file << "failed.";
-            }
+            threads.push_back(std::thread([this, i, &filepath]() {
+                butil::IOBuf buf;
+                blocks_[i].Serialized(buf);
+                std::string file = filepath;
+                file.append("/sparse_block_").append(std::to_string(i));
+                if (!write_to_file(file, buf)) {
+                    LOG(ERROR) << "SparseOptimizer Serialized to file " << file << "failed.";
+                }
+            }));
         }
+
+        std::for_each(threads.begin(), threads.end(), [](std::thread& t) {
+            t.join();
+        });
     }
 
     void DeSerialized(const std::string& filepath) {
+        std::vector<std::thread> threads;
+
         for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
-            butil::IOBuf buf;
-            std::string file = filepath;
-            file.append("/sparse_block_").append(std::to_string(i));
-            if (!read_from_file(file, buf)) {
-                LOG(ERROR) << "SparseOptimizer DeSerialized from file " << file << "failed.";
-            }
-            blocks_[i].DeSerialized(buf);
+            threads.push_back(std::thread([this, i, &filepath]() {
+                butil::IOBuf buf;
+                std::string file = filepath;
+                file.append("/sparse_block_").append(std::to_string(i));
+                if (!read_from_file(file, buf)) {
+                    LOG(ERROR) << "SparseOptimizer DeSerialized from file " << file << "failed.";
+                }
+                blocks_[i].DeSerialized(buf);
+            }));
         }
+
+        std::for_each(threads.begin(), threads.end(), [](std::thread& t) {
+            t.join();
+        });
     }
 
     size_t KeyCount() const {
