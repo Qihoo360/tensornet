@@ -26,6 +26,12 @@ class SparseOptimizerKernelBase;
 typedef std::shared_ptr<DenseOptimizerKernelBase> DenseOptKernelSharedPtr;
 typedef std::shared_ptr<SparseOptimizerKernelBase> SparseOptKernelSharedPtr;
 
+enum OPTIMIZER_TYPE {
+    OPT_UNKNOWN = 0,
+    OPT_ADAM = 1,
+    OPT_ADAGRAD = 2,
+};
+
 class OptimizerBase {
 public:
     OptimizerBase(float lr)
@@ -38,6 +44,8 @@ public:
         int offset_begin, int offset_end) const = 0;
 
     virtual SparseOptKernelSharedPtr CreateSparseOptKernel() const = 0;
+
+    virtual OPTIMIZER_TYPE GetType() const = 0;
 
 public:
     float learning_rate = 0.01;
@@ -59,6 +67,10 @@ public:
         int offset_begin, int offset_end) const;
 
     virtual SparseOptKernelSharedPtr CreateSparseOptKernel() const;
+
+    virtual OPTIMIZER_TYPE GetType() const {
+        return OPT_ADAM;
+    }
 
 public:
     float beta1 = 0.9;
@@ -85,6 +97,10 @@ public:
         int offset_begin, int offset_end) const;
 
     virtual SparseOptKernelSharedPtr CreateSparseOptKernel() const;
+
+    virtual OPTIMIZER_TYPE GetType() const {
+        return OPT_ADAGRAD;
+    }
 
 public:
     float initial_g2sum = 0;

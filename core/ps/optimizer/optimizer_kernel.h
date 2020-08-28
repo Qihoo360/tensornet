@@ -331,7 +331,7 @@ public:
         const std::lock_guard<std::mutex> lock(*mutex_);
 
         dim_ = weight_info.dim;
-        
+
         ValueType* value = new ValueType(weight_info.dim, opt_);
 
         weight_info.weight = value->Weight();
@@ -361,7 +361,11 @@ public:
     void Serialized(butil::IOBuf& buf) {
         std::lock_guard<std::mutex> lock(*mutex_);
 
-        buf.append(&dim_, sizeof(dim_));
+        SerializedDataHeader header;
+        header.dim = dim_;
+        header.opt_type = opt_->GetType();
+
+        buf.append(&header, sizeof(header));
 
         for (const auto& iter : values_) {
             uint64_t sign = iter.first;
@@ -376,9 +380,10 @@ public:
     void DeSerialized(butil::IOBuf& buf) {
         std::lock_guard<std::mutex> lock(*mutex_);
 
-        int dim = 0;
+        SerializedDataHeader header;
+        CHECK_EQ(sizeof(header), buf.cutn(&header, sizeof(header)));
 
-        CHECK_EQ(sizeof(int), buf.cutn(&dim, sizeof(dim)));
+        CHECK_EQ(header.opt_type, opt_->GetType());
 
         while (buf.size()) {
             CHECK(buf.size() > sizeof(uint64_t));
@@ -389,7 +394,7 @@ public:
 
             CHECK(iter == values_.end()) << sign;
 
-            ValueType* value = new ValueType(dim, opt_);
+            ValueType* value = new ValueType(header.dim, opt_);
 
             value->DeSerialized(buf);
 
@@ -400,6 +405,12 @@ public:
     size_t Size() const {
         return values_.size();
     }
+
+private:
+    struct SerializedDataHeader {
+        uint32_t opt_type;
+        int dim;
+    };
 
 private:
     const OptType* opt_ = nullptr;

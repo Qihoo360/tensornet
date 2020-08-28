@@ -105,7 +105,8 @@ void SparseTable::Save(const std::string& filepath) const {
 
     timer.stop();
 
-    LOG(INFO) << "SparseTable save " << GetHandle()
+    LOG(INFO) << "SparseTable save. rank:" << shard_id
+              << " table_id:" << GetHandle()
               << " latency:" << timer.s_elapsed() << "s"
               << " keys_count:" << op_kernel_->KeyCount();
 }
@@ -121,7 +122,8 @@ void SparseTable::Load(const std::string& filepath) const {
 
     timer.stop();
 
-    LOG(INFO) << "SparseTable load " << GetHandle()
+    LOG(INFO) << "SparseTable load. rank:" << shard_id
+              << " table_id:" << GetHandle()
               << " latency:" << timer.s_elapsed() << "s"
               << " keys_count:" << op_kernel_->KeyCount();
 }

@@ -153,8 +153,6 @@ class Model(tf.keras.Model):
             tf_cp_file = os.path.join(cp_dir, "tf_checkpoint")
             super(Model, self).save_weights(tf_cp_file, overwrite, save_format='tf')
 
-            #self.save(os.path.join(cp_dir, "model.h5"))
-
             save_done_info(filepath, dt)
 
         self.is_loaded_from_checkpoint = True
