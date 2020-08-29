@@ -372,6 +372,29 @@ public:
         return os;
     }
 
+    friend std::istream& operator>>(std::istream& is, SparseKernelBlock& block) {
+        std::string name;
+
+        is >> name;
+        CHECK_EQ(name, block.opt_->Name()) << "last trained model with optimizer is:" << name
+            << " but current model use:" << block.opt_->Name() << " instead."
+            << " you must make sure that use same optimizer when incremental training";
+
+        is >> block.dim_;
+
+        std::string line;
+        while (std::getline(is, line)) {
+            std::istringstream iss(line);
+            ValueType* value = new ValueType(block.dim_, block.opt_);
+
+            uint64_t sign;
+            iss >> sign >> *value;
+            block.values_[sign] = value;
+        }
+
+        return is;
+    }
+
 private:
     const OptType* opt_ = nullptr;
     std::unordered_map<uint64_t, ValueType*, decltype(sparse_key_hasher)> values_;
@@ -436,13 +459,13 @@ public:
 
         for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
             threads.push_back(std::thread([this, i, &filepath]() {
-                //butil::IOBuf buf;
-                //std::string file = filepath;
-                //file.append("/sparse_block_").append(std::to_string(i));
-                //if (!read_from_file(file, buf)) {
-                //    LOG(ERROR) << "SparseOptimizer DeSerialized from file " << file << "failed.";
-                //}
-                //blocks_[i].DeSerialized(buf);
+                std::string file = filepath;
+                file.append("/sparse_block_").append(std::to_string(i));
+
+                FileReaderSource reader_source(file);
+                boost::iostreams::stream<FileReaderSource> in_stream(reader_source);
+
+                in_stream >> blocks_[i];
             }));
         }
 

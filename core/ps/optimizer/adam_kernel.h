@@ -116,6 +116,7 @@ protected:
     }
 
     friend std::ostream& operator<<(std::ostream& os, const SparseAdamValue& value);
+    friend std::istream& operator>>(std::istream& is, SparseAdamValue& value);
 
 private:
     UnionWeight w_;
@@ -127,6 +128,7 @@ private:
 };
 
 std::ostream& operator<<(std::ostream& os, const SparseAdamValue& value);
+std::istream& operator>>(std::istream& is, SparseAdamValue& value);
 
 typedef SparseKernelBlock<Adam, SparseAdamValue> SparseAdamKernelBlock;
 

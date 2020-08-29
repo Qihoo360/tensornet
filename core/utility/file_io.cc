@@ -17,6 +17,9 @@
 #include <string>
 
 #include "tensorflow/core/platform/env.h"
+#include "tensorflow/core/lib/io/buffered_inputstream.h"
+#include "tensorflow/core/lib/io/random_inputstream.h"
+
 
 #include <butil/logging.h>
 
@@ -54,6 +57,51 @@ FileWriterSink::~FileWriterSink() {
 std::streamsize FileWriterSink::write(const char_type* str, std::streamsize n) {
     CHECK_TF_STATUS(writer_->Append(tensorflow::StringPiece(str, n)));
     return n;
+}
+
+class FileReaderSource::ReaderInternal {
+public:
+    ReaderInternal(tensorflow::RandomAccessFile* p_file)
+        : file_(p_file)
+        , stream(p_file)
+        , buf(&stream, 65535) {
+    }
+
+    ~ReaderInternal() {
+    }
+
+public:
+    std::unique_ptr<tensorflow::RandomAccessFile> file_;
+
+    tensorflow::io::RandomAccessInputStream stream;
+    tensorflow::io::BufferedInputStream buf;
+};
+
+FileReaderSource::FileReaderSource(const std::string& file) {
+    std::unique_ptr<tensorflow::RandomAccessFile> reader;
+    CHECK_TF_STATUS(tensorflow::Env::Default()->NewRandomAccessFile(file, &reader));
+    reader_ = std::make_shared<ReaderInternal>(reader.release());
+}
+
+FileReaderSource::FileReaderSource(const FileReaderSource& reader_source)
+    : reader_(reader_source.reader_)
+{ }
+
+FileReaderSource::~FileReaderSource() {
+}
+
+std::streamsize FileReaderSource::read(char_type* str, std::streamsize n) {
+    tensorflow::tstring buffer;
+    auto s = reader_->buf.ReadNBytes(n, &buffer);
+    CHECK_LE(buffer.size(), n);
+
+    if (buffer.size() == 0 && tensorflow::errors::IsOutOfRange(s)) {
+        return -1;
+    }
+
+    std::copy(buffer.begin(), buffer.end(), str);
+
+    return buffer.size();
 }
 
 bool write_to_file(const std::string& file, butil::IOBuf& buf) {

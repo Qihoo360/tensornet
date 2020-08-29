@@ -125,5 +125,19 @@ std::ostream& operator<<(std::ostream& os, const SparseAdaGradValue& value) {
     return os;
 }
 
+std::istream& operator>>(std::istream& is, SparseAdaGradValue& value) {
+    is >> value.dim_;
+
+    for (int i = 0; i < value.dim_; i++) {
+        is >> value.Weight()[i];
+    }
+
+    is >> value.g2sum_;
+    is >> value.version_;
+    is >> value.show_;
+
+    return is;
+}
+
 } // namespace tensornet
 

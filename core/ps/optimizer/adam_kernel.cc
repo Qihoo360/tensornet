@@ -130,5 +130,9 @@ std::ostream& operator<<(std::ostream& os, const SparseAdamValue& value) {
     return os;
 }
 
+std::istream& operator>>(std::istream& is, SparseAdamValue& value) {
+    return is;
+}
+
 } // namespace tensornet {
 

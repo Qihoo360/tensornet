@@ -85,6 +85,7 @@ public:
     void Apply(const AdaGrad* opt, SparseGradInfo& grad_info);
 
     friend std::ostream& operator<<(std::ostream& os, const SparseAdaGradValue& value);
+    friend std::istream& operator>>(std::istream& is, SparseAdaGradValue& value);
 
 private:
     bool IsMiniDim_() const {
@@ -105,6 +106,7 @@ private:
 };
 
 std::ostream& operator<<(std::ostream& os, const SparseAdaGradValue& value);
+std::istream& operator>>(std::istream& is, SparseAdaGradValue& value);
 
 typedef SparseKernelBlock<AdaGrad, SparseAdaGradValue> SparseAdaGradKernelBlock;
 

@@ -17,12 +17,12 @@
 
 #include <string>
 #include <iosfwd>                          // streamsize
-#include <boost/iostreams/categories.hpp>  // sink_tag
+#include <boost/iostreams/categories.hpp>  // sink_tag, source_tag
 
 #include <butil/iobuf.h>
 
 namespace tensorflow {
-class WritableFile;
+    class WritableFile;
 }
 
 namespace tensornet {
@@ -41,6 +41,25 @@ public:
 
 private:
     std::shared_ptr<tensorflow::WritableFile> writer_;
+};
+
+class FileReaderSource {
+public:
+    typedef char char_type;
+    typedef boost::iostreams::source_tag category;
+
+    explicit FileReaderSource(const std::string& file);
+    ~FileReaderSource();
+
+    FileReaderSource(const FileReaderSource& reader_source);
+
+    std::streamsize read(char_type* s, std::streamsize n);
+
+    class ReaderInternal;
+
+private:
+    std::shared_ptr<ReaderInternal> reader_;
+
 };
 
 bool write_to_file(const std::string& file, butil::IOBuf& buf);
