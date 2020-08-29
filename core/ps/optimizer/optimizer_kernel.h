@@ -27,6 +27,8 @@
 #include <butil/logging.h>
 #include <Eigen/Dense>
 
+#include <boost/iostreams/stream.hpp>
+
 #include "core/utility/file_io.h"
 
 namespace tensornet {
@@ -266,7 +268,7 @@ private:
     std::vector<KernelBlockType> blocks_;
 };
 
-auto sparse_key_hasher = [](const uint64_t& sign) {
+static auto sparse_key_hasher = [](const uint64_t& sign) {
     // going to this shard sign always have same remainder of sign % shard_num,
     // we flip high and low bit to avoid hashmap bucket conflict probability.
     return std::hash<uint64_t>()(sign >> 32 | sign << 32);
@@ -352,67 +354,23 @@ public:
 
         ValueType* value = iter->second;
 
-        CHECK_EQ(value->Dim(), grad_info.dim);
-
-        value->IncreaseVersion();
-        value->AddShow(grad_info.show);
-
         value->Apply(opt_, grad_info);
-    }
-
-    void Serialized(butil::IOBuf& buf) {
-        std::lock_guard<std::mutex> lock(*mutex_);
-
-        SerializedDataHeader header;
-        header.dim = dim_;
-        header.opt_type = opt_->GetType();
-
-        buf.append(&header, sizeof(header));
-
-        for (const auto& iter : values_) {
-            uint64_t sign = iter.first;
-            ValueType* value = iter.second;
-
-            buf.append(&sign, sizeof(sign));
-
-            value->Serialized(buf);
-        }
-    }
-
-    void DeSerialized(butil::IOBuf& buf) {
-        std::lock_guard<std::mutex> lock(*mutex_);
-
-        SerializedDataHeader header;
-        CHECK_EQ(sizeof(header), buf.cutn(&header, sizeof(header)));
-
-        CHECK_EQ(header.opt_type, opt_->GetType());
-
-        while (buf.size()) {
-            CHECK(buf.size() > sizeof(uint64_t));
-
-            uint64_t sign;
-            CHECK_EQ(sizeof(uint64_t), buf.cutn(&sign, sizeof(sign)));
-            auto iter = values_.find(sign);
-
-            CHECK(iter == values_.end()) << sign;
-
-            ValueType* value = new ValueType(header.dim, opt_);
-
-            value->DeSerialized(buf);
-
-            values_[sign] = value;
-        }
     }
 
     size_t Size() const {
         return values_.size();
     }
 
-private:
-    struct SerializedDataHeader {
-        uint32_t opt_type;
-        int dim;
-    };
+    friend std::ostream& operator<<(std::ostream& os, const SparseKernelBlock& block) {
+        // header
+        os << block.opt_->Name() << "\t" << block.dim_ << std::endl;
+
+        for (const auto& value : block.values_) {
+            os << value.first << "\t" << *(value.second) << std::endl;
+        }
+
+        return os;
+    }
 
 private:
     const OptType* opt_ = nullptr;
@@ -456,13 +414,15 @@ public:
 
         for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
             threads.push_back(std::thread([this, i, &filepath]() {
-                butil::IOBuf buf;
-                blocks_[i].Serialized(buf);
                 std::string file = filepath;
                 file.append("/sparse_block_").append(std::to_string(i));
-                if (!write_to_file(file, buf)) {
-                    LOG(ERROR) << "SparseOptimizer Serialized to file " << file << "failed.";
-                }
+
+                FileWriterSink writer_sink(file);
+
+                boost::iostreams::stream<FileWriterSink> out_stream(writer_sink);
+
+                out_stream << blocks_[i] << std::endl;
+                out_stream.flush();
             }));
         }
 
@@ -476,13 +436,13 @@ public:
 
         for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
             threads.push_back(std::thread([this, i, &filepath]() {
-                butil::IOBuf buf;
-                std::string file = filepath;
-                file.append("/sparse_block_").append(std::to_string(i));
-                if (!read_from_file(file, buf)) {
-                    LOG(ERROR) << "SparseOptimizer DeSerialized from file " << file << "failed.";
-                }
-                blocks_[i].DeSerialized(buf);
+                //butil::IOBuf buf;
+                //std::string file = filepath;
+                //file.append("/sparse_block_").append(std::to_string(i));
+                //if (!read_from_file(file, buf)) {
+                //    LOG(ERROR) << "SparseOptimizer DeSerialized from file " << file << "failed.";
+                //}
+                //blocks_[i].DeSerialized(buf);
             }));
         }
 

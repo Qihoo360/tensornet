@@ -53,14 +53,41 @@ public:
     SparseAdaGradValue(int dim, const AdaGrad* opt);
 
     ~SparseAdaGradValue() {
-        if (!IsMiniDim()) {
+        if (!IsMiniDim_()) {
             delete w_.p;
         }
     }
 
-    int Dim() { return dim_; }
+    int Dim() const {
+        return dim_;
+    }
 
-    bool IsMiniDim() {
+    float* Weight() {
+        if (IsMiniDim_()) {
+            return w_.v;
+        } else {
+            return w_.p;
+        }
+    }
+
+    const float* Weight() const {
+        if (IsMiniDim_()) {
+            return w_.v;
+        } else {
+            return w_.p;
+        }
+    }
+
+    uint32_t Version() const {
+        return version_;
+    }
+
+    void Apply(const AdaGrad* opt, SparseGradInfo& grad_info);
+
+    friend std::ostream& operator<<(std::ostream& os, const SparseAdaGradValue& value);
+
+private:
+    bool IsMiniDim_() const {
         // UnionWeight could store two float
         if (2 > dim_) {
             return true;
@@ -69,36 +96,6 @@ public:
         }
     }
 
-    float* Weight() {
-        if (IsMiniDim()) {
-            return w_.v;
-        } else {
-            return w_.p;
-        }
-    }
-
-    float& G2sum() {
-        return g2sum_;
-    }
-
-    uint32_t Version() {
-        return version_;
-    }
-
-    void IncreaseVersion() {
-        version_++;
-    }
-
-    void AddShow(int show) {
-        show_ += show;
-    }
-
-    void Apply(const AdaGrad* opt, SparseGradInfo& grad_info);
-
-    void Serialized(butil::IOBuf& buf);
-
-    void DeSerialized(butil::IOBuf& buf);
-
 private:
     UnionWeight w_;
     float g2sum_;
@@ -106,6 +103,8 @@ private:
     uint32_t version_ = 0;
     int show_ = 0;
 };
+
+std::ostream& operator<<(std::ostream& os, const SparseAdaGradValue& value);
 
 typedef SparseKernelBlock<AdaGrad, SparseAdaGradValue> SparseAdaGradKernelBlock;
 

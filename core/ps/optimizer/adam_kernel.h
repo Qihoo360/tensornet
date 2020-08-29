@@ -56,16 +56,41 @@ public:
     SparseAdamValue(int dim, const Adam* opt);
 
     ~SparseAdamValue() {
-        if (!IsMiniDim()) {
+        if (!IsMiniDim_()) {
             delete w_.p;
             delete m_.p;
             delete v_.p;
         }
     }
 
-    int Dim() { return dim_; }
+    int Dim() const {
+        return dim_;
+    }
 
-    bool IsMiniDim() {
+    float* Weight() {
+        if (IsMiniDim_()) {
+            return w_.v;
+        } else {
+            return w_.p;
+        }
+    }
+
+    const float* Weight() const {
+        if (IsMiniDim_()) {
+            return w_.v;
+        } else {
+            return w_.p;
+        }
+    }
+
+    uint32_t Version() const {
+        return version_;
+    }
+
+    void Apply(const Adam* opt, SparseGradInfo& grad_info);
+
+protected:
+    bool IsMiniDim_() const {
         // UnionWeight could store two float
         if (2 > dim_) {
             return true;
@@ -74,35 +99,8 @@ public:
         }
     }
 
-    float* Weight() {
-        if (IsMiniDim()) {
-            return w_.v;
-        } else {
-            return w_.p;
-        }
-    }
-
-    uint32_t Version() {
-        return version_;
-    }
-
-    void IncreaseVersion() {
-        version_++;
-    }
-
-    void AddShow(int show) {
-        show_ += show;
-    }
-
-    void Apply(const Adam* opt, SparseGradInfo& grad_info);
-
-    void Serialized(butil::IOBuf& buf);
-
-    void DeSerialized(butil::IOBuf& buf);
-
-protected:
     float* M() {
-        if (IsMiniDim()) {
+        if (IsMiniDim_()) {
             return m_.v;
         } else {
             return m_.p;
@@ -110,12 +108,14 @@ protected:
     }
 
     float* V() {
-        if (IsMiniDim()) {
+        if (IsMiniDim_()) {
             return v_.v;
         } else {
             return v_.p;
         }
     }
+
+    friend std::ostream& operator<<(std::ostream& os, const SparseAdamValue& value);
 
 private:
     UnionWeight w_;
@@ -125,6 +125,8 @@ private:
     uint32_t version_ = 0;
     int show_ = 0;
 };
+
+std::ostream& operator<<(std::ostream& os, const SparseAdamValue& value);
 
 typedef SparseKernelBlock<Adam, SparseAdamValue> SparseAdamKernelBlock;
 

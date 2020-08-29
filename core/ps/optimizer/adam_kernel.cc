@@ -77,7 +77,7 @@ void DenseAdamValue::DeSerialized(butil::IOBuf& buf) {
 SparseAdamValue::SparseAdamValue(int dim, const Adam* opt) {
     dim_ = dim;
 
-    if (!IsMiniDim()) {
+    if (!IsMiniDim_()) {
         float* buf = new float[dim * 3];
         w_.p = buf + dim * 0;
         m_.p = buf + dim * 1;
@@ -88,7 +88,7 @@ SparseAdamValue::SparseAdamValue(int dim, const Adam* opt) {
     auto distribution = std::normal_distribution<float>(0, 1 / sqrt(Dim()));
 
     for (int i = 0; i < Dim(); ++i) {
-        if (IsMiniDim()) {
+        if (IsMiniDim_()) {
             w_.v[i] = distribution(reng) * opt->initial_scale;
             m_.v[i] = 0;
             v_.v[i] = 0;
@@ -101,6 +101,11 @@ SparseAdamValue::SparseAdamValue(int dim, const Adam* opt) {
 }
 
 void SparseAdamValue::Apply(const Adam* opt, SparseGradInfo& grad_info) {
+    CHECK_EQ(Dim(), grad_info.dim);
+
+    version_++;
+    show_ += grad_info.show;
+
     float* w = Weight();
     float* m = M();
     float* v = V();
@@ -121,24 +126,8 @@ void SparseAdamValue::Apply(const Adam* opt, SparseGradInfo& grad_info) {
     }
 }
 
-void SparseAdamValue::Serialized(butil::IOBuf& buf) {
-    buf.append(Weight(), sizeof(float) * Dim());
-    buf.append(M(), sizeof(float) * Dim());
-    buf.append(V(), sizeof(float) * Dim());
-
-    buf.append(&version_, sizeof(version_));
-    buf.append(&show_, sizeof(show_));
-}
-
-void SparseAdamValue::DeSerialized(butil::IOBuf& buf) {
-    CHECK(buf.size() >= sizeof(float) * Dim() * 3);
-
-    CHECK_EQ(sizeof(float) * Dim(), buf.cutn(Weight(), sizeof(float) * Dim()));
-    CHECK_EQ(sizeof(float) * Dim(), buf.cutn(M(), sizeof(float) * Dim()));
-    CHECK_EQ(sizeof(float) * Dim(), buf.cutn(V(), sizeof(float) * Dim()));
-
-    CHECK_EQ(sizeof(version_), buf.cutn(&version_, sizeof(version_)));
-    CHECK_EQ(sizeof(show_), buf.cutn(&show_, sizeof(show_)));
+std::ostream& operator<<(std::ostream& os, const SparseAdamValue& value) {
+    return os;
 }
 
 } // namespace tensornet {

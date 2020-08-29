@@ -65,7 +65,7 @@ void DenseAdaGradValue::DeSerialized(butil::IOBuf& buf) {
 SparseAdaGradValue::SparseAdaGradValue(int dim, const AdaGrad* opt) {
     dim_ = dim;
 
-    if (!IsMiniDim()) {
+    if (!IsMiniDim_()) {
         w_.p = new float[dim];
     }
 
@@ -73,7 +73,7 @@ SparseAdaGradValue::SparseAdaGradValue(int dim, const AdaGrad* opt) {
     auto distribution = std::normal_distribution<float>(0, 1 / sqrt(Dim()));
 
     for (int i = 0; i < Dim(); ++i) {
-        if (IsMiniDim()) {
+        if (IsMiniDim_()) {
             w_.v[i] = distribution(reng) * opt->initial_scale;
         } else {
             w_.p[i] = distribution(reng) * opt->initial_scale;
@@ -85,6 +85,11 @@ SparseAdaGradValue::SparseAdaGradValue(int dim, const AdaGrad* opt) {
 }
 
 void SparseAdaGradValue::Apply(const AdaGrad* opt, SparseGradInfo& grad_info) {
+    CHECK_EQ(Dim(), grad_info.dim);
+
+    version_++;
+    show_ += grad_info.show;
+
     float* w = Weight();
 
     double add_g2sum = 0;
@@ -106,20 +111,18 @@ void SparseAdaGradValue::Apply(const AdaGrad* opt, SparseGradInfo& grad_info) {
     }
 }
 
-void SparseAdaGradValue::Serialized(butil::IOBuf& buf) {
-    buf.append(Weight(), sizeof(float) * Dim());
-    buf.append(&g2sum_, sizeof(g2sum_));
-    buf.append(&version_, sizeof(version_));
-    buf.append(&show_, sizeof(show_));
-}
+std::ostream& operator<<(std::ostream& os, const SparseAdaGradValue& value) {
+    os << value.dim_ << "\t";
 
-void SparseAdaGradValue::DeSerialized(butil::IOBuf& buf) {
-    CHECK(buf.size() >= sizeof(float) * Dim() + sizeof(float));
+    for (int i = 0; i < value.dim_; i++) {
+        os << value.Weight()[i] << "\t";
+    }
 
-    CHECK_EQ(sizeof(float) * Dim(), buf.cutn(Weight(), sizeof(float) * Dim()));
-    CHECK_EQ(sizeof(g2sum_), buf.cutn(&g2sum_, sizeof(g2sum_)));
-    CHECK_EQ(sizeof(version_), buf.cutn(&version_, sizeof(version_)));
-    CHECK_EQ(sizeof(show_), buf.cutn(&show_, sizeof(show_)));
+    os << value.g2sum_ << "\t";
+    os << value.version_ << "\t";
+    os << value.show_ << "\t";
+
+    return os;
 }
 
 } // namespace tensornet

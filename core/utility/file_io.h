@@ -16,10 +16,32 @@
 #define TENSORNET_CORE_UTILITY_FILE_IO_H_
 
 #include <string>
+#include <iosfwd>                          // streamsize
+#include <boost/iostreams/categories.hpp>  // sink_tag
 
 #include <butil/iobuf.h>
 
+namespace tensorflow {
+class WritableFile;
+}
+
 namespace tensornet {
+
+class FileWriterSink {
+public:
+    typedef char char_type;
+    typedef boost::iostreams::sink_tag category;
+
+    explicit FileWriterSink(const std::string& file);
+    ~FileWriterSink();
+
+    FileWriterSink(const FileWriterSink& writer_sink);
+
+    std::streamsize write(const char_type* str, std::streamsize n);
+
+private:
+    std::shared_ptr<tensorflow::WritableFile> writer_;
+};
 
 bool write_to_file(const std::string& file, butil::IOBuf& buf);
 

@@ -28,6 +28,33 @@ namespace tensornet {
         CHECK(s.ok()) << s;                                 \
     } while (0)
 
+FileWriterSink::FileWriterSink(const std::string& file) {
+    size_t found = file.find_last_of("/\\");
+    CHECK(found != std::string::npos);
+    std::string file_dir = file.substr(0, found);
+
+    CHECK_TF_STATUS(tensorflow::Env::Default()->RecursivelyCreateDir(file_dir));
+
+    std::unique_ptr<tensorflow::WritableFile> writer;
+    CHECK_TF_STATUS(tensorflow::Env::Default()->NewWritableFile(file, &writer));
+
+    // unique_ptr need tensorflow::WritableFile to a complete type when destruct, but we want
+    // hide detail of it, so we use the raw ptr directly. this is not safe enough, user must
+    // guarantee that only one thread write at the same time
+    writer_ = std::move(writer);
+}
+
+FileWriterSink::FileWriterSink(const FileWriterSink& writer_sink)
+    : writer_(writer_sink.writer_)
+{ }
+
+FileWriterSink::~FileWriterSink() {
+}
+
+std::streamsize FileWriterSink::write(const char_type* str, std::streamsize n) {
+    CHECK_TF_STATUS(writer_->Append(tensorflow::StringPiece(str, n)));
+    return n;
+}
 
 bool write_to_file(const std::string& file, butil::IOBuf& buf) {
     size_t found = file.find_last_of("/\\");

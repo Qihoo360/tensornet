@@ -17,6 +17,7 @@
 
 #include <vector>
 #include <memory>
+#include <string>
 
 namespace tensornet {
 
@@ -25,12 +26,6 @@ class SparseOptimizerKernelBase;
 
 typedef std::shared_ptr<DenseOptimizerKernelBase> DenseOptKernelSharedPtr;
 typedef std::shared_ptr<SparseOptimizerKernelBase> SparseOptKernelSharedPtr;
-
-enum OPTIMIZER_TYPE {
-    OPT_UNKNOWN = 0,
-    OPT_ADAM = 1,
-    OPT_ADAGRAD = 2,
-};
 
 class OptimizerBase {
 public:
@@ -45,7 +40,7 @@ public:
 
     virtual SparseOptKernelSharedPtr CreateSparseOptKernel() const = 0;
 
-    virtual OPTIMIZER_TYPE GetType() const = 0;
+    virtual std::string Name() const = 0;
 
 public:
     float learning_rate = 0.01;
@@ -68,8 +63,8 @@ public:
 
     virtual SparseOptKernelSharedPtr CreateSparseOptKernel() const;
 
-    virtual OPTIMIZER_TYPE GetType() const {
-        return OPT_ADAM;
+    virtual std::string Name() const {
+        return "Adam";
     }
 
 public:
@@ -98,8 +93,8 @@ public:
 
     virtual SparseOptKernelSharedPtr CreateSparseOptKernel() const;
 
-    virtual OPTIMIZER_TYPE GetType() const {
-        return OPT_ADAGRAD;
+    virtual std::string Name() const {
+        return "AdaGrad";
     }
 
 public:
