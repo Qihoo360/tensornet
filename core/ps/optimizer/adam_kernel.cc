@@ -127,10 +127,48 @@ void SparseAdamValue::Apply(const Adam* opt, SparseGradInfo& grad_info) {
 }
 
 std::ostream& operator<<(std::ostream& os, const SparseAdamValue& value) {
+    os << value.dim_ << "\t";
+
+    for (int i = 0; i < value.dim_; i++) {
+        os << value.Weight()[i] << "\t";
+    }
+
+    for (int i = 0; i < value.dim_; i++) {
+        os << value.M()[i] << "\t";
+    }
+
+    for (int i = 0; i < value.dim_; i++) {
+        os << value.V()[i] << "\t";
+    }
+
+    for (int i = 0; i < value.dim_; i++) {
+        os << value.V()[i] << "\t";
+    }
+
+    os << value.version_ << "\t";
+    os << value.show_ << "\t";
+
     return os;
 }
 
 std::istream& operator>>(std::istream& is, SparseAdamValue& value) {
+    is >> value.dim_;
+
+    for (int i = 0; i < value.dim_; i++) {
+        is >> value.Weight()[i];
+    }
+
+    for (int i = 0; i < value.dim_; i++) {
+        is >> value.M()[i];
+    }
+
+    for (int i = 0; i < value.dim_; i++) {
+        is >> value.V()[i];
+    }
+
+    is >> value.version_;
+    is >> value.show_;
+
     return is;
 }
 

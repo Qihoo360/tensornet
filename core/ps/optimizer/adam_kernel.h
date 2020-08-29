@@ -107,7 +107,23 @@ protected:
         }
     }
 
+    const float* M() const {
+        if (IsMiniDim_()) {
+            return m_.v;
+        } else {
+            return m_.p;
+        }
+    }
+
     float* V() {
+        if (IsMiniDim_()) {
+            return v_.v;
+        } else {
+            return v_.p;
+        }
+    }
+
+    const float* V() const {
         if (IsMiniDim_()) {
             return v_.v;
         } else {
