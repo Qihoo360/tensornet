@@ -16,10 +16,9 @@
 #define TENSORNET_CORE_UTILITY_FILE_IO_H_
 
 #include <string>
+#include <memory>
 #include <iosfwd>                          // streamsize
 #include <boost/iostreams/categories.hpp>  // sink_tag, source_tag
-
-#include <butil/iobuf.h>
 
 namespace tensorflow {
     class WritableFile;
@@ -61,10 +60,6 @@ private:
     std::shared_ptr<ReaderInternal> reader_;
 
 };
-
-bool write_to_file(const std::string& file, butil::IOBuf& buf);
-
-bool read_from_file(const std::string& file, butil::IOBuf& buf);
 
 }  // namespace tensornet
 

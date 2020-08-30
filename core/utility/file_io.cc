@@ -20,7 +20,6 @@
 #include "tensorflow/core/lib/io/buffered_inputstream.h"
 #include "tensorflow/core/lib/io/random_inputstream.h"
 
-
 #include <butil/logging.h>
 
 namespace tensornet {
@@ -102,54 +101,6 @@ std::streamsize FileReaderSource::read(char_type* str, std::streamsize n) {
     std::copy(buffer.begin(), buffer.end(), str);
 
     return buffer.size();
-}
-
-bool write_to_file(const std::string& file, butil::IOBuf& buf) {
-    size_t found = file.find_last_of("/\\");
-    CHECK(found != std::string::npos);
-    std::string file_dir = file.substr(0, found);
-
-    CHECK_TF_STATUS(tensorflow::Env::Default()->RecursivelyCreateDir(file_dir));
-
-    std::unique_ptr<tensorflow::WritableFile> writer;
-    CHECK_TF_STATUS(tensorflow::Env::Default()->NewWritableFile(file, &writer));
-
-    size_t block_num = buf.backing_block_num();
-    for (size_t i = 0; i < block_num; ++i) {
-        auto piece = buf.backing_block(i);
-        CHECK_TF_STATUS(writer->Append(tensorflow::StringPiece(piece.data(), piece.size())));
-    }
-
-    return true;
-}
-
-bool read_from_file(const std::string& file, butil::IOBuf& buf) {
-    std::unique_ptr<tensorflow::RandomAccessFile> reader;
-    tensorflow::Env::Default()->NewRandomAccessFile(file, &reader);
-
-    size_t offset = 0;
-    tensorflow::StringPiece result;
-    const size_t buffer_size = 8 * 1024 * 1024;
-
-    std::unique_ptr<char[]> buffer(new char[buffer_size]);
-    char* raw_data = (char*)buffer.get();
-    while (true) {
-        auto s = reader->Read(offset, buffer_size, &result, raw_data);
-        if (s.ok()) {
-        } else if (tensorflow::errors::IsOutOfRange(s)) {
-            //LOG(INFO) << "Read file EOF: " << file;
-        } else {
-            LOG(ERROR) << "Read file: " << file << " Error:" << s;
-            break;
-        }
-
-        if (result.size() == 0) {
-            break;
-        }
-        offset += result.size();
-        buf.append(raw_data, result.size());
-    }
-    return true;
 }
 
 } // namespace tensornet

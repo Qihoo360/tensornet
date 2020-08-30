@@ -46,20 +46,36 @@ void DenseAdaGradValue::Apply(const AdaGrad* opt, const Eigen::ArrayXf& g) {
     w_ -= opt->learning_rate * m_ / (g2sum_.sqrt() / d2sum_.sqrt() + opt->epsilon);
 }
 
-void DenseAdaGradValue::Serialized(butil::IOBuf& buf) const {
-    buf.append(m_.data(), m_.size() * sizeof(float));
-    buf.append(d2sum_.data(), d2sum_.size() * sizeof(float));
-    buf.append(g2sum_.data(), g2sum_.size() * sizeof(float));
-    buf.append(w_.data(), w_.size() * sizeof(float));
+std::ostream& operator<<(std::ostream& os, const DenseAdaGradValue& value) {
+    int array_size = value.w_.size();
+
+    os << array_size << "\t";
+
+    for (int i = 0; i < array_size; i++) {
+        os << value.w_[i] << "\t"
+           << value.d2sum_[i] << "\t"
+           << value.g2sum_[i] << "\t"
+           << value.m_[i] << std::endl;
+    }
+
+    return os;
 }
 
-void DenseAdaGradValue::DeSerialized(butil::IOBuf& buf) {
-    CHECK_EQ(buf.size(), DataSize());
+std::istream& operator>>(std::istream& is, DenseAdaGradValue& value) {
+    int array_size = 0;
 
-    buf.cutn(m_.data(), m_.size() * sizeof(float));
-    buf.cutn(d2sum_.data(), d2sum_.size() * sizeof(float));
-    buf.cutn(g2sum_.data(), g2sum_.size() * sizeof(float));
-    buf.cutn(w_.data(), w_.size() * sizeof(float));
+    is >> array_size;
+
+    CHECK_EQ(array_size, value.w_.size());
+
+    for (int i = 0; i < array_size; i++) {
+        is >> value.w_[i];
+        is >> value.d2sum_[i];
+        is >> value.g2sum_[i];
+        is >> value.m_[i];
+    }
+
+    return is;
 }
 
 SparseAdaGradValue::SparseAdaGradValue(int dim, const AdaGrad* opt) {

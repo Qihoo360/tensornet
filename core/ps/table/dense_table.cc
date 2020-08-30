@@ -26,11 +26,6 @@
 
 namespace tensornet {
 
-struct DenseTableHeader {
-    int rank_num;
-    int total_elements;
-};
-
 DenseTable::DenseTable(const OptimizerBase* opt)
     : total_elements_(0)
     , opt_(opt) {
@@ -111,7 +106,6 @@ void DenseTable::Save(std::string filepath) const {
     int shard_id = PsCluster::Instance()->Rank();
 
     const auto& opt_kernel = GetOptKernels(shard_id);
-
     if (nullptr == opt_kernel) {
         return;
     }
@@ -119,27 +113,20 @@ void DenseTable::Save(std::string filepath) const {
     std::string file = filepath + "/dense_table/" + std::to_string(GetHandle())
                             + "/" + std::to_string(shard_id);
 
-    butil::IOBuf k_buf;
-    opt_kernel->Serialized(k_buf);
+    FileWriterSink writer_sink(file);
 
-    CHECK_EQ(k_buf.size(), opt_kernel->DataSize());
+    boost::iostreams::stream<FileWriterSink> out_stream(writer_sink);
 
-    DenseTableHeader header;
-    header.total_elements = total_elements_;
-    header.rank_num = PsCluster::Instance()->RankNum();
+    out_stream << total_elements_ << "\t";
+    out_stream << PsCluster::Instance()->RankNum() << std::endl;
+    opt_kernel->Serialized(out_stream);
 
-    butil::IOBuf buf;
-    buf.append(&header, sizeof(DenseTableHeader));
-    buf.append(k_buf);
-
-    int data_size = buf.size();
-
-    CHECK(write_to_file(file, buf));
+    out_stream.flush();
 
     timer.stop();
 
     LOG(INFO) << "DenseTable save, shard_id:" << shard_id
-        << " size:" << data_size
+        << " size:" << opt_kernel->DataSize()
         << " latency:" << timer.s_elapsed() << "s";
 }
 
@@ -147,33 +134,29 @@ void DenseTable::Load(std::string filepath) {
     butil::Timer timer(butil::Timer::STARTED);
 
     int shard_id = PsCluster::Instance()->Rank();
+    const auto& opt_kernel = GetOptKernels(shard_id);
+    if (nullptr == opt_kernel) {
+        return;
+    }
 
     std::string file = filepath + "/dense_table/" + std::to_string(GetHandle())
                             + "/" + std::to_string(shard_id);
 
-    butil::IOBuf buf;
+    FileReaderSource reader_source(file);
+    boost::iostreams::stream<FileReaderSource> in_stream(reader_source);
 
-    CHECK(read_from_file(file, buf));
+    int rank_num = 0;
+    in_stream >> total_elements_ >> rank_num;
 
-    int data_size = buf.size();
+    CHECK_EQ(PsCluster::Instance()->RankNum(), rank_num);
 
-    DenseTableHeader header;
-
-    buf.cutn(&header, sizeof(DenseTableHeader));
-
-    CHECK_EQ(0, Init(header.total_elements));
-    CHECK_EQ(PsCluster::Instance()->RankNum(), header.rank_num);
-
-    const auto& opt_kernel = GetOptKernels(shard_id);
-
-    butil::IOBuf k_buf;
-    CHECK_EQ(buf.cutn(&k_buf, opt_kernel->DataSize()), opt_kernel->DataSize());
-    opt_kernel->DeSerialized(k_buf);
+    CHECK_EQ(0, Init(total_elements_));
+    opt_kernel->DeSerialized(in_stream);
 
     timer.stop();
 
     LOG(INFO) << "DenseTable load, shard_id:" << shard_id
-        << " size:" << data_size
+        << " size:" << opt_kernel->DataSize()
         << " latency:" << timer.s_elapsed() << "s";
 }
 

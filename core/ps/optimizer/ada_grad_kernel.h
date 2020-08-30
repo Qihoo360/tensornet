@@ -35,9 +35,8 @@ public:
         return w_.size() * sizeof(float) * 4;
     }
 
-    void Serialized(butil::IOBuf& buf) const;
-
-    void DeSerialized(butil::IOBuf& buf);
+    friend std::ostream& operator<<(std::ostream& os, const DenseAdaGradValue& value);
+    friend std::istream& operator>>(std::istream& is, DenseAdaGradValue& value);
 
 private:
     Eigen::ArrayXf w_;
@@ -45,6 +44,9 @@ private:
     Eigen::ArrayXf g2sum_;
     Eigen::ArrayXf m_;
 };
+
+std::ostream& operator<<(std::ostream& os, const DenseAdaGradValue& value);
+std::istream& operator>>(std::istream& is, DenseAdaGradValue& value);
 
 typedef DenseKernelBlock<AdaGrad, DenseAdaGradValue> DenseAdaGradKernelBlock;
 

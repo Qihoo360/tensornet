@@ -69,9 +69,9 @@ public:
 
     virtual void GetWeight(butil::IOBuf& w_buf) const = 0;
 
-    virtual void Serialized(butil::IOBuf& buf) const = 0;
+    virtual void Serialized(std::ostream& os) const = 0;
 
-    virtual void DeSerialized(butil::IOBuf& buf) = 0;
+    virtual void DeSerialized(std::istream& is) = 0;
 
     virtual size_t DataSize() = 0;
 
@@ -161,14 +161,29 @@ public:
         return value_.DataSize();
     }
 
-    void Serialized(butil::IOBuf& buf) const {
-        const std::lock_guard<std::mutex> lock(*mu_);
-        return value_.Serialized(buf);
+    friend std::ostream& operator<<(std::ostream& os, const DenseKernelBlock& block) {
+        const std::lock_guard<std::mutex> lock(*block.mu_);
+
+        // header
+        os << block.opt_->Name() << "\t" << block.block_size_ << std::endl;
+        os << block.value_ << std::endl;
+
+        return os;
     }
 
-    void DeSerialized(butil::IOBuf& buf) {
-        const std::lock_guard<std::mutex> lock(*mu_);
-        return value_.DeSerialized(buf);
+    friend std::istream& operator>>(std::istream& is, DenseKernelBlock& block) {
+        const std::lock_guard<std::mutex> lock(*block.mu_);
+        std::string name;
+
+        is >> name;
+        CHECK_EQ(name, block.opt_->Name()) << "last trained model with optimizer is:" << name
+            << " but current model use:" << block.opt_->Name() << " instead."
+            << " you must make sure that use same optimizer when incremental training";
+
+        is >> block.block_size_;
+        is >> block.value_;
+
+        return is;
     }
 
 private:
@@ -238,21 +253,16 @@ public:
         }
     }
 
-    virtual void Serialized(butil::IOBuf& buf) const {
+    virtual void Serialized(std::ostream& os) const {
         for (size_t i = 0; i < blocks_.size(); i++) {
-            butil::IOBuf b_buf;
-            blocks_[i].Serialized(b_buf);
-            buf.append(b_buf);
+            os << blocks_[i] << std::endl;
         }
+        return;
     }
 
-    virtual void DeSerialized(butil::IOBuf& buf) {
-        CHECK_EQ(buf.size(), DataSize());
-
+    virtual void DeSerialized(std::istream& is) {
         for (size_t i = 0; i < blocks_.size(); i++) {
-            butil::IOBuf b_buf;
-            buf.cutn(&b_buf, blocks_[i].DataSize());
-            blocks_[i].DeSerialized(b_buf);
+            is >> blocks_[i];
         }
     }
 

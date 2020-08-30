@@ -54,24 +54,39 @@ void DenseAdamValue::Apply(const Adam* opt, const Eigen::ArrayXf& g) {
     w_ -= (m_ * alpha) / (v_.sqrt() + opt->epsilon);
 }
 
-void DenseAdamValue::Serialized(butil::IOBuf& buf) const {
-    buf.append(&beta1_power_, sizeof(beta1_power_));
-    buf.append(&beta2_power_, sizeof(beta2_power_));
+std::ostream& operator<<(std::ostream& os, const DenseAdamValue& value) {
+    int array_size = value.w_.size();
 
-    buf.append(m_.data(), m_.size() * sizeof(float));
-    buf.append(v_.data(), v_.size() * sizeof(float));
-    buf.append(w_.data(), w_.size() * sizeof(float));
+    os << array_size << "\t";
+
+    os << value.beta1_power_ << "\t";
+    os << value.beta2_power_ << "\t";
+
+    for (int i = 0; i < array_size; i++) {
+        os << value.w_[i] << "\t"
+           << value.m_[i] << "\t"
+           << value.v_[i] << std::endl;
+    }
+
+    return os;
 }
 
-void DenseAdamValue::DeSerialized(butil::IOBuf& buf) {
-    CHECK_EQ(buf.size(), DataSize());
+std::istream& operator>>(std::istream& is, DenseAdamValue& value) {
+    int array_size = 0;
+    is >> array_size;
 
-    buf.cutn(&beta1_power_, sizeof(beta1_power_));
-    buf.cutn(&beta2_power_, sizeof(beta2_power_));
+    CHECK_EQ(array_size, value.w_.size());
 
-    buf.cutn(m_.data(), m_.size() * sizeof(float));
-    buf.cutn(v_.data(), v_.size() * sizeof(float));
-    buf.cutn(w_.data(), w_.size() * sizeof(float));
+    is >> value.beta1_power_;
+    is >> value.beta2_power_;
+
+    for (int i = 0; i < array_size; i++) {
+        is >> value.w_[i];
+        is >> value.m_[i];
+        is >> value.v_[i];
+    }
+
+    return is;
 }
 
 SparseAdamValue::SparseAdamValue(int dim, const Adam* opt) {

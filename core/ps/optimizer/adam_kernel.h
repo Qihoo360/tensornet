@@ -36,9 +36,8 @@ public:
             + (m_.size() + v_.size() + w_.size()) * sizeof(float);
     }
 
-    void Serialized(butil::IOBuf& buf) const;
-
-    void DeSerialized(butil::IOBuf& buf);
+    friend std::ostream& operator<<(std::ostream& os, const DenseAdamValue& value);
+    friend std::istream& operator>>(std::istream& is, DenseAdamValue& value);
 
 private:
     float beta1_power_ = 0;
@@ -48,6 +47,9 @@ private:
     Eigen::ArrayXf m_;
     Eigen::ArrayXf v_;
 };
+
+std::ostream& operator<<(std::ostream& os, const DenseAdamValue& value);
+std::istream& operator>>(std::istream& is, DenseAdamValue& value);
 
 typedef DenseKernelBlock<Adam, DenseAdamValue> DenseAdamKernelBlock;
 
