@@ -126,6 +126,10 @@ void SparseTable::Load(const std::string& filepath) const {
               << " keys_count:" << op_kernel_->KeyCount();
 }
 
+void SparseTable::ShowDecay() const {
+    op_kernel_->ShowDecay();
+}
+
 SparseTableRegistry* SparseTableRegistry::Instance() {
     static SparseTableRegistry instance;
     return &instance;

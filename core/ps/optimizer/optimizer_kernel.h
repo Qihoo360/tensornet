@@ -108,6 +108,8 @@ public:
     virtual void DeSerialized(const std::string& filepath) = 0;
 
     virtual size_t KeyCount() const = 0;
+
+    virtual void ShowDecay() = 0;
 };
 
 template <typename OptType, typename ValueType>
@@ -403,6 +405,13 @@ public:
         return values_.size();
     }
 
+    void ShowDecay() {
+        for (auto& iter : values_) {
+            ValueType* value = iter.second;
+            value->ShowDecay(opt_);
+        }
+    }
+
 private:
     const OptType* opt_ = nullptr;
     std::unordered_map<uint64_t, ValueType*, decltype(sparse_key_hasher)> values_;
@@ -487,6 +496,12 @@ public:
         }
 
         return key_count;
+    }
+
+    void ShowDecay() {
+        for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
+            blocks_[i].ShowDecay();
+        }
     }
 
 private:

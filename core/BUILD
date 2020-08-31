@@ -20,8 +20,13 @@ cc_binary(
         "tools/emb_converter.cc",
         "utility/file_io.h",
         "utility/file_io.cc",
+        "utility/mpi_manager.h",
+        "utility/mpi_manager.cc",
+        "utility/net_util.h",
+        "utility/net_util.cc",
     ],
     deps = [
+        "//thirdparty/openmpi:openmpi",
         "@org_tensorflow//tensorflow/core/platform/hadoop:hadoop_file_system",
         "@brpc//:butil",
         "@boost//:algorithm",

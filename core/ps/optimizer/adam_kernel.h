@@ -90,7 +90,7 @@ public:
         version_++;
     }
 
-    void AddShow(int show) {
+    void AddShow(float show) {
         show_ += show;
     }
 
@@ -99,6 +99,8 @@ public:
     void Serialized(butil::IOBuf& buf);
 
     void DeSerialized(butil::IOBuf& buf);
+
+    void ShowDecay(const Adam* opt) {}
 
 protected:
     float* M() {
@@ -123,7 +125,7 @@ private:
     UnionWeight v_;
     int dim_ = 0;
     uint32_t version_ = 0;
-    int show_ = 0;
+    float show_ = 0.0;
 };
 
 typedef SparseKernelBlock<Adam, SparseAdamValue> SparseAdamKernelBlock;
