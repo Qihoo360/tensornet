@@ -91,6 +91,8 @@ public:
 
     void Apply(const Adam* opt, SparseGradInfo& grad_info);
 
+    void ShowDecay(const Adam* opt) {}
+
 protected:
     bool IsMiniDim_() const {
         // UnionWeight could store two float
@@ -142,7 +144,7 @@ private:
     UnionWeight v_;
     int dim_ = 0;
     uint32_t version_ = 0;
-    int show_ = 0;
+    float show_ = 0.0;
 };
 
 std::ostream& operator<<(std::ostream& os, const SparseAdamValue& value);

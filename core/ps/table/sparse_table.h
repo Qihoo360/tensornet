@@ -53,6 +53,8 @@ public:
 
     void Load(const std::string& filepath) const;
 
+    void ShowDecay() const;
+
 private:
     uint32_t handle_ = 0;
     const OptimizerBase* opt_ = nullptr;

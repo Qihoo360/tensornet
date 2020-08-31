@@ -155,5 +155,9 @@ std::istream& operator>>(std::istream& is, SparseAdaGradValue& value) {
     return is;
 }
 
+void SparseAdaGradValue::ShowDecay(const AdaGrad* opt) {
+    show_ *= opt->show_decay_rate;
+}
+
 } // namespace tensornet
 

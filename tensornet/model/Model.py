@@ -184,3 +184,12 @@ class Model(tf.keras.Model):
 
         tf_cp_file = os.path.join(cp_dir, "tf_checkpoint")
         super(Model, self).load_weights(tf_cp_file, by_name, skip_mismatch)
+
+    def show_decay(self):
+        for layer in self.layers:
+            assert type(layer) != tf.keras.Model, "not support direct use keras.Model, use tn.model.Model instead"
+
+            if isinstance(layer, type(self)):
+                layer.show_decay()
+            elif isinstance(layer, tn.layers.EmbeddingFeatures):
+                layer.show_decay()

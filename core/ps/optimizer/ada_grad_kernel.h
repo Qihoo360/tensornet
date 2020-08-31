@@ -86,6 +86,8 @@ public:
 
     void Apply(const AdaGrad* opt, SparseGradInfo& grad_info);
 
+    void ShowDecay(const AdaGrad* opt);
+
     friend std::ostream& operator<<(std::ostream& os, const SparseAdaGradValue& value);
     friend std::istream& operator>>(std::istream& is, SparseAdaGradValue& value);
 
@@ -104,7 +106,7 @@ private:
     float g2sum_;
     int dim_ = 0;
     uint32_t version_ = 0;
-    int show_ = 0;
+    float show_ = 0.0;
 };
 
 std::ostream& operator<<(std::ostream& os, const SparseAdaGradValue& value);
