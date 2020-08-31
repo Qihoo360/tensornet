@@ -397,13 +397,10 @@ public:
 
         is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> block.dim_;
 
-        std::string line;
-        while (std::getline(is, line)) {
-            std::istringstream iss(line);
+        uint64_t sign = 0;
+        while (is >> sign) {
             ValueType* value = new ValueType(block.dim_, block.opt_);
-
-            uint64_t sign;
-            iss >> sign >> *value;
+            is >> *value;
             block.values_[sign] = value;
         }
 
@@ -460,9 +457,9 @@ public:
         for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
             threads.push_back(std::thread([this, i, &filepath]() {
                 std::string file = filepath;
-                file.append("/sparse_block_").append(std::to_string(i));
+                file.append("/sparse_block_").append(std::to_string(i)).append(".gz");
 
-                FileWriterSink writer_sink(file);
+                FileWriterSink writer_sink(file, FCT_ZLIB);
 
                 boost::iostreams::stream<FileWriterSink> out_stream(writer_sink);
 
@@ -482,9 +479,9 @@ public:
         for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
             threads.push_back(std::thread([this, i, &filepath]() {
                 std::string file = filepath;
-                file.append("/sparse_block_").append(std::to_string(i));
+                file.append("/sparse_block_").append(std::to_string(i)).append(".gz");
 
-                FileReaderSource reader_source(file);
+                FileReaderSource reader_source(file, FCT_ZLIB);
                 boost::iostreams::stream<FileReaderSource> in_stream(reader_source);
 
                 in_stream >> blocks_[i];

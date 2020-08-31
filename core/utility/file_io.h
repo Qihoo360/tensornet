@@ -26,12 +26,18 @@ namespace tensorflow {
 
 namespace tensornet {
 
+enum FileCompressionType {
+    FCT_NONE = 0,
+    FCT_ZLIB = 1,
+};
+
 class FileWriterSink {
 public:
     typedef char char_type;
     typedef boost::iostreams::sink_tag category;
 
-    explicit FileWriterSink(const std::string& file);
+    explicit FileWriterSink(const std::string& file,
+            const FileCompressionType compression_type=FCT_NONE);
     ~FileWriterSink();
 
     FileWriterSink(const FileWriterSink& writer_sink);
@@ -40,6 +46,7 @@ public:
 
 private:
     std::shared_ptr<tensorflow::WritableFile> writer_;
+    std::shared_ptr<tensorflow::WritableFile> zlib_writer_;
 };
 
 class FileReaderSource {
@@ -47,10 +54,12 @@ public:
     typedef char char_type;
     typedef boost::iostreams::source_tag category;
 
-    explicit FileReaderSource(const std::string& file);
+    explicit FileReaderSource(const std::string& file,
+            const FileCompressionType compression_type=FCT_NONE);
+
     ~FileReaderSource();
 
-    FileReaderSource(const FileReaderSource& reader_source);
+    FileReaderSource(const FileReaderSource& reader_source) = default;
 
     std::streamsize read(char_type* s, std::streamsize n);
 
