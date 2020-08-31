@@ -115,8 +115,6 @@ SparseAdamValue::SparseAdamValue(int dim, const Adam* opt) {
 }
 
 void SparseAdamValue::Apply(const Adam* opt, SparseGradInfo& grad_info) {
-    CHECK_EQ(Dim(), grad_info.dim);
-
     version_++;
     show_ += grad_info.show;
 
@@ -128,8 +126,6 @@ void SparseAdamValue::Apply(const Adam* opt, SparseGradInfo& grad_info) {
     if (grad_info.version < Version()) {
         g_scale *= sqrt(Version() - grad_info.version);
     }
-
-    CHECK_EQ(dim_, grad_info.dim);
 
     for (int i = 0; i < dim_; ++i) {
         double scaled_grad = grad_info.grad[i] / g_scale;

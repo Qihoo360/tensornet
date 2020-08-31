@@ -24,8 +24,8 @@ DenseOptKernelSharedPtr Adam::CreateDenseOptKernel(
             this, offset_begin, offset_end);
 }
 
-SparseOptKernelSharedPtr Adam::CreateSparseOptKernel() const {
-    return std::make_shared<SparseOptimizerKernel<SparseAdamKernelBlock>>(this);
+SparseOptKernelSharedPtr Adam::CreateSparseOptKernel(int dimension) const {
+    return std::make_shared<SparseOptimizerKernel<SparseAdamKernelBlock>>(this, dimension);
 }
 
 DenseOptKernelSharedPtr AdaGrad::CreateDenseOptKernel(
@@ -34,8 +34,8 @@ DenseOptKernelSharedPtr AdaGrad::CreateDenseOptKernel(
             this, offset_begin, offset_end);
 }
 
-SparseOptKernelSharedPtr AdaGrad::CreateSparseOptKernel() const {
-    return std::make_shared<SparseOptimizerKernel<SparseAdaGradKernelBlock>>(this);
+SparseOptKernelSharedPtr AdaGrad::CreateSparseOptKernel(int dimension) const {
+    return std::make_shared<SparseOptimizerKernel<SparseAdaGradKernelBlock>>(this, dimension);
 }
 
 } // namespace tensornet {

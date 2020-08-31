@@ -26,11 +26,12 @@
 
 namespace tensornet {
 
-SparseTable::SparseTable(const OptimizerBase* opt)
-    : opt_(opt) {
+SparseTable::SparseTable(const OptimizerBase* opt, int dimension)
+    : opt_(opt)
+    , dim_(dimension) {
     CHECK(opt_ != nullptr);
 
-    op_kernel_ = opt_->CreateSparseOptKernel();
+    op_kernel_ = opt_->CreateSparseOptKernel(dim_);
 }
 
 void SparseTable::SetHandle(uint32_t handle) {
@@ -41,6 +42,8 @@ void SparseTable::SetHandle(uint32_t handle) {
 
 void SparseTable::Pull(const SparsePullRequest* req, SparsePullResponse* resp) {
     resp->set_table_handle(req->table_handle());
+
+    CHECK_EQ(dim_, req->dim());
     resp->set_dim(req->dim());
 
     for (int i = 0; i < req->signs_size(); ++i) {
@@ -49,35 +52,33 @@ void SparseTable::Pull(const SparsePullRequest* req, SparsePullResponse* resp) {
 
         if (false == op_kernel_->GetWeight(sign, weight_info)) {
             weight_info.weight = nullptr;
-            weight_info.dim = req->dim();
             weight_info.version = 0;
 
             CHECK(op_kernel_->NewSignWithWeight(sign, weight_info));
             CHECK(nullptr != weight_info.weight);
         }
 
-        CHECK_EQ(req->dim(), weight_info.dim) << sign;
-
         VariableWeight* weight = resp->add_weight();
 
         weight->set_sign(sign);
         weight->set_version(weight_info.version);
 
-        for (uint32_t j = 0; j < req->dim(); j++) {
+        // weight_info.weight size is guaranteed by op_kernel_ same with dim_
+        for (int j = 0; j < dim_; j++) {
             weight->add_w(weight_info.weight[j]);
         }
     }
 }
 
 void SparseTable::Push(const SparsePushRequest* req, SparsePushResponse* resp) {
-    int dim = req->dim();
+    CHECK_EQ(dim_, req->dim());
 
-    std::vector<float> grad(dim);
+    std::vector<float> grad(dim_);
 
     for (int i = 0; i < req->weight_size(); i++) {
         const VariableWeight& weight = req->weight(i);
 
-        CHECK_EQ(weight.w_size(), dim);
+        CHECK_EQ(weight.w_size(), dim_);
 
         for (int j = 0; j < weight.w_size(); j++) {
             grad[j] = weight.w(j);
@@ -85,7 +86,6 @@ void SparseTable::Push(const SparsePushRequest* req, SparsePushResponse* resp) {
 
         SparseGradInfo grad_info;
         grad_info.grad = grad.data();
-        grad_info.dim = dim;
         grad_info.show = weight.show();
         grad_info.version = weight.version();
 
@@ -151,8 +151,8 @@ uint32_t SparseTableRegistry::Register(SparseTable* table) {
     return table_handle;
 }
 
-SparseTable* CreateSparseTable(const OptimizerBase* opt) {
-    SparseTable* table = new SparseTable(opt);
+SparseTable* CreateSparseTable(const OptimizerBase* opt, int dimension) {
+    SparseTable* table = new SparseTable(opt, dimension);
 
     table->SetHandle(SparseTableRegistry::Instance()->Register(table));
 

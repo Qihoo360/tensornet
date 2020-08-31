@@ -35,10 +35,10 @@ from tensorflow.python.util import serialization
 class StateManagerImpl(fc.StateManager):
     """
     """
-    def __init__(self, layer, sparse_opt, trainable):
+    def __init__(self, layer, sparse_opt, dimension, trainable):
         self._trainable = trainable
         self._layer = layer
-        self.sparse_table_handle = tn.core.create_sparse_table(sparse_opt)
+        self.sparse_table_handle = tn.core.create_sparse_table(sparse_opt, dimension)
         self.pulled_mapping_values = {}
 
         if self._layer is not None and not hasattr(self._layer, '_resources'):
@@ -193,8 +193,14 @@ class EmbeddingFeatures(Layer):
         super(EmbeddingFeatures, self).__init__(
             name=name, trainable=trainable, dynamic=False, **kwargs)
 
+        assert len(feature_columns) != 0, "feature_columns must not empty"
+
+        dim = feature_columns[0].dimension
+        for feature_column in feature_columns:
+            assert feature_column.dimension == dim, "currently we only support feature_columns with same dimension in EmbeddingFeatures"
+
         self._feature_columns = feature_columns
-        self._state_manager = StateManagerImpl(self, sparse_opt, self.trainable)  # pylint: disable=protected-access
+        self._state_manager = StateManagerImpl(self, sparse_opt, dim, self.trainable)  # pylint: disable=protected-access
         self.sparse_pulling_features = None
         self.is_concat = is_concat
 
