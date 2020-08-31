@@ -100,8 +100,6 @@ SparseAdaGradValue::SparseAdaGradValue(int dim, const AdaGrad* opt) {
 }
 
 void SparseAdaGradValue::Apply(const AdaGrad* opt, SparseGradInfo& grad_info) {
-    CHECK_EQ(Dim(), grad_info.dim);
-
     version_++;
     show_ += grad_info.show;
 

@@ -139,11 +139,11 @@ PYBIND11_MODULE(_pywrap_tn, m) {
 
         return py::reinterpret_steal<py::object>(obj);
     })
-    .def("create_sparse_table", [](py::object obj) {
+    .def("create_sparse_table", [](py::object obj, int dimension) {
         OptimizerBase* opt =
                static_cast<OptimizerBase*>(PyCapsule_GetPointer(obj.ptr(), nullptr));
 
-        SparseTable* table = CreateSparseTable(opt);
+        SparseTable* table = CreateSparseTable(opt, dimension);
 
         return table->GetHandle();
     })

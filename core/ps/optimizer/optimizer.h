@@ -38,7 +38,7 @@ public:
     virtual DenseOptKernelSharedPtr CreateDenseOptKernel(
         int offset_begin, int offset_end) const = 0;
 
-    virtual SparseOptKernelSharedPtr CreateSparseOptKernel() const = 0;
+    virtual SparseOptKernelSharedPtr CreateSparseOptKernel(int dimension) const = 0;
 
     virtual std::string Name() const = 0;
 
@@ -61,7 +61,7 @@ public:
     virtual DenseOptKernelSharedPtr CreateDenseOptKernel(
         int offset_begin, int offset_end) const;
 
-    virtual SparseOptKernelSharedPtr CreateSparseOptKernel() const;
+    virtual SparseOptKernelSharedPtr CreateSparseOptKernel(int dimension) const;
 
     virtual std::string Name() const {
         return "Adam";
@@ -93,7 +93,7 @@ public:
     virtual DenseOptKernelSharedPtr CreateDenseOptKernel(
         int offset_begin, int offset_end) const;
 
-    virtual SparseOptKernelSharedPtr CreateSparseOptKernel() const;
+    virtual SparseOptKernelSharedPtr CreateSparseOptKernel(int dimension) const;
 
     virtual std::string Name() const {
         return "AdaGrad";

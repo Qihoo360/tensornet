@@ -82,13 +82,11 @@ private:
 
 struct SparseWeightInfo {
     float* weight;
-    int dim;
     uint32_t version;
 };
 
 struct SparseGradInfo {
     float* grad;
-    int dim;
     uint32_t version;
     int show;
 };
@@ -293,8 +291,9 @@ public:
     // in one single node is 16M * SPARSE_KERNEL_BLOCK_NUM, in which setting we can
     // supporting close to 5B parameter with 50 node run together without rehash.
     // TODO the initial bucket size maybe expose to user by a configure.
-    SparseKernelBlock(const OptimizerBase* opt)
-        : values_(15485863., sparse_key_hasher) {
+    SparseKernelBlock(const OptimizerBase* opt, int dimension)
+        : values_(15485863., sparse_key_hasher)
+        , dim_(dimension) {
         values_.max_load_factor(0.75);
         opt_ = dynamic_cast<const OptType*>(opt);
         mutex_ = std::make_unique<std::mutex>();
@@ -335,7 +334,6 @@ public:
             ValueType* value = iter->second;
 
             weight_info.weight = value->Weight();
-            weight_info.dim = value->Dim();
             weight_info.version = value->Version();
 
             return true;
@@ -345,10 +343,7 @@ public:
     bool NewSignWithWeight(uint64_t sign, SparseWeightInfo& weight_info) {
         const std::lock_guard<std::mutex> lock(*mutex_);
 
-        dim_ = weight_info.dim;
-
-        ValueType* value = new ValueType(weight_info.dim, opt_);
-
+        ValueType* value = new ValueType(dim_, opt_);
         weight_info.weight = value->Weight();
 
         values_[sign] = value;
@@ -360,7 +355,7 @@ public:
         std::lock_guard<std::mutex> lock(*mutex_);
         auto iter = values_.find(sign);
 
-        // must init in pull
+        // must already meet and created in pull
         CHECK(iter != values_.end());
 
         ValueType* value = iter->second;
@@ -425,11 +420,11 @@ private:
 template <typename KernelBlockType>
 class SparseOptimizerKernel : public SparseOptimizerKernelBase {
 public:
-    SparseOptimizerKernel(const OptimizerBase* opt) {
+    SparseOptimizerKernel(const OptimizerBase* opt, int dimension) {
         assert(nullptr != opt);
 
         for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
-            KernelBlockType block(opt);
+            KernelBlockType block(opt, dimension);
             blocks_.emplace_back(std::move(block));
         }
     }
