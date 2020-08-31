@@ -117,8 +117,9 @@ void DenseTable::Save(std::string filepath) const {
 
     boost::iostreams::stream<FileWriterSink> out_stream(writer_sink);
 
-    out_stream << total_elements_ << "\t";
-    out_stream << PsCluster::Instance()->RankNum() << std::endl;
+    out_stream << "total_elements:" << total_elements_ << std::endl;
+    out_stream << "rank_num:" << PsCluster::Instance()->RankNum() << std::endl;
+
     opt_kernel->Serialized(out_stream);
 
     out_stream.flush();
@@ -146,7 +147,8 @@ void DenseTable::Load(std::string filepath) {
     boost::iostreams::stream<FileReaderSource> in_stream(reader_source);
 
     int rank_num = 0;
-    in_stream >> total_elements_ >> rank_num;
+    in_stream.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> total_elements_;
+    in_stream.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> rank_num;
 
     CHECK_EQ(PsCluster::Instance()->RankNum(), rank_num);
 

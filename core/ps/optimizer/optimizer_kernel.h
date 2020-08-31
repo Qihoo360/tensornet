@@ -166,8 +166,7 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const DenseKernelBlock& block) {
         const std::lock_guard<std::mutex> lock(*block.mu_);
 
-        // header
-        os << block.opt_->Name() << "\t" << block.block_size_ << std::endl;
+        os << "opt_name:" << block.opt_->Name() << std::endl;
         os << block.value_ << std::endl;
 
         return os;
@@ -175,14 +174,14 @@ public:
 
     friend std::istream& operator>>(std::istream& is, DenseKernelBlock& block) {
         const std::lock_guard<std::mutex> lock(*block.mu_);
-        std::string name;
 
-        is >> name;
+        std::string name;
+        is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> name;
+
         CHECK_EQ(name, block.opt_->Name()) << "last trained model with optimizer is:" << name
             << " but current model use:" << block.opt_->Name() << " instead."
             << " you must make sure that use same optimizer when incremental training";
 
-        is >> block.block_size_;
         is >> block.value_;
 
         return is;
@@ -374,8 +373,10 @@ public:
     }
 
     friend std::ostream& operator<<(std::ostream& os, const SparseKernelBlock& block) {
-        // header
-        os << block.opt_->Name() << "\t" << block.dim_ << std::endl;
+        std::lock_guard<std::mutex> lock(*block.mutex_);
+
+        os << "opt_name:" << block.opt_->Name() << std::endl;
+        os << "dim:" << block.dim_ << std::endl;
 
         for (const auto& value : block.values_) {
             os << value.first << "\t" << *(value.second) << std::endl;
@@ -385,14 +386,16 @@ public:
     }
 
     friend std::istream& operator>>(std::istream& is, SparseKernelBlock& block) {
-        std::string name;
+        std::lock_guard<std::mutex> lock(*block.mutex_);
 
-        is >> name;
-        CHECK_EQ(name, block.opt_->Name()) << "last trained model with optimizer is:" << name
+        std::string opt_name;
+        is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> opt_name;
+
+        CHECK_EQ(opt_name, block.opt_->Name()) << "last trained model with optimizer is:" << opt_name
             << " but current model use:" << block.opt_->Name() << " instead."
             << " you must make sure that use same optimizer when incremental training";
 
-        is >> block.dim_;
+        is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> block.dim_;
 
         std::string line;
         while (std::getline(is, line)) {

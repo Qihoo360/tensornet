@@ -49,7 +49,7 @@ void DenseAdaGradValue::Apply(const AdaGrad* opt, const Eigen::ArrayXf& g) {
 std::ostream& operator<<(std::ostream& os, const DenseAdaGradValue& value) {
     int array_size = value.w_.size();
 
-    os << array_size << "\t";
+    os << "arrary_size:" << array_size << std::endl;
 
     for (int i = 0; i < array_size; i++) {
         os << value.w_[i] << "\t"
@@ -63,8 +63,7 @@ std::ostream& operator<<(std::ostream& os, const DenseAdaGradValue& value) {
 
 std::istream& operator>>(std::istream& is, DenseAdaGradValue& value) {
     int array_size = 0;
-
-    is >> array_size;
+    is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> array_size;
 
     CHECK_EQ(array_size, value.w_.size());
 
@@ -136,13 +135,16 @@ std::ostream& operator<<(std::ostream& os, const SparseAdaGradValue& value) {
 
     os << value.g2sum_ << "\t";
     os << value.version_ << "\t";
-    os << value.show_ << "\t";
+    os << value.show_;
 
     return os;
 }
 
 std::istream& operator>>(std::istream& is, SparseAdaGradValue& value) {
-    is >> value.dim_;
+    int dim;
+    is >> dim;
+
+    CHECK_EQ(dim, value.dim_);
 
     for (int i = 0; i < value.dim_; i++) {
         is >> value.Weight()[i];

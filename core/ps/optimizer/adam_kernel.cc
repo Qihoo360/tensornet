@@ -57,10 +57,9 @@ void DenseAdamValue::Apply(const Adam* opt, const Eigen::ArrayXf& g) {
 std::ostream& operator<<(std::ostream& os, const DenseAdamValue& value) {
     int array_size = value.w_.size();
 
-    os << array_size << "\t";
-
-    os << value.beta1_power_ << "\t";
-    os << value.beta2_power_ << "\t";
+    os << "array_size:" << array_size << std::endl;
+    os << "beta1_power:" << value.beta1_power_ << std::endl;
+    os << "beta2_power:" << value.beta2_power_ << std::endl;
 
     for (int i = 0; i < array_size; i++) {
         os << value.w_[i] << "\t"
@@ -73,12 +72,12 @@ std::ostream& operator<<(std::ostream& os, const DenseAdamValue& value) {
 
 std::istream& operator>>(std::istream& is, DenseAdamValue& value) {
     int array_size = 0;
-    is >> array_size;
+    is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> array_size;
 
     CHECK_EQ(array_size, value.w_.size());
 
-    is >> value.beta1_power_;
-    is >> value.beta2_power_;
+    is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> value.beta1_power_;
+    is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> value.beta2_power_;
 
     for (int i = 0; i < array_size; i++) {
         is >> value.w_[i];
@@ -146,38 +145,25 @@ std::ostream& operator<<(std::ostream& os, const SparseAdamValue& value) {
 
     for (int i = 0; i < value.dim_; i++) {
         os << value.Weight()[i] << "\t";
-    }
-
-    for (int i = 0; i < value.dim_; i++) {
         os << value.M()[i] << "\t";
-    }
-
-    for (int i = 0; i < value.dim_; i++) {
-        os << value.V()[i] << "\t";
-    }
-
-    for (int i = 0; i < value.dim_; i++) {
         os << value.V()[i] << "\t";
     }
 
     os << value.version_ << "\t";
-    os << value.show_ << "\t";
+    os << value.show_;
 
     return os;
 }
 
 std::istream& operator>>(std::istream& is, SparseAdamValue& value) {
-    is >> value.dim_;
+    int dim;
+    is >> dim;
+
+    CHECK_EQ(dim, value.dim_);
 
     for (int i = 0; i < value.dim_; i++) {
         is >> value.Weight()[i];
-    }
-
-    for (int i = 0; i < value.dim_; i++) {
         is >> value.M()[i];
-    }
-
-    for (int i = 0; i < value.dim_; i++) {
         is >> value.V()[i];
     }
 
