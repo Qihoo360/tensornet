@@ -30,6 +30,7 @@
 #include <boost/iostreams/stream.hpp>
 
 #include "core/utility/file_io.h"
+#include "core/utility/allocator.h"
 
 namespace tensornet {
 
@@ -293,11 +294,11 @@ public:
     // TODO the initial bucket size maybe expose to user by a configure.
     SparseKernelBlock(const OptimizerBase* opt, int dimension)
         : values_(15485863., sparse_key_hasher)
-        , dim_(dimension) {
+        , dim_(dimension)
+        , alloc_(ValueType::DynSizeof(dim_)) {
         values_.max_load_factor(0.75);
         opt_ = dynamic_cast<const OptType*>(opt);
         mutex_ = std::make_unique<std::mutex>();
-        alloc_.TypeSize(ValueType::dyn_sizeof(dim));
     }
 
     SparseKernelBlock(SparseKernelBlock&) = delete;
@@ -308,6 +309,7 @@ public:
         , values_(std::move(other.values_))
         , mutex_(std::move(other.mutex_))
         , dim_(other.dim_)
+        , alloc_(std::move(other.alloc_))
     { }
 
     SparseKernelBlock& operator=(SparseKernelBlock&& other) {
@@ -315,13 +317,14 @@ public:
         values_ = std::move(other.values_);
         mutex_ = std::move(other.mutex_);
         dim_ = other.dim_;
+        alloc_ = std::move(other.alloc_);
 
         return this;
     }
 
     ~SparseKernelBlock() {
         for (const auto& iter : values_) {
-            delete iter.second;
+            alloc_.deallocate(iter.second);
         }
     }
 
@@ -395,7 +398,7 @@ public:
 
         uint64_t sign = 0;
         while (is >> sign) {
-            ValueType* value = alloc_.allocate(block.dim_, block.opt_);
+            ValueType* value = block.alloc_.allocate(block.dim_, block.opt_);
             is >> *value;
             block.values_[sign] = value;
         }
@@ -432,7 +435,7 @@ public:
         }
     }
 
-    ~SparseOptimizerKernel() {}
+    ~SparseOptimizerKernel() = default;
 
     bool GetWeight(uint64_t sign, SparseWeightInfo& weight_info) {
         int block_num = GetBlockId_(sign);

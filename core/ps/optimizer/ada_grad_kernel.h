@@ -56,8 +56,18 @@ public:
 
     ~SparseAdaGradValue() = default;
 
-    static constexpr dyn_sizeof(int dim) {
-        return sizeof(SparseAdaGradValue) + sizeof(float) * dim;
+    static constexpr int DynSizeof(int dim) {
+        return sizeof(SparseAdaGradValue) +
+            sizeof(float) * dim * (IsMiniDim(dim) ? 0 : 1);
+    }
+
+    static constexpr bool IsMiniDim(int dim) {
+        // UnionWeight could store two float
+        if (2 > dim) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     int Dim() const {
@@ -93,12 +103,7 @@ public:
 
 private:
     bool IsMiniDim_() const {
-        // UnionWeight could store two float
-        if (2 > dim_) {
-            return true;
-        } else {
-            return false;
-        }
+        return IsMiniDim(dim_);
     }
 
 private:

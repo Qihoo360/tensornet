@@ -19,21 +19,112 @@
 #include <random>
 #include <ctime>
 
+#include <butil/logging.h>
+
 namespace tensornet {
 
 template<typename T>
 class Allocator {
 public:
-    Allocator()
-        : type_size_(0) {
+    Allocator(int type_sizeof)
+        : Allocator(type_sizeof, 1<<16) {
     }
 
-    void TypeSize(int type_size) {
-        assert(type_size >= sizeof(T));
+    Allocator(int type_sizeof, int block_len)
+        : pool_(nullptr)
+        , type_sizeof_(type_sizeof)
+        , block_len_(block_len)
+        , useable_block_(nullptr) {
+        CHECK_GE(type_sizeof, sizeof(T));
+        CHECK_GE(type_sizeof, sizeof(Block));
+    }
+
+    ~Allocator() {
+        while (pool_) {
+            Pool* next = pool_->next;
+            free(pool_);
+            pool_ = next;
+        }
+    }
+
+    Allocator(Allocator&& other)
+        : pool_(other.pool_)
+        , type_sizeof_(other.type_sizeof_)
+        , block_len_(other.block_len_)
+        , useable_block_(other.useable_block_) {
+        other.pool_ = nullptr;
+        other.useable_block_ = nullptr;
+    }
+
+    Allocator operator=(Allocator&& other) {
+        pool_ = other.pool_;
+        type_sizeof_ = other.type_sizeof_;
+        block_len_ = other.block_len_;
+        useable_block_ = other.useable_block_;
+
+        other.pool_ = nullptr;
+        other.useable_block_ = nullptr;
+    }
+
+    Allocator(const Allocator&) = delete;
+    Allocator& operator=(const Allocator&) = delete;
+
+    template<class... ARGS>
+    T* allocate(ARGS&&... args) {
+        if (!useable_block_) {
+            create_new_pool_();
+        }
+
+        T* value = (T*)useable_block_;
+        useable_block_ = useable_block_->next;
+
+        new (value) T(std::forward<ARGS>(args)...);
+
+        return value;
+    }
+
+    void deallocate(T* ptr) {
+        ptr->~T();
+        auto block = (Block*)ptr;
+        block->next = useable_block_;
+        useable_block_ = block;
     }
 
 private:
-    int type_size_;
+    void create_new_pool_() {
+        Pool* pool = nullptr;
+
+        PCHECK(0 == posix_memalign((void**)&pool, alignof(Pool), sizeof(Pool) + type_sizeof_ * block_len_));
+
+        pool->next = pool_;
+        pool_ = pool;
+
+        for (int i = 0; i < block_len_; i++) {
+            auto block = (Block*)(pool_->block + type_sizeof_ * i);
+            block->next = useable_block_;
+            useable_block_ = block;
+        }
+
+        return;
+    }
+
+private:
+    union Block {
+        Block* next;
+        char data[0];
+    };
+
+    struct Pool {
+        Pool* next;
+        char block[0];
+    };
+
+    Pool* pool_ = nullptr;
+
+    int type_sizeof_ = 0;
+    int block_len_ = 0;
+
+    Block* useable_block_ = nullptr;
 };
 
 } // namespace tensornet
