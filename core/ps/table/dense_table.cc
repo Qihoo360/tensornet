@@ -32,9 +32,6 @@ DenseTable::DenseTable(const OptimizerBase* opt)
     CHECK(opt_ != nullptr);
 }
 
-DenseTable::~DenseTable() {
-}
-
 int DenseTable::Init(int total_elements) {
     if (is_initialized_) {
         CHECK(total_elements == total_elements_);

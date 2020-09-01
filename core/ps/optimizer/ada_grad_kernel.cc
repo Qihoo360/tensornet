@@ -81,7 +81,7 @@ SparseAdaGradValue::SparseAdaGradValue(int dim, const AdaGrad* opt) {
     dim_ = dim;
 
     if (!IsMiniDim_()) {
-        w_.p = new float[dim];
+        w_.p = data;
     }
 
     auto& reng = local_random_engine();

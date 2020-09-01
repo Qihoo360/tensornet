@@ -53,15 +53,22 @@ std::istream& operator>>(std::istream& is, DenseAdamValue& value);
 
 typedef DenseKernelBlock<Adam, DenseAdamValue> DenseAdamKernelBlock;
 
-class SparseAdamValue {
+struct SparseAdamValue {
 public:
     SparseAdamValue(int dim, const Adam* opt);
+    ~SparseAdamValue() = default;
 
-    ~SparseAdamValue() {
-        if (!IsMiniDim_()) {
-            delete w_.p;
-            delete m_.p;
-            delete v_.p;
+    static constexpr int DynSizeof(int dim) {
+        return sizeof(SparseAdamValue) +
+            sizeof(float) * dim * 3 * (IsMiniDim(dim) ? 0 : 1);
+    }
+
+    static constexpr bool IsMiniDim(int dim) {
+        // UnionWeight could store two float
+        if (2 > dim) {
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -95,12 +102,7 @@ public:
 
 protected:
     bool IsMiniDim_() const {
-        // UnionWeight could store two float
-        if (2 > dim_) {
-            return true;
-        } else {
-            return false;
-        }
+        return IsMiniDim(dim_);
     }
 
     float* M() {
@@ -145,6 +147,7 @@ private:
     int dim_ = 0;
     uint32_t version_ = 0;
     float show_ = 0.0;
+    float data[0];
 };
 
 std::ostream& operator<<(std::ostream& os, const SparseAdamValue& value);

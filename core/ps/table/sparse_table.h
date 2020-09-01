@@ -33,7 +33,7 @@ class SparseTable {
 public:
     SparseTable(const OptimizerBase* opt, int dimension);
 
-    ~SparseTable() {}
+    ~SparseTable() = default;
 
     void Pull(const SparsePullRequest* req, SparsePullResponse* resp);
 
@@ -60,6 +60,12 @@ private:
 
 class SparseTableRegistry {
 public:
+    ~SparseTableRegistry() {
+        for (auto table : tables_) {
+            delete table;
+        }
+    }
+
     static SparseTableRegistry* Instance();
 
     SparseTable* Get(uint32_t table_handle);
@@ -67,8 +73,7 @@ public:
     uint32_t Register(SparseTable* table);
 
 private:
-    SparseTableRegistry() {}
-    ~SparseTableRegistry() {}
+    SparseTableRegistry() { }
 
 private:
     std::mutex mu_;

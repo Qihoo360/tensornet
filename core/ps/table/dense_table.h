@@ -32,7 +32,7 @@ class DenseTable
 public:
     DenseTable(const OptimizerBase* opt);
 
-    ~DenseTable();
+    ~DenseTable() = default;
 
     int Init(int total_element);
 
@@ -66,6 +66,12 @@ private:
 
 class DenseTableRegistry {
 public:
+    ~DenseTableRegistry() {
+        for (auto table : tables_) {
+            delete table;
+        }
+    }
+
     static DenseTableRegistry* Instance();
 
     uint32_t Register(DenseTable* table);
@@ -74,7 +80,6 @@ public:
 
 protected:
     DenseTableRegistry() {}
-    ~DenseTableRegistry() {}
 
 private:
     std::mutex table_mu_;

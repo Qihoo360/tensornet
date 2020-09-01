@@ -50,13 +50,23 @@ std::istream& operator>>(std::istream& is, DenseAdaGradValue& value);
 
 typedef DenseKernelBlock<AdaGrad, DenseAdaGradValue> DenseAdaGradKernelBlock;
 
-class SparseAdaGradValue {
+struct SparseAdaGradValue {
 public:
     SparseAdaGradValue(int dim, const AdaGrad* opt);
 
-    ~SparseAdaGradValue() {
-        if (!IsMiniDim_()) {
-            delete w_.p;
+    ~SparseAdaGradValue() = default;
+
+    static constexpr int DynSizeof(int dim) {
+        return sizeof(SparseAdaGradValue) +
+            sizeof(float) * dim * (IsMiniDim(dim) ? 0 : 1);
+    }
+
+    static constexpr bool IsMiniDim(int dim) {
+        // UnionWeight could store two float
+        if (2 > dim) {
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -93,12 +103,7 @@ public:
 
 private:
     bool IsMiniDim_() const {
-        // UnionWeight could store two float
-        if (2 > dim_) {
-            return true;
-        } else {
-            return false;
-        }
+        return IsMiniDim(dim_);
     }
 
 private:
@@ -107,6 +112,7 @@ private:
     int dim_ = 0;
     uint32_t version_ = 0;
     float show_ = 0.0;
+    float data[0];
 };
 
 std::ostream& operator<<(std::ostream& os, const SparseAdaGradValue& value);
