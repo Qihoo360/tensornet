@@ -297,6 +297,7 @@ public:
         values_.max_load_factor(0.75);
         opt_ = dynamic_cast<const OptType*>(opt);
         mutex_ = std::make_unique<std::mutex>();
+        alloc_.TypeSize(ValueType::dyn_sizeof(dim));
     }
 
     SparseKernelBlock(SparseKernelBlock&) = delete;
@@ -343,7 +344,7 @@ public:
     bool NewSignWithWeight(uint64_t sign, SparseWeightInfo& weight_info) {
         const std::lock_guard<std::mutex> lock(*mutex_);
 
-        ValueType* value = new ValueType(dim_, opt_);
+        ValueType* value = alloc_.allocate(dim_, opt_);
         weight_info.weight = value->Weight();
 
         values_[sign] = value;
@@ -394,7 +395,7 @@ public:
 
         uint64_t sign = 0;
         while (is >> sign) {
-            ValueType* value = new ValueType(block.dim_, block.opt_);
+            ValueType* value = alloc_.allocate(block.dim_, block.opt_);
             is >> *value;
             block.values_[sign] = value;
         }
@@ -415,6 +416,8 @@ private:
 
     std::unique_ptr<std::mutex> mutex_;
     int dim_ = 0;
+
+    Allocator<ValueType> alloc_;
 };
 
 template <typename KernelBlockType>

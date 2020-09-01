@@ -92,10 +92,9 @@ SparseAdamValue::SparseAdamValue(int dim, const Adam* opt) {
     dim_ = dim;
 
     if (!IsMiniDim_()) {
-        float* buf = new float[dim * 3];
-        w_.p = buf + dim * 0;
-        m_.p = buf + dim * 1;
-        v_.p = buf + dim * 2;
+        w_.p = data + dim * 0;
+        m_.p = data + dim * 1;
+        v_.p = data + dim * 2;
     }
 
     auto& reng = local_random_engine();

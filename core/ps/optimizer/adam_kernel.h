@@ -56,13 +56,10 @@ typedef DenseKernelBlock<Adam, DenseAdamValue> DenseAdamKernelBlock;
 class SparseAdamValue {
 public:
     SparseAdamValue(int dim, const Adam* opt);
+    ~SparseAdamValue() = default;
 
-    ~SparseAdamValue() {
-        if (!IsMiniDim_()) {
-            delete w_.p;
-            delete m_.p;
-            delete v_.p;
-        }
+    static constexpr dyn_sizeof(int dim) {
+        return sizeof(SparseAdaGradValue) + sizeof(float) * dim * 3;
     }
 
     int Dim() const {
@@ -145,6 +142,7 @@ private:
     int dim_ = 0;
     uint32_t version_ = 0;
     float show_ = 0.0;
+    float data[0];
 };
 
 std::ostream& operator<<(std::ostream& os, const SparseAdamValue& value);
