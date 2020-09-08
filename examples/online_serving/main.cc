@@ -32,12 +32,12 @@ const int k_batch_size = 32;
 
 void InitWeight(int dim, std::vector<float>& weight) {
     weight.clear();
-    auto& reng = tensornet::local_random_engine();                                                                                         
+    auto& reng = tensornet::local_random_engine();
     auto distribution = std::normal_distribution<float>(0, 1 / sqrt(dim));
 
     for (int i = 0; i < dim; ++i) {
         weight.push_back(distribution(reng) * 0.001);
-    }   
+    }
 }
 
 int combine_fea(std::vector<std::vector<float>> emb_feas, std::vector<float>& merged_feas) {
@@ -62,7 +62,7 @@ int combine_fea(std::vector<std::vector<float>> emb_feas, std::vector<float>& me
     for (auto& w : dnn_vec) {
         merged_feas.push_back(w / count);
     }
-    
+
     return 0;
 }
 
@@ -102,11 +102,11 @@ int main() {
     std::vector<std::string> slots_vec;
     boost::split(slots_vec, input, boost::is_any_of(","));
     std::map<int, int> slot2pos;
-    for (int i = 0; i < slots_vec.size(); ++i) {
+    for (size_t i = 0; i < slots_vec.size(); ++i) {
         slot2pos[std::stoi(slots_vec[i])] = i;
     }
 
-    void* handle = dlopen("./data/libmodel.so", RTLD_LAZY);
+    void* handle = dlopen("./libmodel.so", RTLD_LAZY);
     if (handle == NULL) {
         std::cerr << "dlopen error." << std::endl;
         return -1;
@@ -160,7 +160,7 @@ int main() {
             auto end   = system_clock::now();
             auto duration = duration_cast<microseconds>(end - start);
 
-            for (int i = 0; i < outputs.size(); ++i) {
+            for (size_t i = 0; i < outputs.size(); ++i) {
                 std::cout << outputs[i] << std::endl;
             }
             inputs.clear();
@@ -181,7 +181,6 @@ int main() {
             std::cout <<  w << std::endl;
         }
     }
-
 
     return 0;
 }

@@ -14,51 +14,6 @@ cc_proto_library(
     deps = [":server_proto"],
 )
 
-cc_binary(
-    name = "emb_converter",
-    srcs = [
-        "tools/emb_converter.cc",
-        "utility/file_io.h",
-        "utility/file_io.cc",
-        "utility/mpi_manager.h",
-        "utility/mpi_manager.cc",
-        "utility/net_util.h",
-        "utility/net_util.cc",
-    ],
-    deps = [
-        "//thirdparty/openmpi:openmpi",
-        "@org_tensorflow//tensorflow/core/platform/hadoop:hadoop_file_system",
-        "@brpc//:butil",
-        "@boost//:algorithm",
-    ],
-)
-
-filegroup(
-    name = "graph",
-    srcs = [
-        "tools/graph.cc",
-        "tools/graph_c.o",
-        "tools/graph.h",
-    ],
-)
-
-cc_binary(
-    name = "libmodel.so",
-    srcs = [":graph"],
-    deps = [
-        "@org_tensorflow//tensorflow/compiler/tf2xla:xla_compiled_cpu_function",
-        "@org_tensorflow//tensorflow/core:framework_lite",
-        "@org_tensorflow//tensorflow/compiler/xla/service/cpu:runtime_conv2d",
-        "@org_tensorflow//tensorflow/compiler/xla/service/cpu:runtime_key_value_sort",
-        "@org_tensorflow//tensorflow/compiler/xla/service/cpu:runtime_matmul",
-        "@org_tensorflow//tensorflow/compiler/xla/service/cpu:runtime_single_threaded_conv2d",
-        "@org_tensorflow//tensorflow/compiler/xla/service/cpu:runtime_single_threaded_matmul",
-        "@org_tensorflow//third_party/eigen3:eigen3",
-    ],
-    linkshared = 1,
-    linkopts = ["-lpthread"],
-    copts = ["-fPIC"],
-)
 cc_library(
     name = "sparse_table_ops_kernels",
     srcs = [
@@ -131,6 +86,7 @@ tf_gen_op_wrapper_py(
     deps = [":balance_dataset_ops_kernels"],
     cc_linkopts = ['-lrt'],
 )
+
 pybind_extension(
     name = "_pywrap_tn",
     srcs = glob([

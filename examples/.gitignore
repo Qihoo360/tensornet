@@ -5,3 +5,4 @@ data/
 *.txt
 logs/
 model/
+log/

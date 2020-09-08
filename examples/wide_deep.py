@@ -215,7 +215,7 @@ def main():
             for tensor in sub_model.inputs:
                 tensor.set_shape([infer_batch_size] + list(tensor.shape)[1:])
 
-            sub_model.save('model/tmp')
+            sub_model.save('model/saved_model')
 
         if C.PREDICT_DT:
             dataset = read_dataset(C.DATA_DIR, [C.PREDICT_DT], C.FILE_MATCH_PATTERN)

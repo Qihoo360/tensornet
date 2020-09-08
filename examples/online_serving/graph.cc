@@ -1,24 +1,3 @@
-import os, sys
-from string import Template
-
-SLOT_NUM = int(sys.argv[1])
-if SLOT_NUM % 2 != 0:
-    sys.stderr.write("SLOT_NUM is not times of 2")
-    exit(-1)
-
-SLOT_NUM = int(SLOT_NUM / 2)
-
-def string_template():
-    code = Template("""
-        std::copy(input[i][${slot}].data(), input[i][${slot}].data() + dim[0], graph.arg_feed_wide_emb_${slot}_data() + i * dim[0]);
-        std::copy(input[i][${slot}].data() + dim[0], input[i][${slot}].data() + dim[0] + dim[1], graph.arg_feed_deep_emb_${slot}_data() + i * dim[1]);""")
-    for slot in range(SLOT_NUM):
-        code_str = code.safe_substitute(slot=slot)
-        print(code_str)
-
-def gen_code():
-    print("""// This file is MACHINE GENERATED! Do not edit.
-// Source file is gen_graph.py
 
 #include "examples/online_serving/graph.h"
 
@@ -42,13 +21,23 @@ extern "C" int Run(const std::vector<std::vector<std::vector<float>>>& input,
             std::cerr << "TFFeaValues size is wrong, expected " << Graph::kNumArgs / 2 << " but get" << input[i].size() << std::endl;
             return -1;
         }
-        if (input[i][0].size() != dim[0] + dim[1]) {
+        if ((int)input[i][0].size() != dim[0] + dim[1]) {
             std::cerr << "embedding size is wrong, expected " << dim[0] + dim[1] << " but get" << input[i][0].size() << std::endl;
             return -1;
         }
-    """)
-    string_template()
-    print("""
+
+        std::copy(input[i][0].data(), input[i][0].data() + dim[0], graph.arg_feed_wide_emb_0_data() + i * dim[0]);
+        std::copy(input[i][0].data() + dim[0], input[i][0].data() + dim[0] + dim[1], graph.arg_feed_deep_emb_0_data() + i * dim[1]);
+
+        std::copy(input[i][1].data(), input[i][1].data() + dim[0], graph.arg_feed_wide_emb_1_data() + i * dim[0]);
+        std::copy(input[i][1].data() + dim[0], input[i][1].data() + dim[0] + dim[1], graph.arg_feed_deep_emb_1_data() + i * dim[1]);
+
+        std::copy(input[i][2].data(), input[i][2].data() + dim[0], graph.arg_feed_wide_emb_2_data() + i * dim[0]);
+        std::copy(input[i][2].data() + dim[0], input[i][2].data() + dim[0] + dim[1], graph.arg_feed_deep_emb_2_data() + i * dim[1]);
+
+        std::copy(input[i][3].data(), input[i][3].data() + dim[0], graph.arg_feed_wide_emb_3_data() + i * dim[0]);
+        std::copy(input[i][3].data() + dim[0], input[i][3].data() + dim[0] + dim[1], graph.arg_feed_deep_emb_3_data() + i * dim[1]);
+
     }
 
     auto ok = graph.Run();
@@ -62,8 +51,4 @@ extern "C" int Run(const std::vector<std::vector<std::vector<float>>>& input,
 
     return 0;
 }
-
-    """)
-    
-gen_code()
 
