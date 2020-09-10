@@ -33,6 +33,6 @@ TensorNet按照sparse feature key的**哈希值**均匀分隔参数到每个节�
 
 ## concat us
 
-QQ群号：1146192156
+email: 张彦升(zhangyansheng@360.cn),姚磊(yaolei@360.cn)
 
 ![TensorNet](doc/TensorNet-QR-code.png)
