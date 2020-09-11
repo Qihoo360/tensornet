@@ -26,7 +26,7 @@ TensorNet同步训练架构基本与TensorFlow的MultiWorkerMirroredStrategy架�
 
 ![sync-arch](./doc/sync-arch.png)
 
-注：当前release的版本中不包含同步版，目前同步版正在开发中，预计Q4会发布。
+注：当前release的版本中不包含同步版，同步版还未完成稳定性测试，等测试稳定了会很快发布。
 
 ## TensorNet核心优化
 
