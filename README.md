@@ -2,21 +2,58 @@
 
 **TensorNet**是一个构建在**TensorFlow**之上针对广告推荐等大规模稀疏场景优化的分布式训练框架。TensorNet的目标是让所有使用TensorFlow的开发者可以快速的、方便的训练出稀疏参数超过百亿的超大模型。
 
-## TensorNet主要改进
+## TensorNet训练架构
 
-在广告、搜索、推荐等场景下的深度模型都会面临样本规模非常大，参数非常多的挑战，对于这样的模型必须要采用分布式的方式训练。TensorNet主要对TensorFlow的下面几个核心点进行优化：
+TensorNet支持异步和同步模式训练。异步模式在仅有CPU的集群中速度提升十分显著，同步模式在网卡速度超过100GbE的GPU集群中表现突出。
 
-### 1. 对sparse embedding优化。
+### TensorNet异步训练架构
 
-在使用TensorFlow构造带有稀疏特征的模型的时候必须要构造一个大的**embedding tensor**，这个embedding tensor通常非常大，比如对于用户维度的embedding tensor一般会超过亿维，当在这么大的tensor之上做查找、同步等操作会带来巨大的性能开销，严重拖慢分布式训练的速度。
+在仅有CPU的集群中使用参数服务器的异步训练模式是训练模型速度最快的方法，TensorNet异步训练架构与TensorFlow的异步训练架构有很大的区别：
 
-TensorNet使用一个**较小的**、能够容纳**一个batch**数据的tensor代替原始的embedding tensor，将sparse embedding tensor的查找和同步开销优化到最小。
+1. TensorNet将sparse参数和与dense参数分别使用不同的parameter server管理。
+2. TensorNet不设单独的parameter server节点。在每个worker中都会维护一个sparse paramter server和dense parameter server。这省去了开发人员管理ps节点和worker节点的不少麻烦。
+3. TensorNet对sparse参数使用分布式哈希表按照哈希值均匀分布不同的节点上。这相较于TensorFlow需要让开发者根据自身情况将tensor分布在不同的ps节点上的方法更加灵活，这不仅减小了节点通信热点的概率，还减轻了开发者的工作量。
+4. TensorNet将模型的所有dense参数合并后使用分布式数组切分到不同的机器上，每次pull和push参数的时候只有一次网络请求。相较于TensorFlow对每个tensor都有一次网络请求的方法极大的减少了网络请求的次数从而提升了模型训练的速度。
 
-### 2. 对参数服务器优化。
+![async-arch.png](./doc/async-arch.png)
 
-在TensorFlow 1.x中官方实现的参数服务器参数按照tensor分隔，容易导致某一节点变成热点，另外对参数服务器的参数分配工作比较繁琐。在TensorFlow 2.x的版本中官方倾向于优化同步训练模式，对参数服务器的支持越来越少。
+### TensorNet同步训练架构
 
-TensorNet按照sparse feature key的**哈希值**均匀分隔参数到每个节点，极大的避免了热点问题，速度得到了保障。并且分配参数工作对开发者透明，上手较快。
+TensorNet同步训练架构基本与TensorFlow的MultiWorkerMirroredStrategy架构一致，主要区别如下：
+
+1. TensorNet使用单独的sparse parameter server节点保存所有sparse参数。通过parameter server可以解决TensorFlow支持的sparse特征维度不能太大的问题。
+2. TensorNet对sparse参数做了特殊的定制化的同步。TensorNet在训练时只同步当前训练的batch所关注的稀疏特征，相较于TensorFlow会将所有参数都同步的模式通信数据减少到了原来的万分之一，乃至十万分之一。
+
+![sync-arch](./doc/sync-arch.png)
+
+注：当前release的版本中不包含同步版，目前同步版正在开发中，预计Q4会发布。
+
+## TensorNet核心优化
+
+TensorNet最核心的优化是将模型的embedding tensor优化到了最小。
+
+如下图所示，对于最简单的wide&deep模型，如果在一个广告系统中有3亿用户，那么就需要定义一个维度为3亿的embedding矩阵，在训练模型时需要在这个3亿维的矩阵上做`embedding_lookup`得到当前batch内的用户的embedding信息，近而在embedding之上做更加复杂的操作。
+
+![tf-wide-deep](./doc/tf-wide-deep.png)
+
+显而易见，在高维稀疏场景下存在有下列问题：
+
+1. embedding矩阵太大，占用内存多。当特征较多的时候单机无法存储整个模型。
+2. 分布式训练同步开销巨大。由于TensorFlow同步时是需要同步整个矩阵以便进行训练，这极大的消耗了网络带宽，拖慢了整体速度。
+
+**TensorNet使用一个较小的，可以容纳特征在一个batch内所有数据的embedding矩阵代替TensorFlow默认实现中需要定义的较大的embedding矩阵**。
+
+如下图所示，在batch_size设置为1024的场景下，对于用户id特征，在TensorNet中只需要定义一个维度为1024的embedding矩阵，TensorNet的主要处理步骤如下：
+
+1. 定义模型时定义userid的embedding矩阵的维度为一个batch内所有用户id个数的最大值。
+2. 训练模型时得到当前batch内的所有用户id。
+3. 将用户id排序，并按照先后顺序为每个userid分配索引，索引从0开始，对应为下图中的`virtual sparse feature`。
+4. 使用userid从parameter server中获取相应的embedding向量，然后按照其对应的索引放置到embedding矩阵中。
+5. 使用转换后的`virtual sparse feature`作为模型的输入。
+
+![tensornet-wide-deep](doc/tensornet-wide-deep.png)
+
+从上述可见，TensorNet由于极大的减小了模型所需要的embedding矩阵，从而可以极大的减小分布式训练时的开销，以及通过parameter server的方式使得稀疏特征的维度可以支持到接近无限维，从而可以极大的提升模型的刻画能力。
 
 ## 文档
 
