@@ -34,7 +34,7 @@
 
 执行下面命令编译：
 
-    sh configure.sh # 按照提示输入openmpi安装的位置
+    sh ./configure.sh --openmpi_path /da2/zhangyansheng/openmpi-1.4.5
     bazel build -c opt //core:_pywrap_tn
 
 ## 部署
