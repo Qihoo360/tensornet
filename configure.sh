@@ -7,6 +7,50 @@ pushd $WORKSPACE_DIR > /dev/null
 
 readonly PYTHON_PATH="$(which python)"
 
+# global parameter
+OPENMPI_PATH=""
+
+function _simple_help()
+{
+    echo -e "
+    ${THIS_FILE} arguments
+
+        arguments:
+        --openmpi_path the path of your openmpi installed
+        --help help info
+        "
+
+    return 0
+}
+
+function simple_eval_param()
+{
+    while [[ $# -gt 0 ]]; do
+        key="$1"
+
+        case $key in
+            --openmpi_path)
+                OPENMPI_PATH="$2" && shift
+                ;;
+            * |--help | -h)
+                _simple_help
+                exit 1
+                ;;
+        esac
+
+        shift
+    done
+
+    echo "${OPENMPI_PATH}"
+    if [ "x" == "x${OPENMPI_PATH}" ]; then
+        echo "please specify where openmpi installed"
+        _simple_help
+        exit 1
+    fi
+
+    return 0
+}
+
 function check_tf_version()
 {
     echo "checking tensorflow version installed..."
@@ -23,16 +67,14 @@ function check_tf_version()
 
 function link_mpi_thirdparty()
 {
-    read -p "please give us your openmpi install path:" mpi_path
-
-    echo "using openmpi include path:$mpi_path/include"
-    echo "using openmpi lib path:$mpi_path/lib"
+    echo "using openmpi include path:$OPENMPI_PATH/include"
+    echo "using openmpi lib path:$OPENMPI_PATH/lib"
 
     rm -rf thirdparty/openmpi/include
-    ln -s ${mpi_path}/include thirdparty/openmpi/
+    ln -s ${OPENMPI_PATH}/include thirdparty/openmpi/
 
     rm -rf thirdparty/openmpi/lib
-    ln -s ${mpi_path}/lib thirdparty/openmpi/
+    ln -s ${OPENMPI_PATH}/lib thirdparty/openmpi/
 }
 
 function link_tf_thirdparty()
@@ -51,6 +93,8 @@ function link_tf_thirdparty()
 function main()
 {
     echo "using python:${PYTHON_PATH}"
+
+    simple_eval_param $@
 
     check_tf_version
     link_mpi_thirdparty
