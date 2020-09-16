@@ -2,7 +2,7 @@
 
 ## clone代码
 
-    git clone git@adgit.src.corp.qihoo.net:zhangyansheng/tensornet.git
+    git clone git@github.com:Qihoo360/tensornet.git
 
 ## 准备环境
 1. 安装anaconda3。
