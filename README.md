@@ -22,7 +22,7 @@ TensorNet支持异步和同步模式训练。异步模式在仅有CPU的集群�
 TensorNet同步训练架构基本与TensorFlow的MultiWorkerMirroredStrategy架构一致，主要区别如下：
 
 1. TensorNet使用单独的sparse parameter server节点保存所有sparse参数。通过parameter server可以解决TensorFlow支持的sparse特征维度不能太大的问题。
-2. TensorNet对sparse参数做了特殊的定制化的同步。TensorNet在训练时只同步当前训练的batch所关注的稀疏特征，相较于TensorFlow会将所有参数都同步的模式通信数据减少到了原来的万分之一，乃至十万分之一。
+2. TensorNet对sparse参数做了特殊的定制化的同步。TensorNet在训练时由于每个batch内的sparse参数的`IndexedSlices`指向的内容与TensorFlow默认的不同，我们对此做了定制化的同步。
 
 ![sync-arch](./doc/sync-arch.png)
 
@@ -36,10 +36,7 @@ TensorNet最核心的优化是将模型的embedding tensor优化到了最小。
 
 ![tf-wide-deep](./doc/tf-wide-deep.png)
 
-显而易见，在高维稀疏场景下存在有下列问题：
-
-1. embedding矩阵太大，占用内存多。当特征较多的时候单机无法存储整个模型。
-2. 分布式训练同步开销巨大。由于TensorFlow同步时是需要同步整个矩阵以便进行训练，这极大的消耗了网络带宽，拖慢了整体速度。
+显而易见，在高维稀疏场景下embedding矩阵太大，占用内存多。当特征较多的时候单机无法存储整个模型。
 
 **TensorNet使用一个较小的，可以容纳特征在一个batch内所有数据的embedding矩阵代替TensorFlow默认实现中需要定义的较大的embedding矩阵**。
 
@@ -53,7 +50,7 @@ TensorNet最核心的优化是将模型的embedding tensor优化到了最小。
 
 ![tensornet-wide-deep](doc/tensornet-wide-deep.png)
 
-从上述可见，TensorNet由于极大的减小了模型所需要的embedding矩阵，从而可以极大的减小分布式训练时的开销，以及通过parameter server的方式使得稀疏特征的维度可以支持到接近无限维，从而可以极大的提升模型的刻画能力。
+从上述可见，TensorNet由于极大的减小了模型所需要的embedding矩阵，通过parameter server的方式使得稀疏特征的维度可以支持到接近无限维，从而可以极大的提升模型的刻画能力。
 
 ## TensorNet Inference优化
 
@@ -62,8 +59,6 @@ TensorNet最核心的优化是将模型的embedding tensor优化到了最小。
 在使用TensorNet构造模型的时候，可以将模型切分为两部分，如下图所示，`embedding_lookup_graph`只在离线训练时使用，在线inference时只需要将sparse embedding导出成字典供`inference_graph`作为输入即可，具体的请参考：[为inference准备——模型切分](doc/tutorial/03-split-to-sub-graph.ipynb)，[使用XLA方式进行在线预估](doc/tutorial/04-deploy-tf-graph-online.ipynb)，[sparse embedding字典导出](doc/tutorial/05-export-sparse-feature-embedding.ipynb)系列文档。
 
 ![inference.png](./doc/inference.png)
-
-
 
 ## 文档
 
