@@ -47,23 +47,22 @@ void SparseTable::Pull(const SparsePullRequest* req, SparsePullResponse* resp) {
     resp->set_dim(req->dim());
 
     for (int i = 0; i < req->signs_size(); ++i) {
-        SparseWeightInfo weight_info;
         uint64_t sign = req->signs(i);
 
-        if (false == op_kernel_->GetWeight(sign, weight_info)) {
-            weight_info.weight = nullptr;
+        float* w = op_kernel_->GetWeight(sign);
 
-            CHECK(op_kernel_->NewSignWithWeight(sign, weight_info));
-            CHECK(nullptr != weight_info.weight);
+        if (nullptr == w) {
+            w = op_kernel_->NewSignWithWeight(sign);
+            CHECK(nullptr != w);
         }
 
         VariableWeight* weight = resp->add_weight();
 
         weight->set_sign(sign);
 
-        // weight_info.weight size is guaranteed by op_kernel_ same with dim_
+        // w size is guaranteed by op_kernel_ same with dim_
         for (int j = 0; j < dim_; j++) {
-            weight->add_w(weight_info.weight[j]);
+            weight->add_w(w[j]);
         }
     }
 }
