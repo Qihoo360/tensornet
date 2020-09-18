@@ -65,6 +65,12 @@ private:
     int shard_id_ = -1;
 };
 
+struct SignInfo{
+    int64 sign;
+    uint32 version;
+    int batch_show;
+};
+
 class SparsePushCall {
 public:
     SparsePushCall(int table_handle, int shard_id, int dim)
@@ -75,11 +81,11 @@ public:
 
     ~SparsePushCall() {}
 
-    void AddRequestGrad(uint64 sign, const float* grad_vec, int dim, int show, uint32 version) {
+    void AddRequestGrad(const SignInfo& sign_info, const float* grad_vec, int dim) {
         VariableWeight* weight = req.add_weight();
-        weight->set_sign(sign);
-        weight->set_show(show);
-        weight->set_version(version);
+        weight->set_sign(sign_info.sign);
+        weight->set_show(sign_info.batch_show);
+        weight->set_version(sign_info.version);
 
         for (int i = 0; i < dim; i++) {
             weight->add_w(grad_vec[i]);
@@ -110,13 +116,7 @@ public:
 
         for (int i = 0; i < value->NumElements(); ++i) {
             const uint64 sign = (uint64)feasign_vec[i];
-            int sign_id = 0;
-            if (sign_id_mapping.count(sign)) {
-                sign_id = sign_id_mapping[sign];
-            } else {
-                sign_id = sign_id_mapping.size();
-                sign_id_mapping[sign] = sign_id;
-            }
+            sign_id_mapping.insert({sign, sign_id_mapping.size()});
         }
 
         const Tensor* var_tensor = var->tensor();
@@ -143,9 +143,7 @@ public:
     // in order to use embedding_lookup, we must map the feature sign into index
     // which will not exceed *var* first dimension(max_var_count)
     // the mapping id begin from 0, depend on signs order in sign_value 
-    std::map<uint64, int> sign_id_mapping;
-
-    int dim;
+    std::map<uint64, size_t> sign_id_mapping;
 };
 
 class SparseTablePullKernel : public AsyncOpKernel {
@@ -208,21 +206,23 @@ public:
                 new SparsePullCall(table_handle_, shard_id, dim));
         }
 
-        std::map<uint64, std::vector<int>> sign_varid;
+        std::map<uint64, std::vector<size_t>> sign_varid;
         std::map<uint64, uint32> sign_version;
 
         for (size_t i = 0; i < var_infos.size(); i++) {
             for (const auto& sign_iter : var_infos[i].sign_id_mapping) {
                 uint64 sign = sign_iter.first;
 
-                // if already exist, skip
-                if (sign_varid.count(sign) == 0) {
+                const auto ret = sign_varid.insert({sign, {i}});
+
+                // filtered repeated
+                if (ret.second) {
                     int shard_id = sign % cluster->RankNum();
                     calls[shard_id]->AddRequestSign(sign);
+                    sign_version[sign] = 0;
+                } else {
+                    ret.first->second.push_back(i);
                 }
-
-                sign_varid[sign].push_back(i);
-                sign_version[sign] = 0;
             }
         }
 
@@ -257,8 +257,13 @@ public:
             for (int j = 0; j < value->NumElements(); ++j) {
                 const uint64 sign = (uint64)feasign_vec[j];
                 out[j] = var_infos[i].sign_id_mapping[sign];
-                CHECK_GT(sign_version.count(sign), 0) << "sign:" << sign;
-                version_out[j] = sign_version[sign];
+
+                auto iter = sign_version.find(sign);
+                if (iter != sign_version.end()) {
+                    version_out[j] = iter->second;
+                } else {
+                    version_out[j] = 0;
+                }
             }
         }
 
@@ -269,7 +274,7 @@ public:
 
 private:
     Status PopulatePulledVariable_(const std::vector<SparsePullVarInfo>& var_infos,
-                                   const std::map<uint64, std::vector<int>>& sign_varid,
+                                   const std::map<uint64, std::vector<size_t>>& sign_varid,
                                    const SparsePullResponse& resp,
                                    std::map<uint64, uint32>& sign_version) {
         for (int i = 0; i < resp.weight_size(); i++) {
@@ -285,7 +290,7 @@ private:
                 auto sign_id_iter = var_info.sign_id_mapping.find(sign);
                 CHECK(sign_id_iter != var_info.sign_id_mapping.end());
 
-                int sign_id = sign_id_iter->second;
+                int sign_index = sign_id_iter->second;
 
                 mutex_lock ml(*var_info.var->mu());
                 Tensor* var_tensor = var_info.var->tensor();
@@ -294,7 +299,7 @@ private:
 
                 auto w_matrix = var_tensor->matrix<float>();
                 for (int j = 0; j < weight.w_size(); j++) {
-                    w_matrix(sign_id, j) = weight.w(j);
+                    w_matrix(sign_index, j) = weight.w(j);
                 }
 
                 // add version
@@ -326,39 +331,23 @@ public:
 
         std::map<uint64, int> sign_id_mapping;
         for (int i = 0; i < value->NumElements(); ++i) {
-            const uint64 sign = (uint64)feasign_vec[i];
-            if (0 == sign_id_mapping.count(sign)) {
-                int sign_id = sign_id_mapping.size();
-                sign_id_mapping[sign] = sign_id;
-            }
-            if (0 == sign_count_mapping.count(sign)) {
-                sign_count_mapping[sign] = 1;
+            SignInfo sign_info;
+            sign_info.sign = (uint64)feasign_vec[i];
+            auto ret = sign_id_mapping.insert({sign_info.sign, sign_id_mapping.size()});
+
+            if (ret.second) {
+                sign_info.version = (uint32)version_vec[i];
+                sign_info.batch_show = 1;
+                virtual_sign_infos.emplace_back(sign_info);
             } else {
-                sign_count_mapping[sign]++;
+                auto iter = ret.first;
+                virtual_sign_infos[iter->second].batch_show += 1;
             }
-            sign_version_mapping[sign] = (uint32)version_vec[i];
         }
-        for (auto it : sign_id_mapping) {
-            id_sign_mapping[it.second] = it.first;
-        }
-
-        // const int sign_id_cnt = grad->shape().dim_size(0);
-
-        // TODO, BUG, tensorflow will use a dummy (default is 0) grad when feature sign is
-        // empty, maybe we could solve this by custom dataset
-        // CHECK_EQ((int)id_sign_mapping.size(), sign_id_cnt);
-    }
-
-    int SignIdCount() const {
-        return (int)id_sign_mapping.size();
     }
 
     int GradDim() const {
         return grad->shape().dim_size(1);
-    }
-
-    int ShowNum(int64 sign) {
-        return sign_count_mapping[sign];
     }
 
 public:
@@ -366,9 +355,7 @@ public:
     const Tensor* grad;
     const Tensor* version;
 
-    std::map<int, int64> id_sign_mapping;
-    std::map<int64, uint32> sign_version_mapping;
-    std::map<int64, int> sign_count_mapping;
+    std::vector<SignInfo> virtual_sign_infos;
 };
 
 class SparseTablePushKernel : public AsyncOpKernel {
@@ -423,18 +410,12 @@ public:
             // NOTE, tensorfow use RowMajor layout
             const float* grad_matrix = var_infos[i].grad->matrix<float>().data();
 
-            for (int sign_id = 0; sign_id < var_infos[i].SignIdCount(); sign_id++) {
-                auto iter = var_infos[i].id_sign_mapping.find(sign_id);
-                CHECK(iter != var_infos[i].id_sign_mapping.end());
+            for (size_t sign_index = 0; sign_index < var_infos[i].virtual_sign_infos.size(); sign_index++) {
+                const auto& sign_info = var_infos[i].virtual_sign_infos[sign_index];
 
-                const uint64 sign = iter->second;
-
-                CHECK_GT(var_infos[i].sign_version_mapping.count(sign), 0);
-                const uint32 version = var_infos[i].sign_version_mapping[sign];
-
-                int shard_id = sign % cluster->RankNum();
-                const float* grad = grad_matrix + dim * sign_id;
-                calls[shard_id]->AddRequestGrad(sign, grad, dim, var_infos[i].ShowNum(sign), version);
+                int shard_id = sign_info.sign % cluster->RankNum();
+                const float* grad = grad_matrix + dim * sign_index;
+                calls[shard_id]->AddRequestGrad(sign_info, grad, dim);
             }
         }
 
