@@ -83,7 +83,7 @@ void SparseTable::Push(const SparsePushRequest* req, SparsePushResponse* resp) {
 
         SparseGradInfo grad_info;
         grad_info.grad = grad.data();
-        grad_info.show = weight.show();
+        grad_info.batch_show = weight.batch_show();
 
         op_kernel_->Apply(weight.sign(), grad_info);
     }

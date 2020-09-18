@@ -14,7 +14,7 @@ message SparsePullRequest {
 message VariableWeight {
     uint64 sign = 1;
     repeated float w = 2;
-    int32 show = 3;
+    int32 batch_show = 3;
 };
 
 message SparsePullResponse {

@@ -83,7 +83,7 @@ public:
     void AddRequestGrad(const SignInfo& sign_info, const float* grad_vec, int dim) {
         VariableWeight* weight = req.add_weight();
         weight->set_sign(sign_info.sign);
-        weight->set_show(sign_info.batch_show);
+        weight->set_batch_show(sign_info.batch_show);
 
         for (int i = 0; i < dim; i++) {
             weight->add_w(grad_vec[i]);

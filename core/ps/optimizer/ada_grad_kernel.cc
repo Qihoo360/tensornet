@@ -99,7 +99,7 @@ SparseAdaGradValue::SparseAdaGradValue(int dim, const AdaGrad* opt) {
 }
 
 void SparseAdaGradValue::Apply(const AdaGrad* opt, SparseGradInfo& grad_info) {
-    show_ += grad_info.show;
+    show_ += grad_info.batch_show;
 
     float* w = Weight();
 

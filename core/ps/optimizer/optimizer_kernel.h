@@ -83,7 +83,7 @@ private:
 
 struct SparseGradInfo {
     float* grad;
-    int show;
+    int batch_show;
 };
 
 class SparseOptimizerKernelBase {
