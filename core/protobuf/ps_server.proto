@@ -15,7 +15,6 @@ message VariableWeight {
     uint64 sign = 1;
     repeated float w = 2;
     int32 show = 3;
-    uint32 version = 4;
 };
 
 message SparsePullResponse {

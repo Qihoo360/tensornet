@@ -83,12 +83,10 @@ private:
 
 struct SparseWeightInfo {
     float* weight;
-    uint32_t version;
 };
 
 struct SparseGradInfo {
     float* grad;
-    uint32_t version;
     int show;
 };
 
@@ -338,7 +336,6 @@ public:
             ValueType* value = iter->second;
 
             weight_info.weight = value->Weight();
-            weight_info.version = value->Version();
 
             return true;
         }

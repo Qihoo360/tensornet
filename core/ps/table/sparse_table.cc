@@ -52,7 +52,6 @@ void SparseTable::Pull(const SparsePullRequest* req, SparsePullResponse* resp) {
 
         if (false == op_kernel_->GetWeight(sign, weight_info)) {
             weight_info.weight = nullptr;
-            weight_info.version = 0;
 
             CHECK(op_kernel_->NewSignWithWeight(sign, weight_info));
             CHECK(nullptr != weight_info.weight);
@@ -61,7 +60,6 @@ void SparseTable::Pull(const SparsePullRequest* req, SparsePullResponse* resp) {
         VariableWeight* weight = resp->add_weight();
 
         weight->set_sign(sign);
-        weight->set_version(weight_info.version);
 
         // weight_info.weight size is guaranteed by op_kernel_ same with dim_
         for (int j = 0; j < dim_; j++) {
@@ -87,7 +85,6 @@ void SparseTable::Push(const SparsePushRequest* req, SparsePushResponse* resp) {
         SparseGradInfo grad_info;
         grad_info.grad = grad.data();
         grad_info.show = weight.show();
-        grad_info.version = weight.version();
 
         op_kernel_->Apply(weight.sign(), grad_info);
     }

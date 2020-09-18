@@ -67,7 +67,6 @@ private:
 
 struct SignInfo{
     int64 sign;
-    uint32 version;
     int batch_show;
 };
 
@@ -85,7 +84,6 @@ public:
         VariableWeight* weight = req.add_weight();
         weight->set_sign(sign_info.sign);
         weight->set_show(sign_info.batch_show);
-        weight->set_version(sign_info.version);
 
         for (int i = 0; i < dim; i++) {
             weight->add_w(grad_vec[i]);
@@ -207,7 +205,6 @@ public:
         }
 
         std::map<uint64, std::vector<size_t>> sign_varid;
-        std::map<uint64, uint32> sign_version;
 
         for (size_t i = 0; i < var_infos.size(); i++) {
             for (const auto& sign_iter : var_infos[i].sign_id_mapping) {
@@ -219,7 +216,6 @@ public:
                 if (ret.second) {
                     int shard_id = sign % cluster->RankNum();
                     calls[shard_id]->AddRequestSign(sign);
-                    sign_version[sign] = 0;
                 } else {
                     ret.first->second.push_back(i);
                 }
@@ -229,8 +225,8 @@ public:
         Semaphore semaphore(calls.size());
 
         for (auto& call : calls) {
-            call->Start([this, call, &var_infos, &sign_varid, &sign_version, &semaphore]() {
-                auto status = PopulatePulledVariable_(var_infos, sign_varid, call->resp, sign_version);
+            call->Start([this, call, &var_infos, &sign_varid, &semaphore]() {
+                auto status = PopulatePulledVariable_(var_infos, sign_varid, call->resp);
                 if (!status.ok()) {
                     LOG(INFO) << "populate variable fail:" << status.ToString();
                 }
@@ -241,29 +237,19 @@ public:
 
         semaphore.WaitForSemaphore();
 
-        // allocate version output
+        // allocate output
         for (int i = 0; i < N_; i++) {
             Tensor* out_tensor = nullptr;
-            Tensor* version_tensor = nullptr;
 
             const Tensor* value = var_infos[i].sign_value;
             OP_REQUIRES_OK_ASYNC(c, c->allocate_output(i, value->shape(), &out_tensor), done);
-            OP_REQUIRES_OK_ASYNC(c, c->allocate_output(N_ + i, value->shape(), &version_tensor), done);
 
             const int64* feasign_vec = value->flat<int64>().data();
             int64* out = out_tensor->flat<int64>().data();
-            int32* version_out = version_tensor->flat<int32>().data();
 
             for (int j = 0; j < value->NumElements(); ++j) {
                 const uint64 sign = (uint64)feasign_vec[j];
                 out[j] = var_infos[i].sign_id_mapping[sign];
-
-                auto iter = sign_version.find(sign);
-                if (iter != sign_version.end()) {
-                    version_out[j] = iter->second;
-                } else {
-                    version_out[j] = 0;
-                }
             }
         }
 
@@ -275,8 +261,7 @@ public:
 private:
     Status PopulatePulledVariable_(const std::vector<SparsePullVarInfo>& var_infos,
                                    const std::map<uint64, std::vector<size_t>>& sign_varid,
-                                   const SparsePullResponse& resp,
-                                   std::map<uint64, uint32>& sign_version) {
+                                   const SparsePullResponse& resp) {
         for (int i = 0; i < resp.weight_size(); i++) {
             const auto& weight = resp.weight(i);
             uint64 sign = weight.sign();
@@ -301,9 +286,6 @@ private:
                 for (int j = 0; j < weight.w_size(); j++) {
                     w_matrix(sign_index, j) = weight.w(j);
                 }
-
-                // add version
-                sign_version[sign] = weight.version();
             }
         }
 
@@ -320,14 +302,11 @@ REGISTER_KERNEL_BUILDER(Name("SparseTablePull").Device(DEVICE_CPU),
 
 struct SparsePushVarInfo {
 public:
-    SparsePushVarInfo(const Tensor* t_value, const Tensor* t_grad, const Tensor* t_version)
+    SparsePushVarInfo(const Tensor* t_value, const Tensor* t_grad)
         : value(t_value)
-        , grad(t_grad)
-        , version(t_version) {
-        CHECK(value->NumElements() == version->NumElements());
+        , grad(t_grad) {
 
         const int64* feasign_vec = value->flat<int64>().data();
-        const int* version_vec = version->flat<int>().data();
 
         std::map<uint64, int> sign_id_mapping;
         for (int i = 0; i < value->NumElements(); ++i) {
@@ -336,7 +315,6 @@ public:
             auto ret = sign_id_mapping.insert({sign_info.sign, sign_id_mapping.size()});
 
             if (ret.second) {
-                sign_info.version = (uint32)version_vec[i];
                 sign_info.batch_show = 1;
                 virtual_sign_infos.emplace_back(sign_info);
             } else {
@@ -353,7 +331,6 @@ public:
 public:
     const Tensor* value;
     const Tensor* grad;
-    const Tensor* version;
 
     std::vector<SignInfo> virtual_sign_infos;
 };
@@ -367,17 +344,16 @@ public:
     }
 
     void ComputeAsync(OpKernelContext* c, DoneCallback done) override {
-        OP_REQUIRES_ASYNC(c, c->num_inputs() == N_ * 3,
+        OP_REQUIRES_ASYNC(c, c->num_inputs() == N_ * 2,
                           errors::InvalidArgument("SparseTable push num_inputs:",
                                                   c->num_inputs(),
-                                                  " not equal:", N_ * 3),
+                                                  " not equal:", N_ * 2),
                           done);
         std::vector<SparsePushVarInfo> var_infos;
 
         for (int i = 0; i < N_; i++) {
             const Tensor* value = &c->input(i);
             const Tensor* grad = &c->input(N_ + i);
-            const Tensor* version = &c->input(2 * N_ + i);
 
             OP_REQUIRES_ASYNC(
                 c, TensorShapeUtils::IsMatrix(grad->shape()),
@@ -386,7 +362,7 @@ public:
                     grad->shape().DebugString()),
                 done);
 
-            SparsePushVarInfo var_info(value, grad, version);
+            SparsePushVarInfo var_info(value, grad);
 
             var_infos.emplace_back(var_info);
         }
