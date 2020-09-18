@@ -18,7 +18,7 @@ message SparsePullRequest {
 };
 
 message SparsePullVariableInfo {
-    uint64 sign = 1;
+    SparsePullSignInfo sign_info = 1;
     repeated float w = 2;
 };
 

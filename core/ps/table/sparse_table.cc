@@ -47,7 +47,7 @@ void SparseTable::Pull(const SparsePullRequest* req, SparsePullResponse* resp) {
     resp->set_dim(req->dim());
 
     for (int i = 0; i < req->sign_infos_size(); ++i) {
-        const auto& sign_info = req->sign_infos(i);
+        const SparsePullSignInfo& sign_info = req->sign_infos(i);
 
         uint64_t sign = sign_info.sign();
 
@@ -59,8 +59,7 @@ void SparseTable::Pull(const SparsePullRequest* req, SparsePullResponse* resp) {
         }
 
         auto var_info = resp->add_var_infos();
-
-        var_info->set_sign(sign);
+        var_info->mutable_sign_info()->CopyFrom(sign_info);
 
         // w size is guaranteed by op_kernel_ same with dim_
         for (int j = 0; j < dim_; j++) {
