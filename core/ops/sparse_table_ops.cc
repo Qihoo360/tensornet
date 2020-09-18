@@ -37,7 +37,6 @@ REGISTER_OP("SparseTablePull")
             TF_RETURN_IF_ERROR(c->WithRank(c->input(N + i), 1, &shape));
 
             c->set_output(i, shape);
-            c->set_output(N + i, shape);
         }
 
         return Status::OK();

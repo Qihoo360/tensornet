@@ -60,7 +60,8 @@ boost_deps()
 load("@org_tensorflow//tensorflow:workspace.bzl", "tf_workspace")
 tf_workspace(path_prefix = "", tf_repo_name = "org_tensorflow")
 
-// below is needed by generate op python file
+# below is needed by generate op python file
+
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
 grpc_deps()
 load("@upb//bazel:repository_defs.bzl", "bazel_version_repository")
