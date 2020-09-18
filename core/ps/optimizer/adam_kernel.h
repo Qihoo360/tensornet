@@ -92,10 +92,6 @@ public:
         }
     }
 
-    uint32_t Version() const {
-        return version_;
-    }
-
     void Apply(const Adam* opt, SparseGradInfo& grad_info);
 
     void ShowDecay(const Adam* opt) {}
@@ -145,7 +141,6 @@ private:
     UnionWeight m_;
     UnionWeight v_;
     int dim_ = 0;
-    uint32_t version_ = 0;
     float show_ = 0.0;
     float data[0];
 };

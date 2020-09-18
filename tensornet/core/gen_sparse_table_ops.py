@@ -19,10 +19,6 @@ from tensorflow.python.util.deprecation import deprecated_endpoints
 from tensorflow.python.util import dispatch as _dispatch
 from tensorflow.python.util.tf_export import tf_export
 
-_SparseTablePullOutput = collections.namedtuple(
-    "SparseTablePull",
-    ["mapped_values", "versions"])
-
 
 @_dispatch.add_dispatch_list
 @tf_export('sparse_table_pull')
@@ -36,10 +32,7 @@ def sparse_table_pull(resources, values, table_handle, name=None):
     name: A name for the operation (optional).
 
   Returns:
-    A tuple of `Tensor` objects (mapped_values, versions).
-
-    mapped_values: A list with the same length as `resources` of `Tensor` objects with type `int64`.
-    versions: A list with the same length as `resources` of `Tensor` objects with type `int32`.
+    A list with the same length as `resources` of `Tensor` objects with type `int64`.
   """
   _ctx = _context._context or _context.context()
   tld = _ctx._thread_local_data
@@ -48,7 +41,6 @@ def sparse_table_pull(resources, values, table_handle, name=None):
       _result = pywrap_tfe.TFE_Py_FastPathExecute(
         _ctx._context_handle, tld.device_name, "SparseTablePull", name,
         tld.op_callbacks, resources, values, "table_handle", table_handle)
-      _result = _SparseTablePullOutput._make(_result)
       return _result
     except _core._FallbackException:
       try:
@@ -93,15 +85,14 @@ def sparse_table_pull(resources, values, table_handle, name=None):
       return result
     raise
   _result = _outputs[:]
+  if not _result:
+    return _op
   if _execute.must_record_gradient():
     _attrs = ("table_handle", _op._get_attr_int("table_handle"), "N",
               _op._get_attr_int("N"))
     _inputs_flat = _op.inputs
     _execute.record_gradient(
         "SparseTablePull", _inputs_flat, _attrs, _result)
-  _result = [_result[:_attr_N]] + _result[_attr_N:]
-  _result = _result[:1] + [_result[1:]]
-  _result = _SparseTablePullOutput._make(_result)
   return _result
 
 SparseTablePull = tf_export("raw_ops.SparseTablePull")(_ops.to_raw_op(sparse_table_pull))
@@ -127,27 +118,22 @@ def sparse_table_pull_eager_fallback(resources, values, table_handle, name, ctx)
   values = _ops.convert_n_to_tensor(values, _dtypes.int64)
   _inputs_flat = list(resources) + list(values)
   _attrs = ("table_handle", table_handle, "N", _attr_N)
-  _result = _execute.execute(b"SparseTablePull", _attr_N + _attr_N,
-                             inputs=_inputs_flat, attrs=_attrs, ctx=ctx,
-                             name=name)
+  _result = _execute.execute(b"SparseTablePull", _attr_N, inputs=_inputs_flat,
+                             attrs=_attrs, ctx=ctx, name=name)
   if _execute.must_record_gradient():
     _execute.record_gradient(
         "SparseTablePull", _inputs_flat, _attrs, _result)
-  _result = [_result[:_attr_N]] + _result[_attr_N:]
-  _result = _result[:1] + [_result[1:]]
-  _result = _SparseTablePullOutput._make(_result)
   return _result
 
 
 @_dispatch.add_dispatch_list
 @tf_export('sparse_table_push')
-def sparse_table_push(values, grads, versions, table_handle, name=None):
+def sparse_table_push(values, grads, table_handle, name=None):
   r"""push variable from parameter server
 
   Args:
     values: A list of at least 1 `Tensor` objects with type `int64`.
     grads: A list with the same length as `values` of `Tensor` objects with type `float32`.
-    versions: A list with the same length as `values` of `Tensor` objects with type `int32`.
     table_handle: An `int`.
     name: A name for the operation (optional).
 
@@ -160,21 +146,18 @@ def sparse_table_push(values, grads, versions, table_handle, name=None):
     try:
       _result = pywrap_tfe.TFE_Py_FastPathExecute(
         _ctx._context_handle, tld.device_name, "SparseTablePush", name,
-        tld.op_callbacks, values, grads, versions, "table_handle",
-        table_handle)
+        tld.op_callbacks, values, grads, "table_handle", table_handle)
       return _result
     except _core._FallbackException:
       try:
         return sparse_table_push_eager_fallback(
-            values, grads, versions, table_handle=table_handle, name=name,
-            ctx=_ctx)
+            values, grads, table_handle=table_handle, name=name, ctx=_ctx)
       except _core._SymbolicException:
         pass  # Add nodes to the TensorFlow graph.
       except (TypeError, ValueError):
         result = _dispatch.dispatch(
               sparse_table_push, values=values, grads=grads,
-                                 versions=versions, table_handle=table_handle,
-                                 name=name)
+                                 table_handle=table_handle, name=name)
         if result is not _dispatch.OpDispatcher.NOT_SUPPORTED:
           return result
         raise
@@ -195,23 +178,14 @@ def sparse_table_push(values, grads, versions, table_handle, name=None):
         "List argument 'grads' to 'sparse_table_push' Op with length %d "
         "must match length %d of argument 'values'." %
         (len(grads), _attr_N))
-  if not isinstance(versions, (list, tuple)):
-    raise TypeError(
-        "Expected list for 'versions' argument to "
-        "'sparse_table_push' Op, not %r." % versions)
-  if len(versions) != _attr_N:
-    raise ValueError(
-        "List argument 'versions' to 'sparse_table_push' Op with length %d "
-        "must match length %d of argument 'values'." %
-        (len(versions), _attr_N))
   table_handle = _execute.make_int(table_handle, "table_handle")
   try:
     _, _, _op, _outputs = _op_def_library._apply_op_helper(
-        "SparseTablePush", values=values, grads=grads, versions=versions,
+        "SparseTablePush", values=values, grads=grads,
                            table_handle=table_handle, name=name)
   except (TypeError, ValueError):
     result = _dispatch.dispatch(
-          sparse_table_push, values=values, grads=grads, versions=versions,
+          sparse_table_push, values=values, grads=grads,
                              table_handle=table_handle, name=name)
     if result is not _dispatch.OpDispatcher.NOT_SUPPORTED:
       return result
@@ -220,7 +194,7 @@ def sparse_table_push(values, grads, versions, table_handle, name=None):
 SparseTablePush = tf_export("raw_ops.SparseTablePush")(_ops.to_raw_op(sparse_table_push))
 
 
-def sparse_table_push_eager_fallback(values, grads, versions, table_handle, name, ctx):
+def sparse_table_push_eager_fallback(values, grads, table_handle, name, ctx):
   if not isinstance(values, (list, tuple)):
     raise TypeError(
         "Expected list for 'values' argument to "
@@ -235,20 +209,10 @@ def sparse_table_push_eager_fallback(values, grads, versions, table_handle, name
         "List argument 'grads' to 'sparse_table_push' Op with length %d "
         "must match length %d of argument 'values'." %
         (len(grads), _attr_N))
-  if not isinstance(versions, (list, tuple)):
-    raise TypeError(
-        "Expected list for 'versions' argument to "
-        "'sparse_table_push' Op, not %r." % versions)
-  if len(versions) != _attr_N:
-    raise ValueError(
-        "List argument 'versions' to 'sparse_table_push' Op with length %d "
-        "must match length %d of argument 'values'." %
-        (len(versions), _attr_N))
   table_handle = _execute.make_int(table_handle, "table_handle")
   values = _ops.convert_n_to_tensor(values, _dtypes.int64)
   grads = _ops.convert_n_to_tensor(grads, _dtypes.float32)
-  versions = _ops.convert_n_to_tensor(versions, _dtypes.int32)
-  _inputs_flat = list(values) + list(grads) + list(versions)
+  _inputs_flat = list(values) + list(grads)
   _attrs = ("table_handle", table_handle, "N", _attr_N)
   _result = _execute.execute(b"SparseTablePush", 0, inputs=_inputs_flat,
                              attrs=_attrs, ctx=ctx, name=name)

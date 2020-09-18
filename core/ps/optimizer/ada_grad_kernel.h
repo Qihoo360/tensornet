@@ -90,10 +90,6 @@ public:
         }
     }
 
-    uint32_t Version() const {
-        return version_;
-    }
-
     void Apply(const AdaGrad* opt, SparseGradInfo& grad_info);
 
     void ShowDecay(const AdaGrad* opt);
@@ -110,7 +106,6 @@ private:
     UnionWeight w_;
     float g2sum_;
     int dim_ = 0;
-    uint32_t version_ = 0;
     float show_ = 0.0;
     float data[0];
 };

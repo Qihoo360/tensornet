@@ -48,7 +48,6 @@ class StateManagerImpl(fc.StateManager):
         # store one variable for one unique feature column, which is name 'embedding_weights'
         self._cols_to_var_map = collections.defaultdict(lambda: None)
         self._var_to_cols_map = collections.defaultdict(lambda: None)
-        self._var_to_version_map = collections.defaultdict(lambda: None)
 
     def create_variable(self,
                         feature_column,
@@ -99,29 +98,25 @@ class StateManagerImpl(fc.StateManager):
             vars.append(self._cols_to_var_map[column_name])
             feature_values.append(sparse_feature)
 
-        pulled_mapping_values, versions = gen_sparse_table_ops.sparse_table_pull(
+        pulled_mapping_values = gen_sparse_table_ops.sparse_table_pull(
                                                 [var.handle for var in vars],
                                                 [f.values for f in feature_values],
                                                 table_handle=self.sparse_table_handle)
 
         assert len(pulled_mapping_values) == len(vars)
-        assert len(versions) == len(vars)
 
-        for var, mapping_value, version in zip(vars, pulled_mapping_values, versions):
+        for var, mapping_value in zip(vars, pulled_mapping_values):
             assert var.ref() in self._var_to_cols_map
 
             column_name = self._var_to_cols_map[var.ref()]
 
             self.pulled_mapping_values[column_name] = mapping_value
 
-            self._var_to_version_map[var.ref()] = version
-
         return self.pulled_mapping_values
 
     def push(self, grads_and_vars, features):
         grads = []
         feature_values = []
-        versions = []
 
         for grad, var in grads_and_vars:
             if var.ref() not in self._var_to_cols_map:
@@ -141,14 +136,10 @@ class StateManagerImpl(fc.StateManager):
             grads.append(grad.values)
             feature_values.append(sparse_feature.values)
 
-            # generate version
-            version = self._var_to_version_map[var.ref()]
-            versions.append(version)
-
         # grads and feature_values must not empty
-        assert grads and feature_values and versions
+        assert grads and feature_values
 
-        return gen_sparse_table_ops.sparse_table_push(feature_values, grads, versions,
+        return gen_sparse_table_ops.sparse_table_push(feature_values, grads,
                                                       table_handle=self.sparse_table_handle)
 
     def get_feature_mapping_values(self, column_name):

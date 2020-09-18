@@ -114,22 +114,15 @@ SparseAdamValue::SparseAdamValue(int dim, const Adam* opt) {
 }
 
 void SparseAdamValue::Apply(const Adam* opt, SparseGradInfo& grad_info) {
-    version_++;
     show_ += grad_info.show;
 
     float* w = Weight();
     float* m = M();
     float* v = V();
 
-    double g_scale = grad_info.show + opt->epsilon;
-    if (grad_info.version < Version()) {
-        g_scale *= sqrt(Version() - grad_info.version);
-    }
-
     for (int i = 0; i < dim_; ++i) {
-        double scaled_grad = grad_info.grad[i] / g_scale;
-        m[i] = opt->beta1 * m[i] + (1 - opt->beta1) * scaled_grad;
-        v[i] = opt->beta2 * v[i] + (1 - opt->beta2) * scaled_grad * scaled_grad;
+        m[i] = opt->beta1 * m[i] + (1 - opt->beta1) * grad_info.grad[i];
+        v[i] = opt->beta2 * v[i] + (1 - opt->beta2) * grad_info.grad[i] * grad_info.grad[i];
 
         w[i] -= opt->learning_rate * m[i] / (opt->epsilon + sqrt(v[i]));
     }
@@ -144,7 +137,6 @@ std::ostream& operator<<(std::ostream& os, const SparseAdamValue& value) {
         os << value.V()[i] << "\t";
     }
 
-    os << value.version_ << "\t";
     os << value.show_;
 
     return os;
@@ -162,7 +154,6 @@ std::istream& operator>>(std::istream& is, SparseAdamValue& value) {
         is >> value.V()[i];
     }
 
-    is >> value.version_;
     is >> value.show_;
 
     return is;

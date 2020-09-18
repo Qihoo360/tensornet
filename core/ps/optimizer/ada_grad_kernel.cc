@@ -96,31 +96,23 @@ SparseAdaGradValue::SparseAdaGradValue(int dim, const AdaGrad* opt) {
     }
 
     g2sum_ = opt->initial_g2sum;
-    version_ = 0;
 }
 
 void SparseAdaGradValue::Apply(const AdaGrad* opt, SparseGradInfo& grad_info) {
-    version_++;
     show_ += grad_info.show;
 
     float* w = Weight();
 
     double add_g2sum = 0;
-    double g_scale = grad_info.show;
-    if (grad_info.version < Version()) {
-        g_scale *= sqrt(Version() - grad_info.version);
-    }
 
     for (int i = 0; i < dim_; ++i) {
-        double scaled_grad = grad_info.grad[i] / g_scale;
-        add_g2sum += scaled_grad * scaled_grad;
+        add_g2sum += grad_info.grad[i] * grad_info.grad[i];
     }
 
     g2sum_ += add_g2sum / dim_;
 
     for (int i = 0; i < dim_; ++i) {
-        double scaled_grad = grad_info.grad[i] / g_scale;
-        w[i] -= opt->learning_rate * scaled_grad / (opt->epsilon + sqrt(g2sum_));
+        w[i] -= opt->learning_rate * grad_info.grad[i] / (opt->epsilon + sqrt(g2sum_));
     }
 }
 
@@ -132,7 +124,6 @@ std::ostream& operator<<(std::ostream& os, const SparseAdaGradValue& value) {
     }
 
     os << value.g2sum_ << "\t";
-    os << value.version_ << "\t";
     os << value.show_;
 
     return os;
@@ -149,7 +140,6 @@ std::istream& operator>>(std::istream& is, SparseAdaGradValue& value) {
     }
 
     is >> value.g2sum_;
-    is >> value.version_;
     is >> value.show_;
 
     return is;

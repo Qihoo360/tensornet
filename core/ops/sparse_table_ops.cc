@@ -24,7 +24,6 @@ REGISTER_OP("SparseTablePull")
     .Input("resources: N * resource")
     .Input("values: N * int64")
     .Output("mapped_values: N * int64")
-    .Output("versions: N * int32")
     .Attr("table_handle: int")
     .Attr("N: int")
     .SetShapeFn([](shape_inference::InferenceContext* c) {
@@ -38,7 +37,6 @@ REGISTER_OP("SparseTablePull")
             TF_RETURN_IF_ERROR(c->WithRank(c->input(N + i), 1, &shape));
 
             c->set_output(i, shape);
-            c->set_output(N + i, shape);
         }
 
         return Status::OK();
@@ -50,7 +48,6 @@ REGISTER_OP("SparseTablePush")
     )doc")
     .Input("values: N * int64")
     .Input("grads: N * float")
-    .Input("versions: N * int32")
     .Attr("table_handle: int")
     .Attr("N: int")
     .SetShapeFn(shape_inference::NoOutputs);
