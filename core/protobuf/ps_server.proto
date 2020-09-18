@@ -4,31 +4,42 @@ package tensornet;
 
 option cc_generic_services = true;
 
+message SparsePullSignInfo {
+    uint32 var_index = 1;
+    uint64 sign = 2;
+    uint32 index = 3;
+};
+
 message SparsePullRequest {
     uint32 table_handle = 1;
     uint32 dim = 2;
 
-    repeated uint64 signs = 3;
+    repeated SparsePullSignInfo sign_infos = 3;
 };
 
-message VariableWeight {
+message SparsePullVariableInfo {
     uint64 sign = 1;
     repeated float w = 2;
-    int32 batch_show = 3;
 };
 
 message SparsePullResponse {
     uint32 table_handle = 1;
     uint32 dim = 2;
 
-    repeated VariableWeight weight = 3;
+    repeated SparsePullVariableInfo var_infos = 3;
+};
+
+message SparsePushVariableInfo {
+    uint64 sign = 1;
+    repeated float w = 2;
+    int32 batch_show = 3;
 };
 
 message SparsePushRequest {
     uint32 table_handle = 1;
     uint32 dim = 2;
 
-    repeated VariableWeight weight = 3;
+    repeated SparsePushVariableInfo var_infos = 3;
 };
 
 message SparsePushResponse {

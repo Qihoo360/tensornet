@@ -47,7 +47,8 @@ public:
     ~SparsePullCall() {}
 
     void AddRequestSign(uint64 sign) {
-        req.add_signs(sign);
+        auto sign_info =  req.add_sign_infos();
+        sign_info->set_sign(sign);
     }
 
     void Start(const tensornet::Callback& done) {
@@ -81,12 +82,12 @@ public:
     ~SparsePushCall() {}
 
     void AddRequestGrad(const SignInfo& sign_info, const float* grad_vec, int dim) {
-        VariableWeight* weight = req.add_weight();
-        weight->set_sign(sign_info.sign);
-        weight->set_batch_show(sign_info.batch_show);
+        auto var_info = req.add_var_infos();
+        var_info->set_sign(sign_info.sign);
+        var_info->set_batch_show(sign_info.batch_show);
 
         for (int i = 0; i < dim; i++) {
-            weight->add_w(grad_vec[i]);
+            var_info->add_w(grad_vec[i]);
         }
     }
 
@@ -262,9 +263,9 @@ private:
     Status PopulatePulledVariable_(const std::vector<SparsePullVarInfo>& var_infos,
                                    const std::map<uint64, std::vector<size_t>>& sign_varid,
                                    const SparsePullResponse& resp) {
-        for (int i = 0; i < resp.weight_size(); i++) {
-            const auto& weight = resp.weight(i);
-            uint64 sign = weight.sign();
+        for (int i = 0; i < resp.var_infos_size(); i++) {
+            const auto& resp_var_info = resp.var_infos(i);
+            uint64 sign = resp_var_info.sign();
 
             auto varid_iter = sign_varid.find(sign);
             CHECK(varid_iter != sign_varid.end());
@@ -283,8 +284,8 @@ private:
                 CHECK_EQ(resp.dim(), var_info.VarDim());
 
                 auto w_matrix = var_tensor->matrix<float>();
-                for (int j = 0; j < weight.w_size(); j++) {
-                    w_matrix(sign_index, j) = weight.w(j);
+                for (int j = 0; j < resp_var_info.w_size(); j++) {
+                    w_matrix(sign_index, j) = resp_var_info.w(j);
                 }
             }
         }
