@@ -1,8 +1,16 @@
 cc_library(
     name = "tensorflow",
-    hdrs = glob(["include/**"], exclude=["include/**/*.so"]),
-    srcs = glob(["lib/*.so", "lib/*.so.*"]),
+    srcs = [
+        "lib/libtensorflow_framework.so.2"
+    ],
     visibility = ["//visibility:public"],
-    licenses = ["notice"],
+)
+
+cc_library(
+    name = "tensorflow_py",
+    srcs = [
+        "lib/lib_pywrap_tensorflow_internal.so"
+    ],
+    visibility = ["//visibility:public"],
 )
 

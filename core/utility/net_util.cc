@@ -20,8 +20,7 @@
 #include <sys/ioctl.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-
-#include <butil/logging.h>
+#include <unistd.h>
 
 namespace tensornet {
 
@@ -33,9 +32,18 @@ std::string get_local_ip_internal() {
 
     ifconf.ifc_len = 512;
     ifconf.ifc_buf = buf;
-    PCHECK((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) >= 0);
-    PCHECK(ioctl(sockfd, SIOCGIFCONF, &ifconf) >= 0);
-    PCHECK(0 == close(sockfd));
+
+    if((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+        return "";
+    }
+
+    if(ioctl(sockfd, SIOCGIFCONF, &ifconf) < 0) {
+        return "";
+    }
+
+    if(0 != close(sockfd)) {
+        return "";
+    }
 
     ifreq = (struct ifreq*)buf;
     for (int i = 0; i < int(ifconf.ifc_len / sizeof(struct ifreq)); ++i) {
@@ -47,8 +55,6 @@ std::string get_local_ip_internal() {
 
         ifreq++;
     }
-
-    LOG(FATAL) << "IP not found";
 
     return "";
 }

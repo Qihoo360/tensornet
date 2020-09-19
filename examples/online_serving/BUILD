@@ -29,7 +29,7 @@ cc_binary(
     name = "tf_serving",
     srcs = [
         "main.cc",
-        "random.h",
+        "//core:random",
     ],
     deps = [
         "@boost//:algorithm",
