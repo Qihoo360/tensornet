@@ -94,8 +94,6 @@ public:
 
     virtual float* GetWeight(uint64_t sign) = 0;
 
-    virtual float* NewSignWithWeight(uint64_t sign) = 0;
-
     virtual void Apply(uint64_t sign, SparseGradInfo& grad_info) = 0;
 
     virtual void Serialized(const std::string& filepath) = 0;
@@ -325,24 +323,12 @@ public:
     float* GetWeight(uint64_t sign) {
         const std::lock_guard<std::mutex> lock(*mutex_);
 
-        auto iter = values_.find(sign);
-        if (iter == values_.end()) {
-            return nullptr;
-        } else {
-            ValueType* value = iter->second;
-
-            return value->Weight();
+        auto inserted = values_.insert({sign, nullptr});
+        if (inserted.second) {
+            inserted.first->second = alloc_.allocate(dim_, opt_);
         }
-    }
 
-    float* NewSignWithWeight(uint64_t sign) {
-        const std::lock_guard<std::mutex> lock(*mutex_);
-
-        ValueType* value = alloc_.allocate(dim_, opt_);
-
-        values_[sign] = value;
-
-        return value->Weight();
+        return inserted.first->second->Weight();
     }
 
     void Apply(uint64_t sign, SparseGradInfo& grad_info) {
@@ -430,11 +416,6 @@ public:
     float* GetWeight(uint64_t sign) {
         int block_num = GetBlockId_(sign);
         return blocks_[block_num].GetWeight(sign);
-    }
-
-    float* NewSignWithWeight(uint64_t sign) {
-        int block_num = GetBlockId_(sign);
-        return blocks_[block_num].NewSignWithWeight(sign);
     }
 
     void Apply(uint64_t sign, SparseGradInfo& grad_info) {

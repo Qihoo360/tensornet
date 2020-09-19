@@ -100,12 +100,14 @@ SparseAdamValue::SparseAdamValue(int dim, const Adam* opt) {
     auto& reng = local_random_engine();
     auto distribution = std::normal_distribution<float>(0, 1 / sqrt(Dim()));
 
-    for (int i = 0; i < Dim(); ++i) {
-        if (IsMiniDim_()) {
+    if (IsMiniDim_()) {
+        for (int i = 0; i < Dim(); ++i) {
             w_.v[i] = distribution(reng) * opt->initial_scale;
             m_.v[i] = 0;
             v_.v[i] = 0;
-        } else {
+        }
+    } else {
+        for (int i = 0; i < Dim(); ++i) {
             w_.p[i] = distribution(reng) * opt->initial_scale;
             m_.p[i] = 0;
             v_.p[i] = 0;

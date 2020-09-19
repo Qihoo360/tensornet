@@ -81,8 +81,10 @@ void BalanceInputDataInfo::ProcessBrpcDatasetPullReq(const DatasetPullRequest* r
 
     uint32_t balance_handle = req->balance_handle();
 
-    CHECK(op_elements_.count(balance_handle)) << "balance_handle " << balance_handle << " not registered.";
-    auto* elements = op_elements_[balance_handle];
+    auto iter = op_elements_.find(balance_handle);
+
+    CHECK(iter != op_elements_.end()) << "balance_handle " << balance_handle << " not registered.";
+    auto* elements = iter->second;
     std::vector<Tensor> tensors;
     if (elements->get(&tensors)) {
         VariantTensorData variant_tensor;

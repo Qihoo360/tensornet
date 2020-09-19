@@ -52,11 +52,7 @@ void SparseTable::Pull(const SparsePullRequest* req, SparsePullResponse* resp) {
         uint64_t sign = sign_info.sign();
 
         float* w = op_kernel_->GetWeight(sign);
-
-        if (nullptr == w) {
-            w = op_kernel_->NewSignWithWeight(sign);
-            CHECK(nullptr != w);
-        }
+        CHECK(nullptr != w);
 
         auto var_info = resp->add_var_infos();
         var_info->mutable_sign_info()->CopyFrom(sign_info);
