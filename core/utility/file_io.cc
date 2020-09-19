@@ -23,8 +23,6 @@
 #include "tensorflow/core/lib/io/zlib_inputstream.h"
 #include "tensorflow/core/lib/io/zlib_compression_options.h"
 
-#include <butil/logging.h>
-
 using tensorflow::io::ZlibOutputBuffer;
 using tensorflow::io::ZlibInputStream;
 using tensorflow::io::ZlibCompressionOptions;
@@ -149,7 +147,11 @@ FileReaderSource::~FileReaderSource() {
 std::streamsize FileReaderSource::read(char_type* str, std::streamsize n) {
     tensorflow::tstring buffer;
     auto s = reader_->GetInputStream()->ReadNBytes(n, &buffer);
-    CHECK_LE(buffer.size(), n);
+
+    if (buffer.size() > (size_t)n) {
+        // can't happen
+        return -1;
+    }
 
     if (buffer.size() == 0 && tensorflow::errors::IsOutOfRange(s)) {
         return -1;

@@ -15,7 +15,12 @@
 #ifndef TENSORNET_OPTIMIZER_ADAM_KERNEL_H_
 #define TENSORNET_OPTIMIZER_ADAM_KERNEL_H_
 
-#include "core/ps/optimizer/optimizer_kernel.h"
+#include "core/ps/optimizer/optimizer.h"
+
+#include <butil/iobuf.h>
+#include <Eigen/Dense>
+
+#include "core/ps/optimizer/data_struct.h"
 
 namespace tensornet {
 
@@ -50,8 +55,6 @@ private:
 
 std::ostream& operator<<(std::ostream& os, const DenseAdamValue& value);
 std::istream& operator>>(std::istream& is, DenseAdamValue& value);
-
-typedef DenseKernelBlock<Adam, DenseAdamValue> DenseAdamKernelBlock;
 
 struct SparseAdamValue {
 public:
@@ -147,8 +150,6 @@ private:
 
 std::ostream& operator<<(std::ostream& os, const SparseAdamValue& value);
 std::istream& operator>>(std::istream& is, SparseAdamValue& value);
-
-typedef SparseKernelBlock<Adam, SparseAdamValue> SparseAdamKernelBlock;
 
 } // namespace tensornet {
 

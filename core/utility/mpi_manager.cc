@@ -13,6 +13,9 @@
 // limitations under the License.
 
 #include "core/utility/mpi_manager.h"
+
+#include <unistd.h>
+
 #include "core/utility/net_util.h"
 
 namespace tensornet {

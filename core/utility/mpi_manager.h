@@ -19,8 +19,6 @@
 #include <string>
 #include <mpi.h>
 
-#include <butil/logging.h>
-
 namespace tensornet {
 
 class MpiManager {

@@ -15,7 +15,12 @@
 #ifndef TENSORNET_OPTIMIZER_ADA_GRAD_KERNEL_H_
 #define TENSORNET_OPTIMIZER_ADA_GRAD_KERNEL_H_
 
-#include "core/ps/optimizer/optimizer_kernel.h"
+#include "core/ps/optimizer/optimizer.h"
+
+#include <butil/iobuf.h>
+#include <Eigen/Dense>
+
+#include "core/ps/optimizer/data_struct.h"
 
 namespace tensornet {
 
@@ -47,8 +52,6 @@ private:
 
 std::ostream& operator<<(std::ostream& os, const DenseAdaGradValue& value);
 std::istream& operator>>(std::istream& is, DenseAdaGradValue& value);
-
-typedef DenseKernelBlock<AdaGrad, DenseAdaGradValue> DenseAdaGradKernelBlock;
 
 struct SparseAdaGradValue {
 public:
@@ -112,8 +115,6 @@ private:
 
 std::ostream& operator<<(std::ostream& os, const SparseAdaGradValue& value);
 std::istream& operator>>(std::istream& is, SparseAdaGradValue& value);
-
-typedef SparseKernelBlock<AdaGrad, SparseAdaGradValue> SparseAdaGradKernelBlock;
 
 }  // namespace tensornet
 

@@ -16,7 +16,16 @@
 #include "core/ps/optimizer/adam_kernel.h"
 #include "core/ps/optimizer/ada_grad_kernel.h"
 
+#include <memory>
+
 namespace tensornet {
+
+typedef DenseKernelBlock<Adam, DenseAdamValue> DenseAdamKernelBlock;
+typedef DenseKernelBlock<AdaGrad, DenseAdaGradValue> DenseAdaGradKernelBlock;
+
+typedef SparseKernelBlock<Adam, SparseAdamValue> SparseAdamKernelBlock;
+typedef SparseKernelBlock<AdaGrad, SparseAdaGradValue> SparseAdaGradKernelBlock;
+
 
 DenseOptKernelSharedPtr Adam::CreateDenseOptKernel(
     int offset_begin, int offset_end) const {

@@ -21,7 +21,7 @@ cc_library(
         "ops/sparse_table_ops.cc",
     ],
     hdrs = [
-        "utility/semaphore.h",
+        "//core/utility:semaphore",
     ],
     linkstatic = 1,
     deps = [
@@ -45,7 +45,7 @@ cc_library(
         "ops/dense_table_ops.cc",
     ],
     hdrs = [
-        "utility/semaphore.h",
+        "//core/utility:semaphore",
     ],
     linkstatic = 1,
     deps = [
@@ -98,21 +98,26 @@ pybind_extension(
         "kernels/dense_table_ops.cc",
         "kernels/data/balance_dataset_ops.cc",
         "main/*.cc",
-        "utility/*.cc",
     ]),
     hdrs = glob([
         "ps/*.h",
         "ps/table/*.h",
         "ps/optimizer/*.h",
         "ps/hash/*.h",
-        "utility/*.h",
         "kernels/data/balance_dataset_ops.h",
         "kernels/resource_var_wrapper.h",
-    ]),
+    ]) + [
+        "//core/utility:semaphore",
+        "//core/utility:allocator",
+        "//core/utility:random",
+    ],
     module_name = "_pywrap_tn",
     deps = [
         ":server_cc_proto",
+        "//core/utility:mpi_manager",
+        "//core/utility:file_io",
         "//thirdparty/tensorflow:tensorflow",
+        "//thirdparty/tensorflow:tensorflow_py",
         "//thirdparty/openmpi:openmpi",
         "@brpc//:brpc",
         "@pybind11",

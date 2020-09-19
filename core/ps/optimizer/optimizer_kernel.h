@@ -32,15 +32,12 @@
 #include "core/utility/file_io.h"
 #include "core/utility/allocator.h"
 
+#include "core/ps/optimizer/data_struct.h"
+
 namespace tensornet {
 
 static constexpr size_t DENSE_KERNEL_BLOCK_NUM = 8;
 static constexpr size_t SPARSE_KERNEL_BLOCK_NUM = 8;
-
-union UnionWeight {
-    float* p = nullptr;
-    float v[2];
-};
 
 class DenseOptimizerKernelBase {
 public:
@@ -79,11 +76,6 @@ public:
 private:
     int off_b_ = 0;
     int off_e_ = 0;
-};
-
-struct SparseGradInfo {
-    float* grad;
-    int batch_show;
 };
 
 class SparseOptimizerKernelBase {
