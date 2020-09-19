@@ -81,13 +81,9 @@ private:
     int off_e_ = 0;
 };
 
-struct SparseWeightInfo {
-    float* weight;
-};
-
 struct SparseGradInfo {
     float* grad;
-    int show;
+    int batch_show;
 };
 
 class SparseOptimizerKernelBase {
@@ -96,9 +92,7 @@ public:
 
     ~SparseOptimizerKernelBase() {}
 
-    virtual bool GetWeight(uint64_t sign, SparseWeightInfo& buf) = 0;
-
-    virtual bool NewSignWithWeight(uint64_t sign, SparseWeightInfo& buf) = 0;
+    virtual float* GetWeight(uint64_t sign) = 0;
 
     virtual void Apply(uint64_t sign, SparseGradInfo& grad_info) = 0;
 
@@ -326,30 +320,15 @@ public:
         }
     }
 
-    bool GetWeight(uint64_t sign, SparseWeightInfo& weight_info) {
+    float* GetWeight(uint64_t sign) {
         const std::lock_guard<std::mutex> lock(*mutex_);
 
-        auto iter = values_.find(sign);
-        if (iter == values_.end()) {
-            return false;
-        } else {
-            ValueType* value = iter->second;
-
-            weight_info.weight = value->Weight();
-
-            return true;
+        auto inserted = values_.insert({sign, nullptr});
+        if (inserted.second) {
+            inserted.first->second = alloc_.allocate(dim_, opt_);
         }
-    }
 
-    bool NewSignWithWeight(uint64_t sign, SparseWeightInfo& weight_info) {
-        const std::lock_guard<std::mutex> lock(*mutex_);
-
-        ValueType* value = alloc_.allocate(dim_, opt_);
-        weight_info.weight = value->Weight();
-
-        values_[sign] = value;
-
-        return true;
+        return inserted.first->second->Weight();
     }
 
     void Apply(uint64_t sign, SparseGradInfo& grad_info) {
@@ -434,14 +413,9 @@ public:
 
     ~SparseOptimizerKernel() = default;
 
-    bool GetWeight(uint64_t sign, SparseWeightInfo& weight_info) {
+    float* GetWeight(uint64_t sign) {
         int block_num = GetBlockId_(sign);
-        return blocks_[block_num].GetWeight(sign, weight_info);
-    }
-
-    bool NewSignWithWeight(uint64_t sign, SparseWeightInfo& weight_info) {
-        int block_num = GetBlockId_(sign);
-        return blocks_[block_num].NewSignWithWeight(sign, weight_info);
+        return blocks_[block_num].GetWeight(sign);
     }
 
     void Apply(uint64_t sign, SparseGradInfo& grad_info) {

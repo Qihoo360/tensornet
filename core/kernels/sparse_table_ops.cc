@@ -46,8 +46,11 @@ public:
 
     ~SparsePullCall() {}
 
-    void AddRequestSign(uint64 sign) {
-        req.add_signs(sign);
+    void AddRequestSign(size_t var_index, size_t sign_index, uint64 sign) {
+        auto sign_info = req.add_sign_infos();
+        sign_info->set_var_index(var_index);
+        sign_info->set_sign(sign);
+        sign_info->set_index(sign_index);
     }
 
     void Start(const tensornet::Callback& done) {
@@ -81,12 +84,12 @@ public:
     ~SparsePushCall() {}
 
     void AddRequestGrad(const SignInfo& sign_info, const float* grad_vec, int dim) {
-        VariableWeight* weight = req.add_weight();
-        weight->set_sign(sign_info.sign);
-        weight->set_show(sign_info.batch_show);
+        auto var_info = req.add_var_infos();
+        var_info->set_sign(sign_info.sign);
+        var_info->set_batch_show(sign_info.batch_show);
 
         for (int i = 0; i < dim; i++) {
-            weight->add_w(grad_vec[i]);
+            var_info->add_w(grad_vec[i]);
         }
     }
 
@@ -107,20 +110,29 @@ private:
 
 struct SparsePullVarInfo {
 public:
-    SparsePullVarInfo(tensorflow::Var* t_var, const tensorflow::Tensor* value)
+    SparsePullVarInfo(tensorflow::Var* t_var,
+                      const tensorflow::Tensor* value, Tensor* out_tensor)
         : var(t_var)
-        , sign_value(value) {
+        , sign_value(value) 
+        , out_tensor(out_tensor) {
         const int64* feasign_vec = value->flat<int64>().data();
+        int64* out_vec = out_tensor->flat<int64>().data();
 
+        std::map<uint64, size_t> sign_id_mapping;
         for (int i = 0; i < value->NumElements(); ++i) {
             const uint64 sign = (uint64)feasign_vec[i];
-            sign_id_mapping.insert({sign, sign_id_mapping.size()});
+            auto inserted = sign_id_mapping.insert({sign, sign_id_mapping.size()});
+            if (inserted.second) {
+                signs.push_back(sign);
+            }
+
+            out_vec[i] = inserted.first->second;
         }
 
         const Tensor* var_tensor = var->tensor();
 
         const uint64 max_var_count = var_tensor->shape().dim_size(0);
-        CHECK_LT(sign_id_mapping.size(), max_var_count);
+        CHECK_LT(signs.size(), max_var_count);
     }
 
     int VarDim() const {
@@ -138,10 +150,12 @@ public:
     // its store feature signs of one feature_column in one batch
     const tensorflow::Tensor* sign_value;
 
+    Tensor* out_tensor;
+
     // in order to use embedding_lookup, we must map the feature sign into index
     // which will not exceed *var* first dimension(max_var_count)
     // the mapping id begin from 0, depend on signs order in sign_value 
-    std::map<uint64, size_t> sign_id_mapping;
+    std::vector<uint64> signs;
 };
 
 class SparseTablePullKernel : public AsyncOpKernel {
@@ -158,7 +172,6 @@ public:
                                                   c->num_inputs(),
                                                   " not equal:", N_ * 2),
                           done);
-
         std::vector<SparsePullVarInfo> var_infos;
 
         for (int i = 0; i < N_; i++) {
@@ -171,6 +184,10 @@ public:
             CHECK(variable);
 
             const Tensor* var_tensor = variable->tensor();
+            Tensor* out_tensor = nullptr;
+            const Tensor* sign_value = &c->input(N_ + i);
+
+            OP_REQUIRES_OK_ASYNC(c, c->allocate_output(i, sign_value->shape(), &out_tensor), done);
 
             OP_REQUIRES_ASYNC(
                 c, TensorShapeUtils::IsMatrix(var_tensor->shape()),
@@ -179,7 +196,7 @@ public:
                     var_tensor->shape().DebugString()),
                 done);
 
-            SparsePullVarInfo var_info(variable, &c->input(N_ + i));
+            SparsePullVarInfo var_info(variable, sign_value, out_tensor);
 
             var_infos.emplace_back(var_info);
         }
@@ -204,29 +221,20 @@ public:
                 new SparsePullCall(table_handle_, shard_id, dim));
         }
 
-        std::map<uint64, std::vector<size_t>> sign_varid;
+        for (size_t var_index = 0; var_index < var_infos.size(); var_index++) {
+            for (size_t sign_index = 0; sign_index < var_infos[var_index].signs.size(); sign_index++) {
+                const uint64 sign = var_infos[var_index].signs[sign_index];
 
-        for (size_t i = 0; i < var_infos.size(); i++) {
-            for (const auto& sign_iter : var_infos[i].sign_id_mapping) {
-                uint64 sign = sign_iter.first;
-
-                const auto ret = sign_varid.insert({sign, {i}});
-
-                // filtered repeated
-                if (ret.second) {
-                    int shard_id = sign % cluster->RankNum();
-                    calls[shard_id]->AddRequestSign(sign);
-                } else {
-                    ret.first->second.push_back(i);
-                }
+                int shard_id = sign % cluster->RankNum();
+                calls[shard_id]->AddRequestSign(var_index, sign_index, sign);
             }
         }
 
         Semaphore semaphore(calls.size());
 
         for (auto& call : calls) {
-            call->Start([this, call, &var_infos, &sign_varid, &semaphore]() {
-                auto status = PopulatePulledVariable_(var_infos, sign_varid, call->resp);
+            call->Start([this, call, &var_infos, &semaphore]() {
+                auto status = PopulatePulledVariable_(var_infos, call->resp);
                 if (!status.ok()) {
                     LOG(INFO) << "populate variable fail:" << status.ToString();
                 }
@@ -237,55 +245,33 @@ public:
 
         semaphore.WaitForSemaphore();
 
-        // allocate output
-        for (int i = 0; i < N_; i++) {
-            Tensor* out_tensor = nullptr;
-
-            const Tensor* value = var_infos[i].sign_value;
-            OP_REQUIRES_OK_ASYNC(c, c->allocate_output(i, value->shape(), &out_tensor), done);
-
-            const int64* feasign_vec = value->flat<int64>().data();
-            int64* out = out_tensor->flat<int64>().data();
-
-            for (int j = 0; j < value->NumElements(); ++j) {
-                const uint64 sign = (uint64)feasign_vec[j];
-                out[j] = var_infos[i].sign_id_mapping[sign];
-            }
-        }
-
         done();
 
         return;
     }
 
 private:
-    Status PopulatePulledVariable_(const std::vector<SparsePullVarInfo>& var_infos,
-                                   const std::map<uint64, std::vector<size_t>>& sign_varid,
+    Status PopulatePulledVariable_(std::vector<SparsePullVarInfo>& var_infos,
                                    const SparsePullResponse& resp) {
-        for (int i = 0; i < resp.weight_size(); i++) {
-            const auto& weight = resp.weight(i);
-            uint64 sign = weight.sign();
+        for (int i = 0; i < resp.var_infos_size(); i++) {
+            const auto& resp_var_info = resp.var_infos(i);
+            auto& sign_info = resp_var_info.sign_info();
 
-            auto varid_iter = sign_varid.find(sign);
-            CHECK(varid_iter != sign_varid.end());
+            size_t var_index = sign_info.var_index();
+            size_t sign_index = sign_info.index();
 
-            for (auto& var_index : varid_iter->second) {
-                auto& var_info = var_infos[var_index];
+            CHECK_LT(var_index, var_infos.size());
 
-                auto sign_id_iter = var_info.sign_id_mapping.find(sign);
-                CHECK(sign_id_iter != var_info.sign_id_mapping.end());
+            auto& var_info = var_infos[var_index];
 
-                int sign_index = sign_id_iter->second;
+            mutex_lock ml(*var_info.var->mu());
+            Tensor* var_tensor = var_info.var->tensor();
 
-                mutex_lock ml(*var_info.var->mu());
-                Tensor* var_tensor = var_info.var->tensor();
+            CHECK_EQ(resp.dim(), var_info.VarDim());
 
-                CHECK_EQ(resp.dim(), var_info.VarDim());
-
-                auto w_matrix = var_tensor->matrix<float>();
-                for (int j = 0; j < weight.w_size(); j++) {
-                    w_matrix(sign_index, j) = weight.w(j);
-                }
+            auto w_matrix = var_tensor->matrix<float>();
+            for (int j = 0; j < resp_var_info.w_size(); j++) {
+                w_matrix(sign_index, j) = resp_var_info.w(j);
             }
         }
 

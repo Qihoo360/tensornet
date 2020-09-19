@@ -87,10 +87,12 @@ SparseAdaGradValue::SparseAdaGradValue(int dim, const AdaGrad* opt) {
     auto& reng = local_random_engine();
     auto distribution = std::normal_distribution<float>(0, 1 / sqrt(Dim()));
 
-    for (int i = 0; i < Dim(); ++i) {
-        if (IsMiniDim_()) {
+    if (IsMiniDim_()) {
+        for (int i = 0; i < Dim(); ++i) {
             w_.v[i] = distribution(reng) * opt->initial_scale;
-        } else {
+        }
+    } else {
+        for (int i = 0; i < Dim(); ++i) {
             w_.p[i] = distribution(reng) * opt->initial_scale;
         }
     }
@@ -99,7 +101,7 @@ SparseAdaGradValue::SparseAdaGradValue(int dim, const AdaGrad* opt) {
 }
 
 void SparseAdaGradValue::Apply(const AdaGrad* opt, SparseGradInfo& grad_info) {
-    show_ += grad_info.show;
+    show_ += grad_info.batch_show;
 
     float* w = Weight();
 

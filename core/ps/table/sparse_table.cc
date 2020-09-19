@@ -46,24 +46,20 @@ void SparseTable::Pull(const SparsePullRequest* req, SparsePullResponse* resp) {
     CHECK_EQ(dim_, req->dim());
     resp->set_dim(req->dim());
 
-    for (int i = 0; i < req->signs_size(); ++i) {
-        SparseWeightInfo weight_info;
-        uint64_t sign = req->signs(i);
+    for (int i = 0; i < req->sign_infos_size(); ++i) {
+        const SparsePullSignInfo& sign_info = req->sign_infos(i);
 
-        if (false == op_kernel_->GetWeight(sign, weight_info)) {
-            weight_info.weight = nullptr;
+        uint64_t sign = sign_info.sign();
 
-            CHECK(op_kernel_->NewSignWithWeight(sign, weight_info));
-            CHECK(nullptr != weight_info.weight);
-        }
+        float* w = op_kernel_->GetWeight(sign);
+        CHECK(nullptr != w);
 
-        VariableWeight* weight = resp->add_weight();
+        auto var_info = resp->add_var_infos();
+        var_info->mutable_sign_info()->CopyFrom(sign_info);
 
-        weight->set_sign(sign);
-
-        // weight_info.weight size is guaranteed by op_kernel_ same with dim_
+        // w size is guaranteed by op_kernel_ same with dim_
         for (int j = 0; j < dim_; j++) {
-            weight->add_w(weight_info.weight[j]);
+            var_info->add_w(w[j]);
         }
     }
 }
@@ -73,20 +69,20 @@ void SparseTable::Push(const SparsePushRequest* req, SparsePushResponse* resp) {
 
     std::vector<float> grad(dim_);
 
-    for (int i = 0; i < req->weight_size(); i++) {
-        const VariableWeight& weight = req->weight(i);
+    for (int i = 0; i < req->var_infos_size(); i++) {
+        const auto& var_info = req->var_infos(i);
 
-        CHECK_EQ(weight.w_size(), dim_);
+        CHECK_EQ(var_info.w_size(), dim_);
 
-        for (int j = 0; j < weight.w_size(); j++) {
-            grad[j] = weight.w(j);
+        for (int j = 0; j < var_info.w_size(); j++) {
+            grad[j] = var_info.w(j);
         }
 
         SparseGradInfo grad_info;
         grad_info.grad = grad.data();
-        grad_info.show = weight.show();
+        grad_info.batch_show = var_info.batch_show();
 
-        op_kernel_->Apply(weight.sign(), grad_info);
+        op_kernel_->Apply(var_info.sign(), grad_info);
     }
 }
 
