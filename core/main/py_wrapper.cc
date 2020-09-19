@@ -143,7 +143,9 @@ PYBIND11_MODULE(_pywrap_tn, m) {
         OptimizerBase* opt =
                static_cast<OptimizerBase*>(PyCapsule_GetPointer(obj.ptr(), nullptr));
 
-        SparseTable* table = CreateSparseTable(opt, dimension);
+        PsCluster* cluster = PsCluster::Instance();
+
+        SparseTable* table = CreateSparseTable(opt, dimension, cluster->RankNum(), cluster->Rank());
 
         return table->GetHandle();
     })
@@ -151,7 +153,9 @@ PYBIND11_MODULE(_pywrap_tn, m) {
          OptimizerBase* opt =
                static_cast<OptimizerBase*>(PyCapsule_GetPointer(obj.ptr(), nullptr));
 
-        DenseTable* table = CreateDenseTable(opt);
+        PsCluster* cluster = PsCluster::Instance();
+
+        DenseTable* table = CreateDenseTable(opt, cluster->RankNum(), cluster->Rank());
 
         return table->GetHandle();
     })

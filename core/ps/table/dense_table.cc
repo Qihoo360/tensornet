@@ -15,7 +15,7 @@
 #include "core/ps/table/dense_table.h"
 #include "core/ps/optimizer/optimizer.h"
 #include "core/ps/optimizer/optimizer_kernel.h"
-#include "core/ps/ps_cluster.h"
+
 #include "core/utility/file_io.h"
 
 #include <cmath>
@@ -26,8 +26,10 @@
 
 namespace tensornet {
 
-DenseTable::DenseTable(const OptimizerBase* opt)
-    : total_elements_(0)
+DenseTable::DenseTable(const OptimizerBase* opt, int shard_num, int self_shard_id)
+    : shard_num_(shard_num)
+    , self_shard_id_(self_shard_id)
+    , total_elements_(0)
     , opt_(opt) {
     CHECK(opt_ != nullptr);
 }
@@ -38,10 +40,9 @@ int DenseTable::Init(int total_elements) {
         return 0;
     }
 
-    int shard_num = PsCluster::Instance()->RankNum();
-    int every_kernel_size = std::ceil(total_elements * 1.0 / shard_num);
+    int every_kernel_size = std::ceil(total_elements * 1.0 / shard_num_);
 
-    for (int i = 0; i < shard_num; i++) {
+    for (int i = 0; i < shard_num_; i++) {
         int offset_begin = i * every_kernel_size;
         int offset_end = (i + 1) * every_kernel_size;
 
@@ -53,7 +54,7 @@ int DenseTable::Init(int total_elements) {
             offset_end = total_elements;
         }
 
-        if (i == PsCluster::Instance()->Rank()) {
+        if (i == self_shard_id_) {
             LOG(INFO) << "init dense table:" << GetHandle() << " shard_id:" << i
                       << " elements:" << total_elements
                       << " begin:" << offset_begin << " end:" << offset_end;
@@ -100,22 +101,20 @@ const DenseOptKernelSharedPtr DenseTable::GetOptKernels(int shard_id) const {
 void DenseTable::Save(std::string filepath) const {
     butil::Timer timer(butil::Timer::STARTED);
 
-    int shard_id = PsCluster::Instance()->Rank();
-
-    const auto& opt_kernel = GetOptKernels(shard_id);
+    const auto& opt_kernel = GetOptKernels(self_shard_id_);
     if (nullptr == opt_kernel) {
         return;
     }
 
     std::string file = filepath + "/dense_table/" + std::to_string(GetHandle())
-                            + "/" + std::to_string(shard_id);
+                            + "/" + std::to_string(self_shard_id_);
 
     FileWriterSink writer_sink(file);
 
     boost::iostreams::stream<FileWriterSink> out_stream(writer_sink);
 
     out_stream << "total_elements:" << total_elements_ << std::endl;
-    out_stream << "rank_num:" << PsCluster::Instance()->RankNum() << std::endl;
+    out_stream << "rank_num:" << shard_num_ << std::endl;
 
     opt_kernel->Serialized(out_stream);
 
@@ -123,7 +122,7 @@ void DenseTable::Save(std::string filepath) const {
 
     timer.stop();
 
-    LOG(INFO) << "DenseTable save, shard_id:" << shard_id
+    LOG(INFO) << "DenseTable save, shard_id:" << self_shard_id_
         << " size:" << opt_kernel->DataSize()
         << " latency:" << timer.s_elapsed() << "s";
 }
@@ -131,14 +130,13 @@ void DenseTable::Save(std::string filepath) const {
 void DenseTable::Load(std::string filepath) {
     butil::Timer timer(butil::Timer::STARTED);
 
-    int shard_id = PsCluster::Instance()->Rank();
-    const auto& opt_kernel = GetOptKernels(shard_id);
+    const auto& opt_kernel = GetOptKernels(self_shard_id_);
     if (nullptr == opt_kernel) {
         return;
     }
 
     std::string file = filepath + "/dense_table/" + std::to_string(GetHandle())
-                            + "/" + std::to_string(shard_id);
+                            + "/" + std::to_string(self_shard_id_);
 
     FileReaderSource reader_source(file);
     boost::iostreams::stream<FileReaderSource> in_stream(reader_source);
@@ -147,14 +145,14 @@ void DenseTable::Load(std::string filepath) {
     in_stream.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> total_elements_;
     in_stream.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> rank_num;
 
-    CHECK_EQ(PsCluster::Instance()->RankNum(), rank_num);
+    CHECK_EQ(shard_num_, rank_num);
 
     CHECK_EQ(0, Init(total_elements_));
     opt_kernel->DeSerialized(in_stream);
 
     timer.stop();
 
-    LOG(INFO) << "DenseTable load, shard_id:" << shard_id
+    LOG(INFO) << "DenseTable load, shard_id:" << self_shard_id_
         << " size:" << opt_kernel->DataSize()
         << " latency:" << timer.s_elapsed() << "s";
 }
@@ -181,8 +179,8 @@ DenseTable* DenseTableRegistry::Get(uint32_t table_handle) {
     return tables_[table_handle];
 }
 
-DenseTable* CreateDenseTable(const OptimizerBase* opt) {
-    DenseTable* table = new DenseTable(opt);
+DenseTable* CreateDenseTable(const OptimizerBase* opt, int shard_num, int self_shard_id) {
+    DenseTable* table = new DenseTable(opt, shard_num, self_shard_id);
 
     table->SetHandle(DenseTableRegistry::Instance()->Register(table));
 

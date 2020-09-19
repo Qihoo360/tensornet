@@ -23,6 +23,8 @@ TEST(allocator, perf) {
 
     timer.stop();
 
+    LOG(INFO) << "allocate time:" << timer.u_elapsed();
+
     EXPECT_LT(timer.u_elapsed(), 10000);
 }
 

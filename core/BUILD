@@ -87,35 +87,64 @@ tf_gen_op_wrapper_py(
     cc_linkopts = ['-lrt'],
 )
 
+cc_library(
+    name = "_ps_optimizer",
+    srcs = glob([
+        "ps/optimizer/*.cc",
+    ]),
+    hdrs = glob([
+        "ps/optimizer/*.h",
+    ]) + [
+        "//core/utility:random",
+        "//core/utility:allocator",
+    ],
+    deps = [
+        "//core/utility:file_io",
+        "@brpc//:brpc",
+        "@boost//:iostreams",
+        "@org_tensorflow//third_party/eigen3:eigen3",
+    ]
+)
+
+cc_library(
+    name = "_ps_table",
+    srcs = glob([
+        "ps/table/*.cc",
+    ]),
+    hdrs = glob([
+        "ps/table/*.h",
+    ]) + [
+    ],
+    deps = [
+        ":server_cc_proto",
+        ":_ps_optimizer",
+        "@brpc//:brpc",
+    ]
+)
+
 pybind_extension(
     name = "_pywrap_tn",
     srcs = glob([
         "ps/*.cc",
-        "ps/optimizer/*.cc",
-        "ps/table/*.cc",
         "ops/*.cc",
+        "main/*.cc",
+    ]) + [
         "kernels/sparse_table_ops.cc",
         "kernels/dense_table_ops.cc",
         "kernels/data/balance_dataset_ops.cc",
-        "main/*.cc",
-    ]),
+    ],
     hdrs = glob([
         "ps/*.h",
-        "ps/table/*.h",
-        "ps/optimizer/*.h",
-        "ps/hash/*.h",
+    ]) + [
         "kernels/data/balance_dataset_ops.h",
         "kernels/resource_var_wrapper.h",
-    ]) + [
         "//core/utility:semaphore",
-        "//core/utility:allocator",
-        "//core/utility:random",
     ],
     module_name = "_pywrap_tn",
     deps = [
         ":server_cc_proto",
+        ":_ps_table",
         "//core/utility:mpi_manager",
-        "//core/utility:file_io",
         "//thirdparty/tensorflow:tensorflow",
         "//thirdparty/tensorflow:tensorflow_py",
         "//thirdparty/openmpi:openmpi",
@@ -128,6 +157,5 @@ pybind_extension(
         "@org_tensorflow//tensorflow/core/kernels/data:name_utils",
         "@org_tensorflow//tensorflow/python:pybind11_status",
         "@org_tensorflow//tensorflow/python:pybind11_lib",
-        "@org_tensorflow//third_party/eigen3:eigen3",
     ]
 )
