@@ -1,8 +1,8 @@
 cc_test(
-    name = "allocator_test",
+    name = "optimizer_test",
     srcs = [
-        "allocator_test.cc",
-        "//core/utility:allocator",
+        "optimizer_kernel_test.cc",
+        "//core/utility:random",
     ],
     deps = [
         "//core:_ps_optimizer",
