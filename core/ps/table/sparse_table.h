@@ -31,7 +31,8 @@ namespace tensornet {
 
 class SparseTable {
 public:
-    SparseTable(const OptimizerBase* opt, int dimension);
+    SparseTable(const OptimizerBase* opt, int dimension,
+            int shard_num, int self_shard_id);
 
     ~SparseTable() = default;
 
@@ -52,6 +53,8 @@ public:
     void ShowDecay() const;
 
 private:
+    int shard_num_ = 0;
+    int self_shard_id_ = 0;
     uint32_t handle_ = 0;
     const OptimizerBase* opt_ = nullptr;
     std::shared_ptr<SparseOptimizerKernelBase> op_kernel_;
@@ -80,7 +83,8 @@ private:
     std::vector<SparseTable*> tables_;
 };
 
-SparseTable* CreateSparseTable(const OptimizerBase* opt, int dimension);
+SparseTable* CreateSparseTable(const OptimizerBase* opt, int dimension,
+        int shard_num, int self_shard_id);
 
 }  // namespace tensornet
 

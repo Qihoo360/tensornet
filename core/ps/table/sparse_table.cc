@@ -22,12 +22,14 @@
 #include <butil/object_pool.h>
 
 #include "core/ps/optimizer/optimizer_kernel.h"
-#include "core/ps/ps_cluster.h"
 
 namespace tensornet {
 
-SparseTable::SparseTable(const OptimizerBase* opt, int dimension)
-    : opt_(opt)
+SparseTable::SparseTable(const OptimizerBase* opt, int dimension,
+        int shard_num, int self_shard_id)
+    : shard_num_(shard_num)
+    , self_shard_id_(self_shard_id)
+    , opt_(opt)
     , dim_(dimension) {
     CHECK(opt_ != nullptr);
 
@@ -89,16 +91,14 @@ void SparseTable::Push(const SparsePushRequest* req, SparsePushResponse* resp) {
 void SparseTable::Save(const std::string& filepath) const {
     butil::Timer timer(butil::Timer::STARTED);
 
-    int shard_id = PsCluster::Instance()->Rank();
-
     std::string file = filepath + "/sparse_table/" + std::to_string(GetHandle())
-                             + "/rank_" + std::to_string(shard_id);
+                             + "/rank_" + std::to_string(self_shard_id_);
 
     op_kernel_->Serialized(file);
 
     timer.stop();
 
-    LOG(INFO) << "SparseTable save. rank:" << shard_id
+    LOG(INFO) << "SparseTable save. rank:" << self_shard_id_
               << " table_id:" << GetHandle()
               << " latency:" << timer.s_elapsed() << "s"
               << " keys_count:" << op_kernel_->KeyCount();
@@ -107,15 +107,13 @@ void SparseTable::Save(const std::string& filepath) const {
 void SparseTable::Load(const std::string& filepath) const {
     butil::Timer timer(butil::Timer::STARTED);
 
-    int shard_id = PsCluster::Instance()->Rank();
-
     std::string file = filepath + "/sparse_table/" + std::to_string(GetHandle())
-                             + "/rank_" + std::to_string(shard_id);
+                             + "/rank_" + std::to_string(self_shard_id_);
     op_kernel_->DeSerialized(file);
 
     timer.stop();
 
-    LOG(INFO) << "SparseTable load. rank:" << shard_id
+    LOG(INFO) << "SparseTable load. rank:" << self_shard_id_
               << " table_id:" << GetHandle()
               << " latency:" << timer.s_elapsed() << "s"
               << " keys_count:" << op_kernel_->KeyCount();
@@ -144,8 +142,9 @@ uint32_t SparseTableRegistry::Register(SparseTable* table) {
     return table_handle;
 }
 
-SparseTable* CreateSparseTable(const OptimizerBase* opt, int dimension) {
-    SparseTable* table = new SparseTable(opt, dimension);
+SparseTable* CreateSparseTable(const OptimizerBase* opt, int dimension,
+        int shard_num, int self_shard_id) {
+    SparseTable* table = new SparseTable(opt, dimension, shard_num, self_shard_id);
 
     table->SetHandle(SparseTableRegistry::Instance()->Register(table));
 

@@ -30,7 +30,7 @@ namespace tensornet {
 class DenseTable
 {
 public:
-    DenseTable(const OptimizerBase* opt);
+    DenseTable(const OptimizerBase* opt, int shard_num, int self_shard_id);
 
     ~DenseTable() = default;
 
@@ -55,6 +55,8 @@ public:
     void Load(std::string filepath);
 
 private:
+    int shard_num_ = 0;
+    int self_shard_id_ = 0;
     uint32_t handle_ = 0;
     int total_elements_ = 0;
     const OptimizerBase* opt_ = nullptr;
@@ -86,7 +88,7 @@ private:
     std::vector<DenseTable*> tables_;
 };
 
-DenseTable* CreateDenseTable(const OptimizerBase* opt);
+DenseTable* CreateDenseTable(const OptimizerBase* opt, int shard_num, int self_shard_id);
 
 } // namespace tensornet {
 
