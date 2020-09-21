@@ -37,6 +37,8 @@ public:
         , useable_block_(nullptr) {
         CHECK_GE(type_sizeof, sizeof(T));
         CHECK_GE(type_sizeof, sizeof(Block));
+
+        create_new_pool_();
     }
 
     ~Allocator() {

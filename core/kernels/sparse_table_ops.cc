@@ -47,10 +47,9 @@ public:
     ~SparsePullCall() {}
 
     void AddRequestSign(size_t var_index, size_t sign_index, uint64 sign) {
-        auto sign_info = req.add_sign_infos();
-        sign_info->set_var_index(var_index);
-        sign_info->set_sign(sign);
-        sign_info->set_index(sign_index);
+        req.add_signs(sign);
+
+        call_sign_infos.push_back({var_index, sign_index});
     }
 
     void Start(const tensornet::Callback& done) {
@@ -63,6 +62,8 @@ public:
     brpc::Controller cntl;
     SparsePullRequest req;
     SparsePullResponse resp;
+
+    std::vector<std::pair<size_t, size_t>> call_sign_infos;
 
 private:
     int shard_id_ = -1;
@@ -234,7 +235,7 @@ public:
 
         for (auto& call : calls) {
             call->Start([this, call, &var_infos, &semaphore]() {
-                auto status = PopulatePulledVariable_(var_infos, call->resp);
+                auto status = PopulatePulledVariable_(var_infos, call->call_sign_infos, call->resp);
                 if (!status.ok()) {
                     LOG(INFO) << "populate variable fail:" << status.ToString();
                 }
@@ -252,13 +253,15 @@ public:
 
 private:
     Status PopulatePulledVariable_(std::vector<SparsePullVarInfo>& var_infos,
+                                   const std::vector<std::pair<size_t, size_t>>& call_sign_infos,
                                    const SparsePullResponse& resp) {
-        for (int i = 0; i < resp.var_infos_size(); i++) {
-            const auto& resp_var_info = resp.var_infos(i);
-            auto& sign_info = resp_var_info.sign_info();
+        CHECK_EQ(resp.weights_size(), call_sign_infos.size());
 
-            size_t var_index = sign_info.var_index();
-            size_t sign_index = sign_info.index();
+        for (int i = 0; i < resp.weights_size(); i++) {
+            const auto& resp_weights = resp.weights(i);
+
+            size_t var_index = call_sign_infos[i].first;
+            size_t sign_index = call_sign_infos[i].second;
 
             CHECK_LT(var_index, var_infos.size());
 
@@ -270,8 +273,8 @@ private:
             CHECK_EQ(resp.dim(), var_info.VarDim());
 
             auto w_matrix = var_tensor->matrix<float>();
-            for (int j = 0; j < resp_var_info.w_size(); j++) {
-                w_matrix(sign_index, j) = resp_var_info.w(j);
+            for (int j = 0; j < resp_weights.w_size(); j++) {
+                w_matrix(sign_index, j) = resp_weights.w(j);
             }
         }
 
