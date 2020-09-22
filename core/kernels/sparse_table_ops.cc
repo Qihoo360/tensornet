@@ -267,7 +267,6 @@ private:
 
             auto& var_info = var_infos[var_index];
 
-            mutex_lock ml(*var_info.var->mu());
             Tensor* var_tensor = var_info.var->tensor();
 
             CHECK_EQ(resp.dim(), var_info.VarDim());
@@ -384,15 +383,12 @@ public:
             }
         }
 
-        Semaphore semaphore(calls.size());
         for (auto& call : calls) {
-            call->Start([this, c, call, &semaphore]() {
-                semaphore.Notify();
+            call->Start([this, call]() {
                 delete call;
             });
         }
 
-        semaphore.WaitForSemaphore();
         done();
     }
 

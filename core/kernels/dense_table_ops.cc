@@ -54,7 +54,6 @@ public:
 
     void Start(const tensornet::Callback& done) {
         cntl.http_request().set_method(brpc::HTTP_METHOD_POST);
-        cntl.set_request_compress_type(brpc::COMPRESS_TYPE_GZIP);
 
         const PsServerInterface* si =
             PsCluster::Instance()->GetServer(shard_id_);
@@ -212,7 +211,6 @@ public:
                 for (int i = 0, offset = 0; i < (int)variables.size(); ++i) {
                     Var* variable = variables[i];
 
-                    mutex_lock ml(*variable->mu());
                     Tensor *var_tensor = variable->tensor();
                     float* var_data = var_tensor->flat<float>().data();
 
