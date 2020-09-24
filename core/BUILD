@@ -161,3 +161,33 @@ pybind_extension(
         "@org_tensorflow//tensorflow/python:pybind11_lib",
     ]
 )
+
+filegroup(
+    name = "graph",
+    srcs = [
+        "tools/graph.cc",
+        "tools/graph_c.o",
+        "tools/graph.h",
+        "tools/object_pool.h",
+        "tools/dual_dict.h",
+    ],
+)
+
+cc_binary(
+    name = "libmodel.so",
+    srcs = [":graph"],
+    deps = [
+        "@org_tensorflow//tensorflow/compiler/tf2xla:xla_compiled_cpu_function",
+        "@org_tensorflow//tensorflow/core:framework_lite",
+        "@org_tensorflow//tensorflow/compiler/xla/service/cpu:runtime_conv2d",
+        "@org_tensorflow//tensorflow/compiler/xla/service/cpu:runtime_key_value_sort",
+        "@org_tensorflow//tensorflow/compiler/xla/service/cpu:runtime_matmul",
+        "@org_tensorflow//tensorflow/compiler/xla/service/cpu:runtime_single_threaded_conv2d",
+        "@org_tensorflow//tensorflow/compiler/xla/service/cpu:runtime_single_threaded_matmul",
+        "@org_tensorflow//third_party/eigen3:eigen3",
+        "@boost//:algorithm",
+    ],
+    linkshared = 1,
+    linkopts = ["-lpthread"],
+    copts = ["-fPIC"],
+)
