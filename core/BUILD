@@ -103,7 +103,8 @@ cc_library(
         "@brpc//:brpc",
         "@boost//:iostreams",
         "@org_tensorflow//third_party/eigen3:eigen3",
-    ]
+    ],
+    visibility = ["//visibility:public"],
 )
 
 cc_library(
@@ -119,7 +120,8 @@ cc_library(
         ":server_cc_proto",
         ":_ps_optimizer",
         "@brpc//:brpc",
-    ]
+    ],
+    visibility = ["//visibility:public"],
 )
 
 pybind_extension(

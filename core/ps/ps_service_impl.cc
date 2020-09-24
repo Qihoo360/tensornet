@@ -28,7 +28,6 @@ void PsServiceImpl::SparsePull(google::protobuf::RpcController* cntl_base,
                                SparsePullResponse* response,
                                google::protobuf::Closure* done) {
     brpc::Controller* cntl = static_cast<brpc::Controller*>(cntl_base);
-    cntl->set_response_compress_type(brpc::COMPRESS_TYPE_GZIP);
 
     auto* cluster = PsCluster::Instance();
     const auto* si = cluster->GetServer(cluster->Rank());
@@ -42,7 +41,6 @@ void PsServiceImpl::SparsePush(google::protobuf::RpcController* cntl_base,
                                SparsePushResponse* response,
                                google::protobuf::Closure* done) {
     brpc::Controller* cntl = static_cast<brpc::Controller*>(cntl_base);
-    cntl->set_response_compress_type(brpc::COMPRESS_TYPE_GZIP);
 
     auto* cluster = PsCluster::Instance();
     const auto* si = cluster->GetServer(cluster->Rank());
@@ -56,7 +54,6 @@ void PsServiceImpl::DensePushPull(google::protobuf::RpcController* cntl_base,
                                   DensePushPullResponse* response,
                                   google::protobuf::Closure* done) {
     brpc::Controller* cntl = static_cast<brpc::Controller*>(cntl_base);
-    cntl->set_response_compress_type(brpc::COMPRESS_TYPE_GZIP);
 
     auto* cluster = PsCluster::Instance();
     const auto* si = cluster->GetServer(cluster->Rank());

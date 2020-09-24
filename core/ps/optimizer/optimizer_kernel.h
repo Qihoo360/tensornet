@@ -279,7 +279,7 @@ public:
     SparseKernelBlock(const OptimizerBase* opt, int dimension)
         : values_(15485863., sparse_key_hasher)
         , dim_(dimension)
-        , alloc_(ValueType::DynSizeof(dim_)) {
+        , alloc_(ValueType::DynSizeof(dim_), 1 << 25) {
         values_.max_load_factor(0.75);
         opt_ = dynamic_cast<const OptType*>(opt);
         mutex_ = std::make_unique<std::mutex>();
@@ -308,7 +308,9 @@ public:
 
     ~SparseKernelBlock() {
         for (const auto& iter : values_) {
-            alloc_.deallocate(iter.second);
+            if (iter.second) {
+                alloc_.deallocate(iter.second);
+            }
         }
     }
 
