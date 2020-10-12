@@ -1,24 +1,23 @@
 #ifndef TENSORNET_CORE_TOOLS_OBJECT_POOL_H_
 #define TENSORNET_CORE_TOOLS_OBJECT_POOL_H_
 
-#include <list>
+#include <deque>
 #include <vector>
 #include <string>
 
 template <typename Object>
 class ObjectPool {
 public:
-    ObjectPool(size_t unSize, const std::string& path, const std::string doneFile)
+    ObjectPool(size_t unSize, const std::string& path)
         : _un_size(unSize)
-        , _path(path)
-        , _done_file(doneFile) {
+        , _path(path) {
         for (size_t un_idx = 0; un_idx < _un_size; ++ un_idx) {
-            _o_pool.push_back(new Object(_path, _done_file));
+            _o_pool.push_back(new Object(_path));
         }
     }
 
     ~ObjectPool() {
-        typename std::list<Object *>::iterator o_it = _o_pool.begin();
+        typename std::deque<Object *>::iterator o_it = _o_pool.begin();
         while (o_it != _o_pool.end()) {
             delete (*o_it);
             ++o_it;
@@ -29,7 +28,7 @@ public:
     Object* GetObject() {
         Object* p_obj = NULL;
         if (0 == _un_size) {
-            p_obj = new Object(_path, _done_file);
+            p_obj = new Object(_path);
         } else {
             p_obj = _o_pool.front();
             _o_pool.pop_front();
@@ -60,9 +59,8 @@ public:
 
 private:
     size_t _un_size;
-    std::list<Object *> _o_pool;
+    std::deque<Object *> _o_pool;
     std::string _path;
-    std::string _done_file;
 };
 
 #endif
