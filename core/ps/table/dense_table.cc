@@ -130,11 +130,6 @@ void DenseTable::Save(std::string filepath) const {
 void DenseTable::Load(std::string filepath) {
     butil::Timer timer(butil::Timer::STARTED);
 
-    const auto& opt_kernel = GetOptKernels(self_shard_id_);
-    if (nullptr == opt_kernel) {
-        return;
-    }
-
     std::string file = filepath + "/dense_table/" + std::to_string(GetHandle())
                             + "/" + std::to_string(self_shard_id_);
 
@@ -148,6 +143,12 @@ void DenseTable::Load(std::string filepath) {
     CHECK_EQ(shard_num_, rank_num);
 
     CHECK_EQ(0, Init(total_elements_));
+
+    const auto& opt_kernel = GetOptKernels(self_shard_id_);
+    if (nullptr == opt_kernel) {
+        return;
+    }
+
     opt_kernel->DeSerialized(in_stream);
 
     timer.stop();
