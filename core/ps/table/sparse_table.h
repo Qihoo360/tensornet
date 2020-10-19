@@ -36,9 +36,9 @@ public:
 
     ~SparseTable() = default;
 
-    void Pull(const SparsePullRequest* req, SparsePullResponse* resp);
+    void Pull(const SparsePullRequest* req, butil::IOBuf& out_emb_buf, SparsePullResponse* resp);
 
-    void Push(const SparsePushRequest* req, SparsePushResponse* resp);
+    void Push(const SparsePushRequest* req, butil::IOBuf& grad_buf, SparsePushResponse* resp);
 
     void SetHandle(uint32_t handle);
 

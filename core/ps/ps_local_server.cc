@@ -32,7 +32,8 @@ void PsLocalServer::SparsePullAsync(brpc::Controller *cntl,
         SparseTableRegistry::Instance()->Get(request->table_handle());
     CHECK(nullptr != table);
 
-    table->Pull(request, response);
+    butil::IOBuf& output = cntl->response_attachment();
+    table->Pull(request, output, response);
 
     done();
 }
@@ -45,7 +46,8 @@ void PsLocalServer::SparsePushAsync(brpc::Controller *cntl,
         SparseTableRegistry::Instance()->Get(request->table_handle());
     CHECK(nullptr != table);
 
-    table->Push(request, response);
+    butil::IOBuf& grad_buf = cntl->request_attachment();
+    table->Push(request, grad_buf, response);
 
     done();
 }

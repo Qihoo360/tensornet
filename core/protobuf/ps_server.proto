@@ -11,28 +11,14 @@ message SparsePullRequest {
     repeated uint64 signs = 3;
 };
 
-message SparsePullResponseWeight {
-    repeated float w = 2;
-};
-
 message SparsePullResponse {
     uint32 table_handle = 1;
     uint32 dim = 2;
-
-    repeated SparsePullResponseWeight weights = 3;
-};
-
-message SparsePushVariableInfo {
-    uint64 sign = 1;
-    int32 batch_show = 2;
-    repeated float w = 3;
 };
 
 message SparsePushRequest {
     uint32 table_handle = 1;
     uint32 dim = 2;
-
-    repeated SparsePushVariableInfo var_infos = 3;
 };
 
 message SparsePushResponse {

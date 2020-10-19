@@ -42,7 +42,7 @@ void SparseTable::SetHandle(uint32_t handle) {
     handle_ = handle;
 }
 
-void SparseTable::Pull(const SparsePullRequest* req, SparsePullResponse* resp) {
+void SparseTable::Pull(const SparsePullRequest* req, butil::IOBuf& out_emb_buf, SparsePullResponse* resp) {
     resp->set_table_handle(req->table_handle());
 
     CHECK_EQ(dim_, req->dim());
@@ -51,37 +51,34 @@ void SparseTable::Pull(const SparsePullRequest* req, SparsePullResponse* resp) {
     for (int i = 0; i < req->signs_size(); ++i) {
         uint64_t sign = req->signs(i);
 
+        // w.size() is guaranteed by op_kernel_ same with dim_
         float* w = op_kernel_->GetWeight(sign);
         CHECK(nullptr != w);
 
-        auto weights = resp->add_weights();
-
-        // w size is guaranteed by op_kernel_ same with dim_
-        for (int j = 0; j < dim_; j++) {
-            weights->add_w(w[j]);
-        }
+        out_emb_buf.append(w, sizeof(float) * dim_);
     }
 }
 
-void SparseTable::Push(const SparsePushRequest* req, SparsePushResponse* resp) {
+struct SignInfo {
+    uint64_t sign;
+    int batch_show;
+};
+
+void SparseTable::Push(const SparsePushRequest* req, butil::IOBuf& grad_buf, SparsePushResponse* resp) {
     CHECK_EQ(dim_, req->dim());
 
-    std::vector<float> grad(dim_);
+    float grad[dim_];
+    SignInfo sign_info;
 
-    for (int i = 0; i < req->var_infos_size(); i++) {
-        const auto& var_info = req->var_infos(i);
-
-        CHECK_EQ(var_info.w_size(), dim_);
-
-        for (int j = 0; j < var_info.w_size(); j++) {
-            grad[j] = var_info.w(j);
-        }
+    while (sizeof(sign_info) == grad_buf.cutn(&sign_info, sizeof(sign_info))) {
+        size_t grad_size = sizeof(float) * dim_;
+        CHECK_EQ(grad_size, grad_buf.cutn(grad, grad_size));
 
         SparseGradInfo grad_info;
-        grad_info.grad = grad.data();
-        grad_info.batch_show = var_info.batch_show();
+        grad_info.grad = grad;
+        grad_info.batch_show = sign_info.batch_show;
 
-        op_kernel_->Apply(var_info.sign(), grad_info);
+        op_kernel_->Apply(sign_info.sign, grad_info);
     }
 }
 

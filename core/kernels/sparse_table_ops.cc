@@ -49,7 +49,7 @@ public:
     void AddRequestSign(size_t var_index, size_t sign_index, uint64 sign) {
         req.add_signs(sign);
 
-        call_sign_infos.push_back({var_index, sign_index});
+        call_sign_infos.emplace_back(var_index, sign_index);
     }
 
     void Start(const tensornet::Callback& done) {
@@ -95,13 +95,9 @@ public:
     ~SparsePushCall() {}
 
     void AddRequestGrad(const SignInfo& sign_info, const float* grad_vec, int dim) {
-        auto var_info = req.add_var_infos();
-        var_info->set_sign(sign_info.sign);
-        var_info->set_batch_show(sign_info.batch_show);
-
-        for (int i = 0; i < dim; i++) {
-            var_info->add_w(grad_vec[i]);
-        }
+        butil::IOBuf &buf = cntl.request_attachment();
+        buf.append(&sign_info, sizeof(sign_info));
+        buf.append(grad_vec, dim * sizeof(float));
     }
 
     void Start(const tensornet::Callback& done) {
@@ -243,7 +239,8 @@ public:
 
         for (auto& call : calls) {
             call->Start([this, call, &var_infos, &semaphore]() {
-                auto status = PopulatePulledVariable_(var_infos, call->call_sign_infos, call->resp);
+                auto status = PopulatePulledVariable_(var_infos, call->call_sign_infos,
+                    call->resp, call->cntl.response_attachment());
                 if (!status.ok()) {
                     LOG(INFO) << "populate variable fail:" << status.ToString();
                 }
@@ -262,27 +259,23 @@ public:
 private:
     Status PopulatePulledVariable_(std::vector<SparsePullVarInfo>& var_infos,
                                    const std::vector<std::pair<size_t, size_t>>& call_sign_infos,
-                                   const SparsePullResponse& resp) {
-        CHECK_EQ(resp.weights_size(), call_sign_infos.size());
+                                   const SparsePullResponse& resp, butil::IOBuf& emb_buf) {
+        int dim = resp.dim();
 
-        for (int i = 0; i < resp.weights_size(); i++) {
-            const auto& resp_weights = resp.weights(i);
-
+        for (size_t i = 0; i < call_sign_infos.size(); i++) {
             size_t var_index = call_sign_infos[i].first;
             size_t sign_index = call_sign_infos[i].second;
 
             CHECK_LT(var_index, var_infos.size());
 
             auto& var_info = var_infos[var_index];
-
             Tensor* var_tensor = var_info.var->tensor();
+            CHECK_EQ(dim, var_info.VarDim());
 
-            CHECK_EQ(resp.dim(), var_info.VarDim());
+            float* w_matrix = var_tensor->matrix<float>().data();
 
-            auto w_matrix = var_tensor->matrix<float>();
-            for (int j = 0; j < resp_weights.w_size(); j++) {
-                w_matrix(sign_index, j) = resp_weights.w(j);
-            }
+            size_t emb_size = sizeof(float) * dim;
+            CHECK_EQ(emb_size, emb_buf.cutn(w_matrix + sign_index * dim, emb_size));
         }
 
         return Status::OK();
