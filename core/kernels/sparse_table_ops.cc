@@ -70,7 +70,17 @@ private:
 };
 
 struct SignInfo{
-    int64 sign;
+public:
+    SignInfo()
+        : SignInfo(0, 0)
+    { }
+
+    SignInfo(uint64 s, int bs)
+        : sign(s)
+        , batch_show(bs)
+    { }
+
+    uint64 sign;
     int batch_show;
 };
 
@@ -197,9 +207,7 @@ public:
                     var_tensor->shape().DebugString()),
                 done);
 
-            SparsePullVarInfo var_info(variable, sign_value, out_tensor);
-
-            var_infos.emplace_back(var_info);
+            var_infos.emplace_back(variable, sign_value, out_tensor);
         }
 
         CHECK_GT(var_infos.size(), 0);
@@ -298,13 +306,11 @@ public:
 
         std::map<uint64, int> sign_id_mapping;
         for (int i = 0; i < value->NumElements(); ++i) {
-            SignInfo sign_info;
-            sign_info.sign = (uint64)feasign_vec[i];
-            auto ret = sign_id_mapping.insert({sign_info.sign, sign_id_mapping.size()});
+            uint64 sign = (uint64)feasign_vec[i];
+            auto ret = sign_id_mapping.insert({sign, sign_id_mapping.size()});
 
             if (ret.second) {
-                sign_info.batch_show = 1;
-                virtual_sign_infos.emplace_back(sign_info);
+                virtual_sign_infos.emplace_back(sign, 1);
             } else {
                 auto iter = ret.first;
                 virtual_sign_infos[iter->second].batch_show += 1;
@@ -350,9 +356,7 @@ public:
                     grad->shape().DebugString()),
                 done);
 
-            SparsePushVarInfo var_info(value, grad);
-
-            var_infos.emplace_back(var_info);
+            var_infos.emplace_back(value, grad);
         }
 
         CHECK_GT(var_infos.size(), 0);

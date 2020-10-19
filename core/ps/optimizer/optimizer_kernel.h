@@ -194,9 +194,7 @@ public:
                 block_size = Length() - block_offset;
             }
 
-            KernelBlockType block(block_size, opt);
-
-            blocks_.emplace_back(std::move(block));
+            blocks_.emplace_back(block_size, opt);
         }
     }
 
@@ -400,8 +398,7 @@ public:
         assert(nullptr != opt);
 
         for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
-            KernelBlockType block(opt, dimension);
-            blocks_.emplace_back(std::move(block));
+            blocks_.emplace_back(opt, dimension);
         }
     }
 
