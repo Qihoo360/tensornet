@@ -139,6 +139,44 @@ PYBIND11_MODULE(_pywrap_tn, m) {
 
         return py::reinterpret_steal<py::object>(obj);
     })
+    .def("Ftrl", [](py::kwargs kwargs) {
+        float learning_rate = 0.001;
+        float alpha = 0;
+        float beta = 0;
+        float lambda1 = 0;
+        float lambda2 = 0;
+
+        PyObject* item = PyDict_GetItemString(kwargs.ptr(), "learning_rate");
+        if (NULL != item) {
+            learning_rate = PyFloat_AsDouble(item);
+        }
+
+        item = PyDict_GetItemString(kwargs.ptr(), "alpha");
+        if (NULL != item) {
+            alpha = PyFloat_AsDouble(item);
+        }
+
+        item = PyDict_GetItemString(kwargs.ptr(), "beta");
+        if (NULL != item) {
+            beta = PyFloat_AsDouble(item);
+        }
+
+        item = PyDict_GetItemString(kwargs.ptr(), "lambda1");
+        if (NULL != item) {
+            lambda1 = PyFloat_AsDouble(item);
+        }
+        item = PyDict_GetItemString(kwargs.ptr(), "lambda2");
+        if (NULL != item) {
+            lambda2 = PyFloat_AsDouble(item);
+        }
+
+        auto opt = new Adam(learning_rate, alpha, beta, lambda1, lambda2);
+
+        // NOTICE! opt will not delete until system exist
+        PyObject* obj = PyCapsule_New(opt, nullptr, nullptr);
+
+        return py::reinterpret_steal<py::object>(obj);
+    })
     .def("create_sparse_table", [](py::object obj, int dimension) {
         OptimizerBase* opt =
                static_cast<OptimizerBase*>(PyCapsule_GetPointer(obj.ptr(), nullptr));

@@ -15,6 +15,7 @@
 #include "core/ps/optimizer/optimizer_kernel.h"
 #include "core/ps/optimizer/adam_kernel.h"
 #include "core/ps/optimizer/ada_grad_kernel.h"
+#include "core/ps/optimizer/ftrl_kernel.h"
 
 #include <memory>
 
@@ -22,9 +23,11 @@ namespace tensornet {
 
 typedef DenseKernelBlock<Adam, DenseAdamValue> DenseAdamKernelBlock;
 typedef DenseKernelBlock<AdaGrad, DenseAdaGradValue> DenseAdaGradKernelBlock;
+typedef DenseKernelBlock<Ftrl, DenseFtrlValue> DenseFtrlKernelBlock;
 
 typedef SparseKernelBlock<Adam, SparseAdamValue> SparseAdamKernelBlock;
 typedef SparseKernelBlock<AdaGrad, SparseAdaGradValue> SparseAdaGradKernelBlock;
+typedef SparseKernelBlock<Ftrl, SparseFtrlValue> SparseFtrlKernelBlock;
 
 
 DenseOptKernelSharedPtr Adam::CreateDenseOptKernel(
@@ -45,6 +48,16 @@ DenseOptKernelSharedPtr AdaGrad::CreateDenseOptKernel(
 
 SparseOptKernelSharedPtr AdaGrad::CreateSparseOptKernel(int dimension) const {
     return std::make_shared<SparseOptimizerKernel<SparseAdaGradKernelBlock>>(this, dimension);
+}
+
+DenseOptKernelSharedPtr Ftrl::CreateDenseOptKernel(
+    int offset_begin, int offset_end) const {
+    return std::make_shared<DenseOptimizerKernel<DenseFtrlKernelBlock>>(
+            this, offset_begin, offset_end);
+}
+
+SparseOptKernelSharedPtr AdaGrad::CreateSparseOptKernel(int dimension) const {
+    return std::make_shared<SparseOptimizerKernel<SparseFtrlKernelBlock>>(this, dimension);
 }
 
 } // namespace tensornet {

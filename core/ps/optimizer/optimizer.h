@@ -108,6 +108,34 @@ public:
     float show_decay_rate = 0.98;
 };
 
+class Ftrl : public OptimizerBase {
+public:
+    Ftrl(float lr, float alpha, float beta, float lambda1, float lambda2)
+        : OptimizerBase(lr)
+        , alpha(alpha)
+        , beta(beta)
+        , lambda1(lambda1)
+        , lambda2(lambda2) {
+    }
+
+    ~Ftrl() {}
+
+    virtual DenseOptKernelSharedPtr CreateDenseOptKernel(
+        int offset_begin, int offset_end) const;
+
+    virtual SparseOptKernelSharedPtr CreateSparseOptKernel(int dimension) const;
+
+    virtual std::string Name() const {
+        return "Ftrl";
+    }
+
+public:
+    float alpha = 0;
+    float beta = 0;
+    float lambda1 = 0;
+    float lambda2 = 0;
+};
+
 } // namespace tensornet {
 
 #endif // !TENSORNET_OPTIMIZER_OPTIMIZER_H_
