@@ -53,11 +53,11 @@ SparseFtrlValue::SparseFtrlValue(int dim, const Ftrl* opt) {
 
     if (IsMiniDim_()) {
         for (int i = 0; i < Dim(); ++i) {
-            w_.v[i] = distribution(reng) * opt->initial_scale;
+            w_.v[i] = distribution(reng) * opt->initial_range;
         }
     } else {
         for (int i = 0; i < Dim(); ++i) {
-            w_.p[i] = distribution(reng) * opt->initial_scale;
+            w_.p[i] = distribution(reng) * opt->initial_range;
         }
     }
 }
@@ -70,12 +70,12 @@ void SparseFtrlValue::Apply(const AdaGrad* opt, SparseGradInfo& grad_info) {
     for (int i = 0; i < dim_; ++i) {
         float g2 = grad_info.grad[i] * grad_info.grad[i];
 
-        z[i] += grad_info.grad[i] - opt->alpha * (sqrt(n[i] + g2) - sqrt(n[i])) * w[i];
+        z[i] += grad_info.grad[i] - opt->learning_rate * (sqrt(n[i] + g2) - sqrt(n[i])) * w[i];
         n[i] += g2;
         if (abs(z[i]) <= opt->lambda1) {
             w[i] = 0;
         } else {
-            w[i] = -1 / ((opt->beta + sqrt(n[i])) * opt->alpha + opt->lambda2);
+            w[i] = -1 / ((opt->beta + sqrt(n[i])) * opt->learning_rate + opt->lambda2);
             if (z[i] > 0) {
                 w[i] *= z[i] - opt->lambda1;
             } else {

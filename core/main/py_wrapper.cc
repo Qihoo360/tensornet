@@ -140,20 +140,20 @@ PYBIND11_MODULE(_pywrap_tn, m) {
         return py::reinterpret_steal<py::object>(obj);
     })
     .def("Ftrl", [](py::kwargs kwargs) {
-        float learning_rate = 0.001;
-        float alpha = 0;
-        float beta = 0;
-        float lambda1 = 0;
-        float lambda2 = 0;
+        float learning_rate = 0.05;
+        float initial_range = 0;
+        float beta = 1;
+        float lambda1 = 0.1;
+        float lambda2 = 1;
 
         PyObject* item = PyDict_GetItemString(kwargs.ptr(), "learning_rate");
         if (NULL != item) {
             learning_rate = PyFloat_AsDouble(item);
         }
 
-        item = PyDict_GetItemString(kwargs.ptr(), "alpha");
+        item = PyDict_GetItemString(kwargs.ptr(), "initial_range");
         if (NULL != item) {
-            alpha = PyFloat_AsDouble(item);
+            initial_range = PyFloat_AsDouble(item);
         }
 
         item = PyDict_GetItemString(kwargs.ptr(), "beta");
@@ -165,12 +165,13 @@ PYBIND11_MODULE(_pywrap_tn, m) {
         if (NULL != item) {
             lambda1 = PyFloat_AsDouble(item);
         }
+
         item = PyDict_GetItemString(kwargs.ptr(), "lambda2");
         if (NULL != item) {
             lambda2 = PyFloat_AsDouble(item);
         }
 
-        auto opt = new Adam(learning_rate, alpha, beta, lambda1, lambda2);
+        auto opt = new Ftrl(learning_rate, initial_range, beta, lambda1, lambda2);
 
         // NOTICE! opt will not delete until system exist
         PyObject* obj = PyCapsule_New(opt, nullptr, nullptr);
