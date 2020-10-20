@@ -56,7 +56,6 @@ int PsCluster::Init() {
     uint16_t self_port = GetSelfPort_();
 
     brpc::ServerOptions server_options;
-    server_options.num_threads = 20;
 
     if (server_->Start(self_port, &server_options) != 0) {
         LOG(ERROR) << "tensornet fail to bind port:" << self_port;
