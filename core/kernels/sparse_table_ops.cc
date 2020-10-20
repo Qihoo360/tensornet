@@ -53,9 +53,13 @@ public:
     }
 
     void Start(const tensornet::Callback& done) {
-        const PsServerInterface* si =
-            PsCluster::Instance()->GetServer(shard_id_);
-        si->SparsePullAsync(&cntl, &req, &resp, done);
+        if (call_sign_infos.empty()) {
+            done();
+        } else {
+            const PsServerInterface* si =
+                PsCluster::Instance()->GetServer(shard_id_);
+            si->SparsePullAsync(&cntl, &req, &resp, done);
+        }
     }
 
 public:
@@ -101,9 +105,14 @@ public:
     }
 
     void Start(const tensornet::Callback& done) {
-        const PsServerInterface* si =
-            PsCluster::Instance()->GetServer(shard_id_);
-        si->SparsePushAsync(&cntl, &req, &resp, done);
+        butil::IOBuf &buf = cntl.request_attachment();
+        if (buf.size() <= 0) {
+            done();
+        } else {
+            const PsServerInterface* si =
+                PsCluster::Instance()->GetServer(shard_id_);
+            si->SparsePushAsync(&cntl, &req, &resp, done);
+        }
     }
 
 public:
@@ -239,11 +248,8 @@ public:
 
         for (auto& call : calls) {
             call->Start([this, call, &var_infos, &semaphore]() {
-                auto status = PopulatePulledVariable_(var_infos, call->call_sign_infos,
+                PopulatePulledVariable_(var_infos, call->call_sign_infos,
                     call->resp, call->cntl.response_attachment());
-                if (!status.ok()) {
-                    LOG(INFO) << "populate variable fail:" << status.ToString();
-                }
                 semaphore.Notify();
                 delete call;
             });
@@ -257,7 +263,7 @@ public:
     }
 
 private:
-    Status PopulatePulledVariable_(std::vector<SparsePullVarInfo>& var_infos,
+    void PopulatePulledVariable_(std::vector<SparsePullVarInfo>& var_infos,
                                    const std::vector<std::pair<size_t, size_t>>& call_sign_infos,
                                    const SparsePullResponse& resp, butil::IOBuf& emb_buf) {
         int dim = resp.dim();
@@ -277,8 +283,6 @@ private:
             size_t emb_size = sizeof(float) * dim;
             CHECK_EQ(emb_size, emb_buf.cutn(w_matrix + sign_index * dim, emb_size));
         }
-
-        return Status::OK();
     }
 
 private:
