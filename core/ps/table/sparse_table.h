@@ -25,7 +25,7 @@
 #include <butil/iobuf.h>
 
 #include "core/ps/optimizer/optimizer.h"
-#include "core/protobuf/ps_server.pb.h"
+#include "core/ps_interface/ps_server.pb.h"
 
 namespace tensornet {
 

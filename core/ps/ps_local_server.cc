@@ -14,7 +14,7 @@
 
 #include "core/ps/ps_local_server.h"
 #include "core/ps/ps_cluster.h"
-#include "core/protobuf/ps_server.pb.h"
+#include "core/ps_interface/ps_server.pb.h"
 #include "core/ps/table/dense_table.h"
 #include "core/ps/table/sparse_table.h"
 #include "core/kernels/data/balance_dataset_ops.h"

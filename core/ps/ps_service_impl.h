@@ -15,7 +15,7 @@
 #ifndef TENSORNET_PS_SERVICE_IMPL_H_
 #define TENSORNET_PS_SERVICE_IMPL_H_
 
-#include "core/protobuf/ps_server.pb.h"
+#include "core/ps_interface/ps_server.pb.h"
 
 namespace tensornet {
 

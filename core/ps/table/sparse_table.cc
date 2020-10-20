@@ -22,6 +22,7 @@
 #include <butil/object_pool.h>
 
 #include "core/ps/optimizer/optimizer_kernel.h"
+#include "core/ps_interface/ps_raw_interface.h"
 
 namespace tensornet {
 
@@ -59,16 +60,11 @@ void SparseTable::Pull(const SparsePullRequest* req, butil::IOBuf& out_emb_buf, 
     }
 }
 
-struct SignInfo {
-    uint64_t sign;
-    int batch_show;
-};
-
 void SparseTable::Push(const SparsePushRequest* req, butil::IOBuf& grad_buf, SparsePushResponse* resp) {
     CHECK_EQ(dim_, req->dim());
 
     float grad[dim_];
-    SignInfo sign_info;
+    SparsePushSignInfo sign_info;
 
     while (sizeof(sign_info) == grad_buf.cutn(&sign_info, sizeof(sign_info))) {
         size_t grad_size = sizeof(float) * dim_;

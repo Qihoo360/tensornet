@@ -20,6 +20,7 @@
 #include "tensorflow/core/lib/core/refcount.h"
 
 #include "core/kernels/resource_var_wrapper.h"
+#include "core/ps_interface/ps_raw_interface.h"
 
 #include <brpc/controller.h>
 #include <sstream>
@@ -73,21 +74,6 @@ private:
     int shard_id_ = -1;
 };
 
-struct SignInfo{
-public:
-    SignInfo()
-        : SignInfo(0, 0)
-    { }
-
-    SignInfo(uint64 s, int bs)
-        : sign(s)
-        , batch_show(bs)
-    { }
-
-    uint64 sign;
-    int batch_show;
-};
-
 class SparsePushCall {
 public:
     SparsePushCall(int table_handle, int shard_id, int dim)
@@ -98,7 +84,7 @@ public:
 
     ~SparsePushCall() {}
 
-    void AddRequestGrad(const SignInfo& sign_info, const float* grad_vec, int dim) {
+    void AddRequestGrad(const SparsePushSignInfo& sign_info, const float* grad_vec, int dim) {
         butil::IOBuf &buf = cntl.request_attachment();
         buf.append(&sign_info, sizeof(sign_info));
         buf.append(grad_vec, dim * sizeof(float));
@@ -323,7 +309,7 @@ public:
     const Tensor* value;
     const Tensor* grad;
 
-    std::vector<SignInfo> virtual_sign_infos;
+    std::vector<SparsePushSignInfo> virtual_sign_infos;
 };
 
 class SparseTablePushKernel : public AsyncOpKernel {
