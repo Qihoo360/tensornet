@@ -20,6 +20,7 @@
 #include "tensorflow/core/lib/core/refcount.h"
 
 #include "core/kernels/resource_var_wrapper.h"
+#include "core/ps_interface/ps_raw_interface.h"
 
 #include <brpc/controller.h>
 #include <sstream>
@@ -49,13 +50,17 @@ public:
     void AddRequestSign(size_t var_index, size_t sign_index, uint64 sign) {
         req.add_signs(sign);
 
-        call_sign_infos.push_back({var_index, sign_index});
+        call_sign_infos.emplace_back(var_index, sign_index);
     }
 
     void Start(const tensornet::Callback& done) {
-        const PsServerInterface* si =
-            PsCluster::Instance()->GetServer(shard_id_);
-        si->SparsePullAsync(&cntl, &req, &resp, done);
+        if (call_sign_infos.empty()) {
+            done();
+        } else {
+            const PsServerInterface* si =
+                PsCluster::Instance()->GetServer(shard_id_);
+            si->SparsePullAsync(&cntl, &req, &resp, done);
+        }
     }
 
 public:
@@ -69,11 +74,6 @@ private:
     int shard_id_ = -1;
 };
 
-struct SignInfo{
-    int64 sign;
-    int batch_show;
-};
-
 class SparsePushCall {
 public:
     SparsePushCall(int table_handle, int shard_id, int dim)
@@ -84,20 +84,21 @@ public:
 
     ~SparsePushCall() {}
 
-    void AddRequestGrad(const SignInfo& sign_info, const float* grad_vec, int dim) {
-        auto var_info = req.add_var_infos();
-        var_info->set_sign(sign_info.sign);
-        var_info->set_batch_show(sign_info.batch_show);
-
-        for (int i = 0; i < dim; i++) {
-            var_info->add_w(grad_vec[i]);
-        }
+    void AddRequestGrad(const SparsePushSignInfo& sign_info, const float* grad_vec, int dim) {
+        butil::IOBuf &buf = cntl.request_attachment();
+        buf.append(&sign_info, sizeof(sign_info));
+        buf.append(grad_vec, dim * sizeof(float));
     }
 
     void Start(const tensornet::Callback& done) {
-        const PsServerInterface* si =
-            PsCluster::Instance()->GetServer(shard_id_);
-        si->SparsePushAsync(&cntl, &req, &resp, done);
+        butil::IOBuf &buf = cntl.request_attachment();
+        if (buf.size() <= 0) {
+            done();
+        } else {
+            const PsServerInterface* si =
+                PsCluster::Instance()->GetServer(shard_id_);
+            si->SparsePushAsync(&cntl, &req, &resp, done);
+        }
     }
 
 public:
@@ -197,9 +198,7 @@ public:
                     var_tensor->shape().DebugString()),
                 done);
 
-            SparsePullVarInfo var_info(variable, sign_value, out_tensor);
-
-            var_infos.emplace_back(var_info);
+            var_infos.emplace_back(variable, sign_value, out_tensor);
         }
 
         CHECK_GT(var_infos.size(), 0);
@@ -235,10 +234,8 @@ public:
 
         for (auto& call : calls) {
             call->Start([this, call, &var_infos, &semaphore]() {
-                auto status = PopulatePulledVariable_(var_infos, call->call_sign_infos, call->resp);
-                if (!status.ok()) {
-                    LOG(INFO) << "populate variable fail:" << status.ToString();
-                }
+                PopulatePulledVariable_(var_infos, call->call_sign_infos,
+                    call->resp, call->cntl.response_attachment());
                 semaphore.Notify();
                 delete call;
             });
@@ -252,32 +249,26 @@ public:
     }
 
 private:
-    Status PopulatePulledVariable_(std::vector<SparsePullVarInfo>& var_infos,
+    void PopulatePulledVariable_(std::vector<SparsePullVarInfo>& var_infos,
                                    const std::vector<std::pair<size_t, size_t>>& call_sign_infos,
-                                   const SparsePullResponse& resp) {
-        CHECK_EQ(resp.weights_size(), call_sign_infos.size());
+                                   const SparsePullResponse& resp, butil::IOBuf& emb_buf) {
+        int dim = resp.dim();
 
-        for (int i = 0; i < resp.weights_size(); i++) {
-            const auto& resp_weights = resp.weights(i);
-
+        for (size_t i = 0; i < call_sign_infos.size(); i++) {
             size_t var_index = call_sign_infos[i].first;
             size_t sign_index = call_sign_infos[i].second;
 
             CHECK_LT(var_index, var_infos.size());
 
             auto& var_info = var_infos[var_index];
-
             Tensor* var_tensor = var_info.var->tensor();
+            CHECK_EQ(dim, var_info.VarDim());
 
-            CHECK_EQ(resp.dim(), var_info.VarDim());
+            float* w_matrix = var_tensor->matrix<float>().data();
 
-            auto w_matrix = var_tensor->matrix<float>();
-            for (int j = 0; j < resp_weights.w_size(); j++) {
-                w_matrix(sign_index, j) = resp_weights.w(j);
-            }
+            size_t emb_size = sizeof(float) * dim;
+            CHECK_EQ(emb_size, emb_buf.cutn(w_matrix + sign_index * dim, emb_size));
         }
-
-        return Status::OK();
     }
 
 private:
@@ -298,13 +289,11 @@ public:
 
         std::map<uint64, int> sign_id_mapping;
         for (int i = 0; i < value->NumElements(); ++i) {
-            SignInfo sign_info;
-            sign_info.sign = (uint64)feasign_vec[i];
-            auto ret = sign_id_mapping.insert({sign_info.sign, sign_id_mapping.size()});
+            uint64 sign = (uint64)feasign_vec[i];
+            auto ret = sign_id_mapping.insert({sign, sign_id_mapping.size()});
 
             if (ret.second) {
-                sign_info.batch_show = 1;
-                virtual_sign_infos.emplace_back(sign_info);
+                virtual_sign_infos.emplace_back(sign, 1);
             } else {
                 auto iter = ret.first;
                 virtual_sign_infos[iter->second].batch_show += 1;
@@ -320,7 +309,7 @@ public:
     const Tensor* value;
     const Tensor* grad;
 
-    std::vector<SignInfo> virtual_sign_infos;
+    std::vector<SparsePushSignInfo> virtual_sign_infos;
 };
 
 class SparseTablePushKernel : public AsyncOpKernel {
@@ -350,9 +339,7 @@ public:
                     grad->shape().DebugString()),
                 done);
 
-            SparsePushVarInfo var_info(value, grad);
-
-            var_infos.emplace_back(var_info);
+            var_infos.emplace_back(value, grad);
         }
 
         CHECK_GT(var_infos.size(), 0);

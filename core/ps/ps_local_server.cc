@@ -14,7 +14,7 @@
 
 #include "core/ps/ps_local_server.h"
 #include "core/ps/ps_cluster.h"
-#include "core/protobuf/ps_server.pb.h"
+#include "core/ps_interface/ps_server.pb.h"
 #include "core/ps/table/dense_table.h"
 #include "core/ps/table/sparse_table.h"
 #include "core/kernels/data/balance_dataset_ops.h"
@@ -32,7 +32,8 @@ void PsLocalServer::SparsePullAsync(brpc::Controller *cntl,
         SparseTableRegistry::Instance()->Get(request->table_handle());
     CHECK(nullptr != table);
 
-    table->Pull(request, response);
+    butil::IOBuf& output = cntl->response_attachment();
+    table->Pull(request, output, response);
 
     done();
 }
@@ -45,7 +46,8 @@ void PsLocalServer::SparsePushAsync(brpc::Controller *cntl,
         SparseTableRegistry::Instance()->Get(request->table_handle());
     CHECK(nullptr != table);
 
-    table->Push(request, response);
+    butil::IOBuf& grad_buf = cntl->request_attachment();
+    table->Push(request, grad_buf, response);
 
     done();
 }

@@ -17,7 +17,7 @@
 
 #include <functional>
 
-#include "core/protobuf/ps_server.pb.h"
+#include "core/ps_interface/ps_server.pb.h"
 
 namespace brpc {
 

@@ -4,16 +4,6 @@ load(
     "tf_gen_op_wrapper_py",
 )
 
-proto_library(
-    name = "server_proto",
-    srcs = ["protobuf/ps_server.proto"],
-)
-
-cc_proto_library(
-    name = "server_cc_proto",
-    deps = [":server_proto"],
-)
-
 cc_library(
     name = "sparse_table_ops_kernels",
     srcs = [
@@ -115,9 +105,10 @@ cc_library(
     hdrs = glob([
         "ps/table/*.h",
     ]) + [
+        "//core/ps_interface:ps_raw_interface",
     ],
     deps = [
-        ":server_cc_proto",
+        "//core/ps_interface:server_cc_proto",
         ":_ps_optimizer",
         "@brpc//:brpc",
     ],
@@ -141,10 +132,11 @@ pybind_extension(
         "kernels/data/balance_dataset_ops.h",
         "kernels/resource_var_wrapper.h",
         "//core/utility:semaphore",
+        "//core/ps_interface:ps_raw_interface",
     ],
     module_name = "_pywrap_tn",
     deps = [
-        ":server_cc_proto",
+        "//core/ps_interface:server_cc_proto",
         ":_ps_table",
         "//core/utility:mpi_manager",
         "//thirdparty/tensorflow:tensorflow",
