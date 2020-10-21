@@ -56,7 +56,7 @@ DenseOptKernelSharedPtr Ftrl::CreateDenseOptKernel(
             this, offset_begin, offset_end);
 }
 
-SparseOptKernelSharedPtr AdaGrad::CreateSparseOptKernel(int dimension) const {
+SparseOptKernelSharedPtr Ftrl::CreateSparseOptKernel(int dimension) const {
     return std::make_shared<SparseOptimizerKernel<SparseFtrlKernelBlock>>(this, dimension);
 }
 

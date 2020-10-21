@@ -25,19 +25,19 @@ DenseFtrlValue::DenseFtrlValue(const Ftrl* opt, int len) {
     return;
 }
 
-void DenseAdaGradValue::SetWeight(butil::IOBuf& w_buf) {
+void DenseFtrlValue::SetWeight(butil::IOBuf& w_buf) {
     return;
 }
 
-void DenseAdaGradValue::Apply(const AdaGrad* opt, const Eigen::ArrayXf& g) {
+void DenseFtrlValue::Apply(const Ftrl* opt, const Eigen::ArrayXf& g) {
     return;
 }
 
-std::ostream& operator<<(std::ostream& os, const DenseAdaGradValue& value) {
+std::ostream& operator<<(std::ostream& os, const DenseFtrlValue& value) {
     return os;
 }
 
-std::istream& operator>>(std::istream& is, DenseAdaGradValue& value) {
+std::istream& operator>>(std::istream& is, DenseFtrlValue& value) {
     return is;
 }
 
@@ -45,7 +45,9 @@ SparseFtrlValue::SparseFtrlValue(int dim, const Ftrl* opt) {
     dim_ = dim;
 
     if (!IsMiniDim_()) {
-        w_.p = data;
+        w_.p = data + dim * 0;
+        z_.p = data + dim * 1;
+        n_.p = data + dim * 2;
     }
 
     auto& reng = local_random_engine();
@@ -54,15 +56,19 @@ SparseFtrlValue::SparseFtrlValue(int dim, const Ftrl* opt) {
     if (IsMiniDim_()) {
         for (int i = 0; i < Dim(); ++i) {
             w_.v[i] = distribution(reng) * opt->initial_range;
+            z_.v[i] = 0;
+            n_.v[i] = 0;
         }
     } else {
         for (int i = 0; i < Dim(); ++i) {
             w_.p[i] = distribution(reng) * opt->initial_range;
+            z_.p[i] = 0;
+            n_.p[i] = 0;
         }
     }
 }
 
-void SparseFtrlValue::Apply(const AdaGrad* opt, SparseGradInfo& grad_info) {
+void SparseFtrlValue::Apply(const Ftrl* opt, SparseGradInfo& grad_info) {
     float* w = Weight();
     float* z = Z();
     float* n = N();
@@ -85,18 +91,12 @@ void SparseFtrlValue::Apply(const AdaGrad* opt, SparseGradInfo& grad_info) {
     }
 }
 
-std::ostream& operator<<(std::ostream& os, const SparseAdaGradValue& value) {
+std::ostream& operator<<(std::ostream& os, const SparseFtrlValue& value) {
     os << value.dim_ << "\t";
 
     for (int i = 0; i < value.dim_; i++) {
         os << value.Weight()[i] << "\t";
-    }
-
-    for (int i = 0; i < value.dim_; i++) {
         os << value.Z()[i] << "\t";
-    }
-
-    for (int i = 0; i < value.dim_; i++) {
         os << value.N()[i] << "\t";
     }
 
@@ -105,7 +105,7 @@ std::ostream& operator<<(std::ostream& os, const SparseAdaGradValue& value) {
     return os;
 }
 
-std::istream& operator>>(std::istream& is, SparseAdaGradValue& value) {
+std::istream& operator>>(std::istream& is, SparseFtrlValue& value) {
     int dim;
     is >> dim;
 
@@ -113,13 +113,7 @@ std::istream& operator>>(std::istream& is, SparseAdaGradValue& value) {
 
     for (int i = 0; i < value.dim_; i++) {
         is >> value.Weight()[i];
-    }
-
-    for (int i = 0; i < value.dim_; i++) {
         is >> value.Z()[i];
-    }
-
-    for (int i = 0; i < value.dim_; i++) {
         is >> value.N()[i];
     }
 
@@ -128,7 +122,7 @@ std::istream& operator>>(std::istream& is, SparseAdaGradValue& value) {
     return is;
 }
 
-void SparseAdaGradValue::ShowDecay(const AdaGrad* opt) {
+void SparseFtrlValue::ShowDecay(const Ftrl* opt) {
     show_ *= opt->show_decay_rate;
 }
 

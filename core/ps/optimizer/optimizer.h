@@ -110,12 +110,14 @@ public:
 
 class Ftrl : public OptimizerBase {
 public:
-    Ftrl(float lr, float initial_range, float beta, float lambda1, float lambda2)
+    Ftrl(float lr, float initial_range, float beta, 
+         float lambda1, float lambda2, float show_decay_rate)
         : OptimizerBase(lr)
         , initial_range(initial_range)
         , beta(beta)
         , lambda1(lambda1)
-        , lambda2(lambda2) {
+        , lambda2(lambda2)
+        ,show_decay_rate(show_decay_rate) {
     }
 
     ~Ftrl() {}
@@ -134,6 +136,7 @@ public:
     float beta = 1;
     float lambda1 = 0.1;
     float lambda2 = 1;
+    float show_decay_rate = 0.98;
 };
 
 } // namespace tensornet {

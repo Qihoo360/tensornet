@@ -60,7 +60,7 @@ public:
 
     static constexpr int DynSizeof(int dim) {
         return sizeof(SparseFtrlValue) +
-            sizeof(float) * dim * (IsMiniDim(dim) ? 0 : 1);
+            sizeof(float) * dim * 3 * (IsMiniDim(dim) ? 0 : 1);
     }
 
     static constexpr bool IsMiniDim(int dim) {
