@@ -139,6 +139,51 @@ PYBIND11_MODULE(_pywrap_tn, m) {
 
         return py::reinterpret_steal<py::object>(obj);
     })
+    .def("Ftrl", [](py::kwargs kwargs) {
+        float learning_rate = 0.05;
+        float initial_range = 0;
+        float beta = 1;
+        float lambda1 = 0.1;
+        float lambda2 = 1;
+        float show_decay_rate = 0.98;
+
+        PyObject* item = PyDict_GetItemString(kwargs.ptr(), "learning_rate");
+        if (NULL != item) {
+            learning_rate = PyFloat_AsDouble(item);
+        }
+
+        item = PyDict_GetItemString(kwargs.ptr(), "initial_range");
+        if (NULL != item) {
+            initial_range = PyFloat_AsDouble(item);
+        }
+
+        item = PyDict_GetItemString(kwargs.ptr(), "beta");
+        if (NULL != item) {
+            beta = PyFloat_AsDouble(item);
+        }
+
+        item = PyDict_GetItemString(kwargs.ptr(), "lambda1");
+        if (NULL != item) {
+            lambda1 = PyFloat_AsDouble(item);
+        }
+
+        item = PyDict_GetItemString(kwargs.ptr(), "lambda2");
+        if (NULL != item) {
+            lambda2 = PyFloat_AsDouble(item);
+        }
+
+        item = PyDict_GetItemString(kwargs.ptr(), "show_decay_rate");
+        if (NULL != item) {
+            show_decay_rate = PyFloat_AsDouble(item);
+        }
+
+        auto opt = new Ftrl(learning_rate, initial_range, beta, lambda1, lambda2, show_decay_rate);
+
+        // NOTICE! opt will not delete until system exist
+        PyObject* obj = PyCapsule_New(opt, nullptr, nullptr);
+
+        return py::reinterpret_steal<py::object>(obj);
+    })
     .def("create_sparse_table", [](py::object obj, int dimension) {
         OptimizerBase* opt =
                static_cast<OptimizerBase*>(PyCapsule_GetPointer(obj.ptr(), nullptr));
