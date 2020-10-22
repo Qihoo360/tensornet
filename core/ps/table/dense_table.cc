@@ -55,7 +55,7 @@ int DenseTable::Init(int total_elements) {
         }
 
         if (i == self_shard_id_) {
-            LOG(INFO) << "init dense table:" << GetHandle() << " shard_id:" << i
+            LOG(INFO) << "init dense table:" << GetHandle() << " rank:" << i
                       << " elements:" << total_elements
                       << " begin:" << offset_begin << " end:" << offset_end;
         }
@@ -122,7 +122,7 @@ void DenseTable::Save(std::string filepath) const {
 
     timer.stop();
 
-    LOG(INFO) << "DenseTable save, shard_id:" << self_shard_id_
+    LOG(INFO) << "DenseTable save, rank:" << self_shard_id_
         << " size:" << opt_kernel->DataSize()
         << " latency:" << timer.s_elapsed() << "s";
 }
@@ -153,7 +153,7 @@ void DenseTable::Load(std::string filepath) {
 
     timer.stop();
 
-    LOG(INFO) << "DenseTable load, shard_id:" << self_shard_id_
+    LOG(INFO) << "DenseTable load, rank:" << self_shard_id_
         << " size:" << opt_kernel->DataSize()
         << " latency:" << timer.s_elapsed() << "s";
 }

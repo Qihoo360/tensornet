@@ -204,6 +204,8 @@ public:
             call->AddRequestData(k_buf);
 
             call->Start([call, variables, opt_kernel, k_len, &semaphore]() {
+                std::unique_ptr<DensePushPullCall> call_free_guard(call);
+
                 butil::IOBuf& output = call->cntl.response_attachment();
 
                 CHECK_EQ(output.size(), k_len);
@@ -246,7 +248,6 @@ public:
                 }
 
                 semaphore.Notify();
-                delete call;
             });
         }
 

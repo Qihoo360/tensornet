@@ -208,11 +208,7 @@ public:
 
             Eigen::ArrayXf g(block_size);
 
-            for (size_t j = 0; j < block_size; j++) {
-                float t_g = 0;
-                CHECK_EQ(sizeof(t_g), grad.cutn(&t_g, sizeof(t_g)));
-                g[j] = t_g;
-            }
+            CHECK_EQ(sizeof(float) * block_size, grad.cutn(g.data(), sizeof(float) * block_size));
 
             blocks_[i].Apply(g);
         }
@@ -277,7 +273,7 @@ public:
     SparseKernelBlock(const OptimizerBase* opt, int dimension)
         : values_(15485863., sparse_key_hasher)
         , dim_(dimension)
-        , alloc_(ValueType::DynSizeof(dim_), 1 << 25) {
+        , alloc_(ValueType::DynSizeof(dim_), 1 << 16) {
         values_.max_load_factor(0.75);
         opt_ = dynamic_cast<const OptType*>(opt);
         mutex_ = std::make_unique<std::mutex>();
