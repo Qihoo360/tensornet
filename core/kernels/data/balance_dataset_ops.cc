@@ -16,6 +16,7 @@
 
 #include "core/utility/semaphore.h"
 
+#include <thread>
 #include <brpc/server.h>
 #include <butil/rand_util.h>
 
@@ -73,8 +74,10 @@ void BalanceInputDataInfo::ProcessBrpcDatasetPullReq(const DatasetPullRequest* r
     resp->set_resp_shard_id(PsCluster::Instance()->Rank());
 
     ChangeShardStatus(req->req_shard_id());
+    //LOG(INFO) << "Shard [" << PsCluster::Instance()->Rank() << "] remove shard [" << req->req_shard_id() << "].";
 
     if (GetFinished()) {
+        //LOG(INFO) << "Shard [" << PsCluster::Instance()->Rank() << "] no data.";
         resp->set_end_of_sequence(true);
         return;
     }
@@ -86,7 +89,7 @@ void BalanceInputDataInfo::ProcessBrpcDatasetPullReq(const DatasetPullRequest* r
     CHECK(iter != op_elements_.end()) << "balance_handle " << balance_handle << " not registered.";
     auto* elements = iter->second;
     std::vector<Tensor> tensors;
-    if (elements->get(&tensors)) {
+    if (elements->get_wait(&tensors)) {
         VariantTensorData variant_tensor;
         {
             for (auto& element : tensors) {
@@ -95,8 +98,10 @@ void BalanceInputDataInfo::ProcessBrpcDatasetPullReq(const DatasetPullRequest* r
         }
         resp->set_end_of_sequence(false);
         resp->set_dataset_info(variant_tensor.SerializeAsString());
+        //LOG(INFO) << "Shard [" << PsCluster::Instance()->Rank() << "] send data to shard [" << req->req_shard_id() << "], thread [" << std::this_thread::get_id() << "].";
     } else {
         resp->set_end_of_sequence(GetFinished());
+        //LOG(INFO) << "Shard [" << PsCluster::Instance()->Rank() << "] send no data to shard [" << req->req_shard_id() << "], " << "end_of_sequence " << GetFinished() << ", thread [" << std::this_thread::get_id() << "].";
     }
 }
 
@@ -105,6 +110,7 @@ void BalanceInputDataInfo::SendBrpcDatasetPullReq(uint32_t balance_handle, bool*
     {
         const std::lock_guard<std::mutex> lock(RemainingShardsMutex());
         for (auto shard : *RemainingShards()) {
+	    //LOG(INFO) << "Shard [" << PsCluster::Instance()->Rank() << "] request data from [" << shard << "].";
             calls.emplace_back(new BalanceDataCall(shard, balance_handle));
         }
     }
@@ -131,6 +137,7 @@ void BalanceInputDataInfo::CopyDataToBuffer(const DatasetPullResponse* resp, uin
     if (resp->dataset_info().length() == 0) {
         if (resp->end_of_sequence()) {
             ChangeShardStatus(resp->resp_shard_id());
+            //LOG(INFO) << "Shard [" << PsCluster::Instance()->Rank() << "] remove shard [" << resp->resp_shard_id() << "].";
         }
         return;
     }
@@ -218,6 +225,7 @@ private:
             }
 
             if (has_data) {
+                //LOG(INFO) << "self consume data [" << PsCluster::Instance()->Rank() << "], thread [" << std::this_thread::get_id() << "].";
                 *end_of_sequence = false;
                 return Status::OK();
             }
@@ -229,11 +237,15 @@ private:
             }
 
             if (!q->empty() || !*end_of_sequence) {
+                //LOG(INFO) << "self consume queue data [" << PsCluster::Instance()->Rank() << "], thread [" << std::this_thread::get_id() << "].";
                 q->get(out_tensors);
                 *end_of_sequence = false;
             }
 
 
+            if (*end_of_sequence = true) {
+                LOG(INFO) << "Shard [" << PsCluster::Instance()->Rank() << "] finished.";
+            }
             return Status::OK();
         }
 
@@ -280,14 +292,17 @@ private:
 
             auto* data_info = BalanceInputDataInfo::Instance();
             BufferQueueWithLock* q = data_info->op_elements_[dataset()->balance_handle_];
-            while (!q->buffer_full() && !*end_of_sequence) {
+            std::vector<std::vector<Tensor> > inputs;
+            size_t fill_count = q->fill_count();
+            for (size_t i = 0; i < fill_count && !*end_of_sequence; ++i) {
                 std::vector<Tensor> input_vec;
                 TF_RETURN_IF_ERROR(
                     input_impl_->GetNext(ctx, &input_vec, end_of_sequence));
                 if (!*end_of_sequence) {
-                    q->put(std::move(input_vec));
+                    inputs.emplace_back(std::move(input_vec));
                 }
             }
+            q->put(std::move(inputs));
 
             return Status::OK();
         }

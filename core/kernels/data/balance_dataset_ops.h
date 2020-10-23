@@ -21,6 +21,8 @@
 #include <vector>
 #include <mutex>
 #include <queue>
+#include <condition_variable>
+#include <chrono>
 
 #include "core/ps/ps_server_interface.h"
 #include "core/ps/ps_cluster.h"
@@ -49,6 +51,16 @@ public:
     void put(std::vector<Tensor>&& element) {
         const std::lock_guard<std::mutex> lock(mu_);
         elements_.emplace(element);
+        cv_.notify_one();
+    }
+
+    void put(std::vector<std::vector<Tensor> >&& elements) {
+        const std::lock_guard<std::mutex> lock(mu_);
+        for (auto&& v : elements) {
+            elements_.emplace(v);
+        }
+        cv_.notify_all();
+        
     }
 
     bool empty() {
@@ -61,9 +73,13 @@ public:
         return elements_.size() > buffer_size_;
     }
 
+    size_t fill_count() {
+        const std::lock_guard<std::mutex> lock(mu_);
+        return buffer_size_ - elements_.size();
+    }
+
     bool get(std::vector<Tensor>* tensors) {
         const std::lock_guard<std::mutex> lock(mu_);
-
         if (empty_unlock()) {
             return false;
         }
@@ -71,6 +87,17 @@ public:
         *tensors = std::move(elements_.front());
         elements_.pop();
         return true;
+    }
+
+    bool get_wait(std::vector<Tensor>* tensors) {
+        {
+            std::unique_lock<std::mutex> lock(mu_);
+            if (empty_unlock()) {
+                cv_.wait_for(lock, std::chrono::seconds(5));
+            }
+        }
+
+        return get(tensors);
     }
 
     void pop() {
@@ -90,6 +117,7 @@ private:
 
 private:
     size_t buffer_size_ = 100;
+    std::condition_variable cv_;
     std::mutex mu_;
     std::queue<std::vector<Tensor> > elements_;
 };
