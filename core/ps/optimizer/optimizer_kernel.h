@@ -324,7 +324,8 @@ public:
         auto iter = values_.find(sign);
 
         // must already meet and created in pull
-        CHECK(iter != values_.end());
+        CHECK(iter != values_.end()) << " embedding of sign " << sign
+            << " not create yet, something must be wrong";
 
         ValueType* value = iter->second;
 

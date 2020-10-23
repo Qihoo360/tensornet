@@ -36,7 +36,11 @@ DenseTable::DenseTable(const OptimizerBase* opt, int shard_num, int self_shard_i
 
 int DenseTable::Init(int total_elements) {
     if (is_initialized_) {
-        CHECK(total_elements == total_elements_);
+        CHECK(total_elements == total_elements_)
+            << "dense table already init with element size:" << total_elements_
+            << " but " << total_elements << " expected,"
+            << " maybe you have loaded dense table with different model";
+
         return 0;
     }
 
