@@ -16,7 +16,6 @@
 
 #include "core/utility/semaphore.h"
 
-#include <thread>
 #include <brpc/server.h>
 
 #include "tensorflow/core/framework/op_kernel.h"
