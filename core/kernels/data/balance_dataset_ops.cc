@@ -18,7 +18,6 @@
 
 #include <thread>
 #include <brpc/server.h>
-#include <butil/rand_util.h>
 
 #include "tensorflow/core/framework/op_kernel.h"
 #include "tensorflow/core/framework/partial_tensor_shape.h"
@@ -74,10 +73,8 @@ void BalanceInputDataInfo::ProcessBrpcDatasetPullReq(const DatasetPullRequest* r
     resp->set_resp_shard_id(PsCluster::Instance()->Rank());
 
     ChangeShardStatus(req->req_shard_id());
-    //LOG(INFO) << "Shard [" << PsCluster::Instance()->Rank() << "] remove shard [" << req->req_shard_id() << "].";
 
     if (GetFinished()) {
-        //LOG(INFO) << "Shard [" << PsCluster::Instance()->Rank() << "] no data.";
         resp->set_end_of_sequence(true);
         return;
     }
@@ -98,10 +95,8 @@ void BalanceInputDataInfo::ProcessBrpcDatasetPullReq(const DatasetPullRequest* r
         }
         resp->set_end_of_sequence(false);
         resp->set_dataset_info(variant_tensor.SerializeAsString());
-        //LOG(INFO) << "Shard [" << PsCluster::Instance()->Rank() << "] send data to shard [" << req->req_shard_id() << "], thread [" << std::this_thread::get_id() << "].";
     } else {
         resp->set_end_of_sequence(GetFinished());
-        //LOG(INFO) << "Shard [" << PsCluster::Instance()->Rank() << "] send no data to shard [" << req->req_shard_id() << "], " << "end_of_sequence " << GetFinished() << ", thread [" << std::this_thread::get_id() << "].";
     }
 }
 
@@ -110,7 +105,6 @@ void BalanceInputDataInfo::SendBrpcDatasetPullReq(uint32_t balance_handle, bool*
     {
         const std::lock_guard<std::mutex> lock(RemainingShardsMutex());
         for (auto shard : *RemainingShards()) {
-	    //LOG(INFO) << "Shard [" << PsCluster::Instance()->Rank() << "] request data from [" << shard << "].";
             calls.emplace_back(new BalanceDataCall(shard, balance_handle));
         }
     }
@@ -137,7 +131,6 @@ void BalanceInputDataInfo::CopyDataToBuffer(const DatasetPullResponse* resp, uin
     if (resp->dataset_info().length() == 0) {
         if (resp->end_of_sequence()) {
             ChangeShardStatus(resp->resp_shard_id());
-            //LOG(INFO) << "Shard [" << PsCluster::Instance()->Rank() << "] remove shard [" << resp->resp_shard_id() << "].";
         }
         return;
     }
@@ -225,7 +218,6 @@ private:
             }
 
             if (has_data) {
-                //LOG(INFO) << "self consume data [" << PsCluster::Instance()->Rank() << "], thread [" << std::this_thread::get_id() << "].";
                 *end_of_sequence = false;
                 return Status::OK();
             }
@@ -233,19 +225,22 @@ private:
             BufferQueueWithLock* q = data_info->op_elements_[dataset()->balance_handle_];
             if (q->empty() && *end_of_sequence) {
                 GetDataFromBrpcInternal(end_of_sequence, out_tensors);
+
+                if (*end_of_sequence) {
+                    LOG(INFO) << "Shard [" << PsCluster::Instance()->Rank() 
+                              << "] consumed all data, total spend " 
+                              << data_info->TimerElapsedInSecond() << " seconds.";
+                }
+
                 return Status::OK();
             }
 
             if (!q->empty() || !*end_of_sequence) {
-                //LOG(INFO) << "self consume queue data [" << PsCluster::Instance()->Rank() << "], thread [" << std::this_thread::get_id() << "].";
                 q->get(out_tensors);
                 *end_of_sequence = false;
             }
 
 
-            if (*end_of_sequence = true) {
-                LOG(INFO) << "Shard [" << PsCluster::Instance()->Rank() << "] finished.";
-            }
             return Status::OK();
         }
 
