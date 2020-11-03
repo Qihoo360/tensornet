@@ -129,14 +129,14 @@ class Model(tf.keras.Model):
 
         return
 
-    def save_weights(self, filepath, overwrite=True, save_format=None, dt=""):
+    def save_weights(self, filepath, overwrite=True, save_format=None, dt="", root=True):
         cp_dir = os.path.join(filepath, dt)
         # sparse weight
         for layer in self.layers:
             assert type(layer) != tf.keras.Model, "not support direct use keras.Model, use tn.model.Model instead"
 
             if isinstance(layer, type(self)):
-                layer.save_weights(filepath, overwrite, save_format, dt)
+                layer.save_weights(filepath, overwrite, save_format, dt, False)
             elif isinstance(layer, tn.layers.EmbeddingFeatures):
                 layer.save_sparse_table(cp_dir)
 
@@ -145,7 +145,7 @@ class Model(tf.keras.Model):
 
         # only the first node save the model, other node use the first node saved model
         # when load_weights
-        if tn.core.self_shard_id() == 0:
+        if tn.core.self_shard_id() == 0 and root:
 
             # actually, we use tensorflow checkpoint only when system restart, this could be
             # done by tensornet checkpoint instead, but we need a pull operation to fetch
@@ -157,7 +157,7 @@ class Model(tf.keras.Model):
 
         self.is_loaded_from_checkpoint = True
 
-    def load_weights(self, filepath, by_name=False, skip_mismatch=False):
+    def load_weights(self, filepath, by_name=False, skip_mismatch=False, root=True):
         last_train_dt = read_last_train_dt(filepath)
 
         # not saved model info found
@@ -172,7 +172,7 @@ class Model(tf.keras.Model):
                 assert type(layer) != tf.keras.Model, "not support direct use keras.Model, use tn.model.Model instead"
 
                 if isinstance(layer, type(self)):
-                    layer.load_weights(filepath, by_name, skip_mismatch)
+                    layer.load_weights(filepath, by_name, skip_mismatch, False)
                 elif isinstance(layer, tn.layers.EmbeddingFeatures):
                     layer.load_sparse_table(cp_dir)
 
@@ -182,8 +182,9 @@ class Model(tf.keras.Model):
 
             self.is_loaded_from_checkpoint = True
 
-        tf_cp_file = os.path.join(cp_dir, "tf_checkpoint")
-        super(Model, self).load_weights(tf_cp_file, by_name, skip_mismatch)
+        if root:
+            tf_cp_file = os.path.join(cp_dir, "tf_checkpoint")
+            super(Model, self).load_weights(tf_cp_file, by_name, skip_mismatch)
 
     def show_decay(self):
         for layer in self.layers:
