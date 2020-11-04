@@ -60,6 +60,7 @@ cc_library(
     ],
     hdrs = [
         "kernels/data/balance_dataset_ops_dummy.h",
+        "public/version.h",
     ],
     linkstatic = 1,
     deps = [
@@ -130,6 +131,7 @@ pybind_extension(
         "ps/*.h",
     ]) + [
         "kernels/data/balance_dataset_ops.h",
+        "public/version.h",
         "kernels/resource_var_wrapper.h",
         "//core/utility:semaphore",
         "//core/ps_interface:ps_raw_interface",

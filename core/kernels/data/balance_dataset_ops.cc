@@ -14,6 +14,7 @@
 
 #include "core/kernels/data/balance_dataset_ops.h"
 
+#include "core/public/version.h"
 #include "core/utility/semaphore.h"
 
 #include <brpc/server.h>
@@ -81,10 +82,8 @@ void BalanceInputDataInfo::ProcessBrpcDatasetPullReq(const DatasetPullRequest* r
 
     uint32_t balance_handle = req->balance_handle();
 
-    auto iter = op_elements_.find(balance_handle);
-
-    CHECK(iter != op_elements_.end()) << "balance_handle " << balance_handle << " not registered.";
-    auto* elements = iter->second;
+    CHECK(op_elements_.count(balance_handle)) << "balance_handle " << balance_handle << " not registered.";
+    auto* elements = op_elements_[balance_handle];
     std::vector<Tensor> tensors;
     if (elements->get(&tensors)) {
         VariantTensorData variant_tensor;
@@ -243,6 +242,7 @@ private:
             return data::model::MakeKnownRatioNode(std::move(args), /*ratio=*/1);
         }
 
+#if defined(TN_COMPATIBLE_INTERFACE_2_2_0)
         Status SaveInternal(IteratorStateWriter* writer) override {
             mutex_lock l(mu_);
             if (!input_impl_) {
@@ -252,6 +252,18 @@ private:
             }
             return Status::OK();
         }
+#else 
+        Status SaveInternal(SerializationContext* ctx,
+                            IteratorStateWriter* writer) override {
+            mutex_lock l(mu_);
+            if (!input_impl_) {
+              TF_RETURN_IF_ERROR(writer->WriteScalar(full_name(kInputImplEmpty), ""));
+            } else {
+              TF_RETURN_IF_ERROR(SaveInput(ctx, writer, input_impl_));
+            }
+            return Status::OK();
+        }
+#endif
 
         Status RestoreInternal(IteratorContext* ctx,
                                IteratorStateReader* reader) override {
@@ -269,7 +281,7 @@ private:
                                    std::vector<Tensor>* out_tensors,
                                    bool* has_data) {
             mutex_lock l(mu_);
-            
+
             TF_RETURN_IF_ERROR(
                     input_impl_->GetNext(ctx, out_tensors, end_of_sequence));
             if (*end_of_sequence) {
