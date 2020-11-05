@@ -3,8 +3,6 @@ load(
     "tf_gen_op_wrapper_py",
 )
 
-load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
-
 cc_library(
     name = "sparse_table_ops_kernels",
     srcs = [
@@ -146,7 +144,6 @@ cc_binary(
         "@boost//:variant",
         "@boost//:random",
         "@boost//:iostreams",
-        "@local_config_python//:python_headers",
     ],
     linkshared = 1,
 )
