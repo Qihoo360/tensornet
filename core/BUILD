@@ -1,8 +1,9 @@
 load(
     "@org_tensorflow//tensorflow:tensorflow.bzl",
-    "pybind_extension",
     "tf_gen_op_wrapper_py",
 )
+
+load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
 
 cc_library(
     name = "sparse_table_ops_kernels",
@@ -116,27 +117,23 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-pybind_extension(
-    name = "_pywrap_tn",
+cc_binary(
+    name = "_pywrap_tn.so",
     srcs = glob([
         "ps/*.cc",
         "ops/*.cc",
         "main/*.cc",
+        "ps/*.h",
     ]) + [
         "kernels/sparse_table_ops.cc",
         "kernels/dense_table_ops.cc",
         "kernels/data/balance_dataset_ops.cc",
-    ],
-    hdrs = glob([
-        "ps/*.h",
-    ]) + [
         "kernels/data/balance_dataset_ops.h",
         "public/version.h",
         "kernels/resource_var_wrapper.h",
         "//core/utility:semaphore",
         "//core/ps_interface:ps_raw_interface",
     ],
-    module_name = "_pywrap_tn",
     deps = [
         "//core/ps_interface:server_cc_proto",
         ":_ps_table",
@@ -149,9 +146,7 @@ pybind_extension(
         "@boost//:variant",
         "@boost//:random",
         "@boost//:iostreams",
-        "@org_tensorflow//tensorflow/core:protos_all_cc",
-        "@org_tensorflow//tensorflow/core/kernels/data:name_utils",
-        "@org_tensorflow//tensorflow/python:pybind11_status",
-        "@org_tensorflow//tensorflow/python:pybind11_lib",
-    ]
+        "@local_config_python//:python_headers",
+    ],
+    linkshared = 1,
 )

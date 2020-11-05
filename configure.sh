@@ -88,6 +88,7 @@ function link_tf_thirdparty()
     mkdir -p thirdparty/tensorflow/lib/
     ln -s ${tf_lib_path}/lib* thirdparty/tensorflow/lib/
     ln -sf ${tf_lib_path}/python/_pywrap_tensorflow_internal.so thirdparty/tensorflow/lib/lib_pywrap_tensorflow_internal.so
+    ln -sf ${tf_include_path} thirdparty/tensorflow/
 }
 
 function main()

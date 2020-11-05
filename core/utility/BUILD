@@ -53,8 +53,7 @@ cc_library(
     ],
     deps = [
         "@boost//:iostreams",
-        "@org_tensorflow//tensorflow/core:protos_all_cc",
-        "@org_tensorflow//tensorflow/core/kernels/data:name_utils",
+        "//thirdparty/tensorflow:tensorflow",
     ],
     visibility = ["//visibility:public"]
 )
