@@ -271,7 +271,7 @@ public:
     // supporting close to 5B parameter with 50 node run together without rehash.
     // TODO the initial bucket size maybe expose to user by a configure.
     SparseKernelBlock(const OptimizerBase* opt, int dimension)
-        : values_(15485863., sparse_key_hasher)
+        : values_(15485863, sparse_key_hasher)
         , dim_(dimension)
         , alloc_(ValueType::DynSizeof(dim_), 1 << 16) {
         values_.max_load_factor(0.75);
