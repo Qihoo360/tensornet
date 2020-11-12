@@ -26,7 +26,7 @@ def create_emb_model(features, columns_group, suffix = "_input"):
 
     sparse_opt = tn.core.AdaGrad(learning_rate=0.01, initial_g2sum=0.1, initial_scale=0.1)
 
-    for columns_group_name in columns_group.keys():
+    for column_group_name in columns_group.keys():
         embs = tn.layers.EmbeddingFeatures(columns_group[column_group_name], sparse_opt, 
                                            name=column_group_name + suffix)(inputs)
         model_output.append(embs)

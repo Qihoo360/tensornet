@@ -33,6 +33,14 @@ class DeepCrossLayer(Layer):
                 cross = inputs * tf.matmul(cross, self.W[i]) + self.bias[i] + cross
         return cross
 
+    def get_config(self):
+        config = super(DeepCrossLayer, self).get_config()
+        config.update({
+            'num_layer': self.num_layer,
+        })
+
+        return config
+
 
 class FMLayer(Layer):
     """Factorization Machine models pairwise (order-2) feature interactions without linear term and bias.
