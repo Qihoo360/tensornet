@@ -36,6 +36,20 @@
 
     sh ./configure.sh --openmpi_path /da2/zhangyansheng/openmpi-1.4.5
     bazel build -c opt //core:_pywrap_tn
+**tips**:
+在tensorflow-2.2.0版本下编译时，修改`WORKSPACE`中tensorflow版本
+```bash
+http_archive(
+    name = "org_tensorflow",
+    sha256 = "69cd836f87b8c53506c4f706f655d423270f5a563b76dc1cfa60fbc3184185a3",
+    strip_prefix = "tensorflow-2.2.0",
+    urls = [
+        "https://github.com/tensorflow/tensorflow/archive/v2.2.0.tar.gz",
+    ],
+)
+```
+
+
 
 ## 部署
 
