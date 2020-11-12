@@ -14,6 +14,8 @@
 
 #include "core/kernels/data/balance_dataset_ops_dummy.h"
 
+#include "core/public/version.h"
+
 #include "tensorflow/core/framework/op_kernel.h"
 #include "tensorflow/core/framework/partial_tensor_shape.h"
 #include "tensorflow/core/framework/tensor.h"
@@ -117,6 +119,7 @@ private:
             return data::model::MakeKnownRatioNode(std::move(args), /*ratio=*/1);
         }
 
+#if defined(TN_COMPATIBLE_INTERFACE_2_2_0)
         Status SaveInternal(IteratorStateWriter* writer) override {
             mutex_lock l(mu_);
             if (!input_impl_) {
@@ -126,6 +129,18 @@ private:
             }
             return Status::OK();
         }
+#else 
+        Status SaveInternal(SerializationContext* ctx,
+                            IteratorStateWriter* writer) override {
+            mutex_lock l(mu_);
+            if (!input_impl_) {
+              TF_RETURN_IF_ERROR(writer->WriteScalar(full_name(kInputImplEmpty), ""));
+            } else {
+              TF_RETURN_IF_ERROR(SaveInput(ctx, writer, input_impl_));
+            }
+            return Status::OK();
+        }
+#endif
 
         Status RestoreInternal(IteratorContext* ctx,
                                IteratorStateReader* reader) override {

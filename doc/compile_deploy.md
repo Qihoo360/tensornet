@@ -7,10 +7,10 @@
 ## 准备环境
 1. 安装anaconda3。
 
-2. 安装tensorflow。目前只支持2.2.0，其它版本陆续会适配。
+2. 安装tensorflow。目前支持2.2.0~2.3.0，tensorflow版本更新后陆续会适配。
 
     ```
-    pip install tensorflow==2.2.0
+    pip install tensorflow==2.3.0
     ```
 
 3. 安装bazel。
@@ -36,6 +36,20 @@
 
     sh ./configure.sh --openmpi_path /da2/zhangyansheng/openmpi-1.4.5
     bazel build -c opt //core:_pywrap_tn
+**tips**:
+在tensorflow-2.2.0版本下编译时，修改`WORKSPACE`中tensorflow版本
+```bash
+http_archive(
+    name = "org_tensorflow",
+    sha256 = "69cd836f87b8c53506c4f706f655d423270f5a563b76dc1cfa60fbc3184185a3",
+    strip_prefix = "tensorflow-2.2.0",
+    urls = [
+        "https://github.com/tensorflow/tensorflow/archive/v2.2.0.tar.gz",
+    ],
+)
+```
+
+
 
 ## 部署
 

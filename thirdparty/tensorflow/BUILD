@@ -3,6 +3,8 @@ cc_library(
     srcs = [
         "lib/libtensorflow_framework.so.2"
     ],
+    includes = ["include"],
+    hdrs = glob(["include/**"]),
     visibility = ["//visibility:public"],
 )
 
