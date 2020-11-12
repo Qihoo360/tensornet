@@ -7,10 +7,10 @@
 ## 准备环境
 1. 安装anaconda3。
 
-2. 安装tensorflow。目前只支持2.2.0，其它版本陆续会适配。
+2. 安装tensorflow。目前支持2.2.0~2.3.0，tensorflow版本更新后陆续会适配。
 
     ```
-    pip install tensorflow==2.2.0
+    pip install tensorflow==2.3.0
     ```
 
 3. 安装bazel。
