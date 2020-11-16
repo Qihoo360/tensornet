@@ -59,6 +59,8 @@ private:
     int self_shard_id_ = 0;
     uint32_t handle_ = 0;
     int total_elements_ = 0;
+    int offset_begin_ = 0;
+    int offset_end_ = 0;
     const OptimizerBase* opt_ = nullptr;
 
     std::vector<DenseOptKernelSharedPtr> opt_kernels_;

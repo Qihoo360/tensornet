@@ -46,10 +46,26 @@ void DenseAdaGradValue::Apply(const AdaGrad* opt, const Eigen::ArrayXf& g) {
     w_ -= opt->learning_rate * m_ / (g2sum_.sqrt() / d2sum_.sqrt() + opt->epsilon);
 }
 
+void DenseAdaGradValue::DeSerialized(std::istream& is, int begin_offset, int end_offset, int index) {
+    int last_index = w_.size() - 1;
+    for (int i = 0; i < end_offset; i++) {
+        if (i < begin_offset) {
+            is >> w_[last_index];
+            is >> d2sum_[last_index];
+            is >> g2sum_[last_index];
+            is >> m_[last_index];
+        } else {
+            is >> w_[index];
+            is >> d2sum_[index];
+            is >> g2sum_[index];
+            is >> m_[index];
+            index++;
+        }
+    }
+}
+
 std::ostream& operator<<(std::ostream& os, const DenseAdaGradValue& value) {
     int array_size = value.w_.size();
-
-    os << "arrary_size:" << array_size << std::endl;
 
     for (int i = 0; i < array_size; i++) {
         os << value.w_[i] << "\t"

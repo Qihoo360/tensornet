@@ -97,8 +97,7 @@ void SparseTable::Save(const std::string& filepath) const {
 void SparseTable::Load(const std::string& filepath) const {
     butil::Timer timer(butil::Timer::STARTED);
 
-    std::string file = filepath + "/sparse_table/" + std::to_string(GetHandle())
-                             + "/rank_" + std::to_string(self_shard_id_);
+    std::string file = filepath + "/sparse_table/" + std::to_string(GetHandle());
     op_kernel_->DeSerialized(file);
 
     timer.stop();

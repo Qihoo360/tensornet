@@ -62,6 +62,8 @@ int DenseTable::Init(int total_elements) {
             LOG(INFO) << "init dense table:" << GetHandle() << " rank:" << i
                       << " elements:" << total_elements
                       << " begin:" << offset_begin << " end:" << offset_end;
+            offset_begin_ = offset_begin;
+            offset_end_ = offset_end;
         }
 
         opt_kernels_.emplace_back(opt_->CreateDenseOptKernel(offset_begin, offset_end));
@@ -110,19 +112,21 @@ void DenseTable::Save(std::string filepath) const {
         return;
     }
 
-    std::string file = filepath + "/dense_table/" + std::to_string(GetHandle())
-                            + "/" + std::to_string(self_shard_id_);
+    std::string meta_file = filepath + "/dense_table/" + std::to_string(GetHandle())
+                            + "/" + std::to_string(self_shard_id_) + "/meta";
 
-    FileWriterSink writer_sink(file);
-
+    FileWriterSink writer_sink(meta_file);
     boost::iostreams::stream<FileWriterSink> out_stream(writer_sink);
 
     out_stream << "total_elements:" << total_elements_ << std::endl;
     out_stream << "rank_num:" << shard_num_ << std::endl;
 
-    opt_kernel->Serialized(out_stream);
-
     out_stream.flush();
+
+    std::string file = filepath + "/dense_table/" + std::to_string(GetHandle())
+                            + "/" + std::to_string(self_shard_id_);
+
+    opt_kernel->Serialized(file);
 
     timer.stop();
 
@@ -134,17 +138,13 @@ void DenseTable::Save(std::string filepath) const {
 void DenseTable::Load(std::string filepath) {
     butil::Timer timer(butil::Timer::STARTED);
 
-    std::string file = filepath + "/dense_table/" + std::to_string(GetHandle())
-                            + "/" + std::to_string(self_shard_id_);
+    std::string meta_file = filepath + "/dense_table/" + std::to_string(GetHandle())
+                            + "/" + std::to_string(self_shard_id_) + "/meta";
 
     FileReaderSource reader_source(file);
     boost::iostreams::stream<FileReaderSource> in_stream(reader_source);
 
-    int rank_num = 0;
     in_stream.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> total_elements_;
-    in_stream.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> rank_num;
-
-    CHECK_EQ(shard_num_, rank_num);
 
     CHECK_EQ(0, Init(total_elements_));
 
@@ -153,7 +153,9 @@ void DenseTable::Load(std::string filepath) {
         return;
     }
 
-    opt_kernel->DeSerialized(in_stream);
+    std::string file = filepath;
+    file.append("/dense_table/").append(std::to_string(GetHandle())).append("/");
+    opt_kernel->DeSerialized(file);
 
     timer.stop();
 

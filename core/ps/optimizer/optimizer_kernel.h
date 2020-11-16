@@ -33,6 +33,7 @@
 #include "core/utility/allocator.h"
 
 #include "core/ps/optimizer/data_struct.h"
+#include "core/ps/ps_cluster.h"
 
 namespace tensornet {
 
@@ -67,9 +68,9 @@ public:
 
     virtual void GetWeight(butil::IOBuf& w_buf) const = 0;
 
-    virtual void Serialized(std::ostream& os) const = 0;
+    virtual void Serialized(std::string& filepath) const = 0;
 
-    virtual void DeSerialized(std::istream& is) = 0;
+    virtual void DeSerialized(std::string& filepath) = 0;
 
     virtual size_t DataSize() = 0;
 
@@ -231,17 +232,80 @@ public:
         }
     }
 
-    virtual void Serialized(std::ostream& os) const {
+    virtual void Serialized(std::string& filepath) const {
+        std::vector<std::thread> threads;
+
         for (size_t i = 0; i < blocks_.size(); i++) {
-            os << blocks_[i] << std::endl;
+            threads.push_back(std::thread([this, i, &filepath]() {
+                std::string file = filepath;
+                file.append("/dense_block_").append(std::to_string(i));
+
+                FileWriterSink writer_sink(file);
+                boost::iostreams::stream<FileWriterSink> out_stream(writer_sink);
+
+                out_stream << blocks_[i] << std::endl;
+                out_stream.flush();
+            }));
         }
+
+        std::for_each(threads.begin(), threads.end(), [](std::thread& t) {
+            t.join();
+        });
+
         return;
     }
 
-    virtual void DeSerialized(std::istream& is) {
+    virtual void DeSerialized(std::string& filepath) {
+        std::vector<std::thread> threads;
+
         for (size_t i = 0; i < blocks_.size(); i++) {
-            is >> blocks_[i];
+            threads.push_back(std::thread([this, i, &filepath]() {
+                std::string meta_file = filepath;
+                meta_file.append("/0/meta");
+
+                FileReaderSource meta_reader(meta_file);
+                boost::iostreams::stream<FileReaderSource> meta_stream(meta_reader);
+
+                int total_element = 0;
+                int old_shard_num = 0;
+                meta_stream.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> total_element;
+                meta_stream.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> old_shard_num;
+
+                int file_element_cnt = std::ceil(total_element * 1.0 / old_shard_num);
+                int needed_cnt = std::ceil(total_element * 1.0 / PsCluster::Instance()->RankNum());
+
+                int begin_index = std::floor(needed_cnt * PsCluster::Instance()->Rank() * 1.0 
+                                             / file_element_cnt);
+                int begin_offset = needed_cnt * PsCluster::Instance()->Rank() % needed_cnt;
+                int index = 0;
+
+                while (needed_cnt > 0) {
+                    std::string file = filepath;
+                    file.append("/dense_block_").append(std::to_string(begin_index));
+
+                    FileReaderSource reader_source(file);
+                    boost::iostreams::stream<FileReaderSource> in_stream(reader_source);
+
+                    int end_offset = begin_offset + needed_cnt;
+                    if (end_offset > file_element_cnt) {
+                        end_offset = file_element_cnt;
+                    }
+
+                    blocks_[i].DeSerialized(in_stream, begin_offset, end_offset, index);
+
+                    needed_cnt -= end_offset - begin_offset;
+                    begin_index++;
+                    begin_offset = 0;
+                    index += end_offset - begin_offset;
+                }
+            }));
         }
+
+        std::for_each(threads.begin(), threads.end(), [](std::thread& t) {
+            t.join();
+        });
+
+        return;
     }
 
     virtual size_t DataSize() {
@@ -361,8 +425,17 @@ public:
 
         is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> block.dim_;
 
+        PsCluster* cluster = PsCluster::Instance();
+        size_t shard_num = cluster->RankNum();
+        int self_shard_id = cluster->Rank();
+
         uint64_t sign = 0;
+        ValueType trash_can;
         while (is >> sign) {
+            if (sign % shard_num != self_shard_id) {
+                is >> trash_can;
+                continue;
+            }
             ValueType* value = block.alloc_.allocate(block.dim_, block.opt_);
             is >> *value;
             block.values_[sign] = value;
@@ -438,13 +511,17 @@ public:
 
         for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
             threads.push_back(std::thread([this, i, &filepath]() {
-                std::string file = filepath;
-                file.append("/sparse_block_").append(std::to_string(i)).append(".gz");
+                PsCluster* cluster = PsCluster::Instance();
+                for (int shard = 0; shard < cluster->RankNum(); ++shard) {
+                    std::string file = filepath;
+                    file.append("/rank_").append(std::to_string(shard))
+                        .append("/sparse_block_").append(std::to_string(i)).append(".gz");
 
-                FileReaderSource reader_source(file, FCT_ZLIB);
-                boost::iostreams::stream<FileReaderSource> in_stream(reader_source);
+                    FileReaderSource reader_source(file, FCT_ZLIB);
+                    boost::iostreams::stream<FileReaderSource> in_stream(reader_source);
 
-                in_stream >> blocks_[i];
+                    in_stream >> blocks_[i];
+                }
             }));
         }
 

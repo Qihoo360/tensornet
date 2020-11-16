@@ -33,6 +33,10 @@ void DenseFtrlValue::Apply(const Ftrl* opt, const Eigen::ArrayXf& g) {
     return;
 }
 
+void DenseFtrlValue::DeSerialized(std::istream& is, int begin_offset, int end_offset, int index) {
+    return;
+}
+
 std::ostream& operator<<(std::ostream& os, const DenseFtrlValue& value) {
     return os;
 }

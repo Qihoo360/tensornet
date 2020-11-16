@@ -40,6 +40,8 @@ public:
         return w_.size() * sizeof(float) * 4;
     }
 
+    void DeSerialized(std::istream& is, int begin_offset, int end_offset, int index);
+
     friend std::ostream& operator<<(std::ostream& os, const DenseFtrlValue& value);
     friend std::istream& operator>>(std::istream& is, DenseFtrlValue& value);
 
