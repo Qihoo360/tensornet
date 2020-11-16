@@ -284,36 +284,44 @@ public:
                 meta_stream.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> total_element;
                 meta_stream.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> old_shard_num;
 
-                int file_element_cnt = std::ceil(total_element * 1.0 / old_shard_num);
+                int shard_element_cnt = std::ceil(total_element * 1.0 / old_shard_num);
                 int needed_cnt = std::ceil(total_element * 1.0 / PsCluster::Instance()->RankNum());
 
                 int begin_index = std::floor(needed_cnt * PsCluster::Instance()->Rank() * 1.0 
-                                             / file_element_cnt);
-                int begin_offset = needed_cnt * PsCluster::Instance()->Rank() % needed_cnt;
+                                             / shard_element_cnt);
+                int begin_offset = needed_cnt * PsCluster::Instance()->Rank() % shard_element_cnt;
                 int index = 0;
 
-                LOG(INFO) << "total_emelemt:" << total_element
+                LOG(INFO) << "Shard:" << PsCluster::Instance()->Rank()
+                          << ",total_emelemt:" << total_element
                           << ", old_shard:" << old_shard_num
-                          << ", old_cnt:" << file_element_cnt
+                          << ", old_cnt:" << shard_element_cnt
                           << ", new_cnt:" << needed_cnt;
+
                 while (needed_cnt > 0) {
-                    std::string file = filepath;
-                    file.append("/dense_block_").append(std::to_string(begin_index));
+                    int block_element_cnt = std::ceil(shard_element_cnt * 1.0 / blocks_.size());
+                    int block_index = begin_offset / block_element_cnt;
+                    begin_offset %= block_element_cnt;
 
-                    FileReaderSource reader_source(file);
-                    boost::iostreams::stream<FileReaderSource> in_stream(reader_source);
+                    for (int b = block_index; b < blocks_.size(); ++b) {
+                        std::string file = filepath;
+                        file.append(std::to_string(begin_index)).append("/dense_block_").append(std::to_string(b));
 
-                    int end_offset = begin_offset + needed_cnt;
-                    if (end_offset > file_element_cnt) {
-                        end_offset = file_element_cnt;
+                        FileReaderSource reader_source(file);
+                        boost::iostreams::stream<FileReaderSource> in_stream(reader_source);
+
+                        int end_offset = begin_offset + needed_cnt;
+                        if (end_offset > block_element_cnt) {
+                            end_offset = block_element_cnt;
+                        }
+
+                        blocks_[i].DeSerialized(in_stream, begin_offset, end_offset, index);
+                        needed_cnt -= end_offset - begin_offset;
+                        begin_offset = 0;
+                        index += end_offset - begin_offset;
                     }
 
-                    blocks_[i].DeSerialized(in_stream, begin_offset, end_offset, index);
-
-                    needed_cnt -= end_offset - begin_offset;
                     begin_index++;
-                    begin_offset = 0;
-                    index += end_offset - begin_offset;
                 }
             }));
         }
