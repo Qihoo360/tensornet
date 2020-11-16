@@ -27,18 +27,18 @@
 
 namespace tensorflow {
 
-class BalanceDatasetOp : public tensorflow::UnaryDatasetOpKernel {
+class BalanceDatasetOp : public UnaryDatasetOpKernel {
 public:
     static constexpr const char* const kDatasetType = "Balance";
     static constexpr const char* const kInputDataset = "input_dataset";
     static constexpr const char* const kOutputTypes = "output_types";
     static constexpr const char* const kOutputShapes = "output_shapes";
 
-    explicit BalanceDatasetOp(tensorflow::OpKernelConstruction* ctx);
+    explicit BalanceDatasetOp(OpKernelConstruction* ctx);
 
 protected:
-    void MakeDataset(tensorflow::OpKernelContext* ctx, tensorflow::DatasetBase* input,
-                    tensorflow::DatasetBase** output) override;
+    void MakeDataset(OpKernelContext* ctx, DatasetBase* input,
+                     DatasetBase** output) override;
 
 private:
     class Dataset;
