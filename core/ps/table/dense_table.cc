@@ -141,7 +141,7 @@ void DenseTable::Load(std::string filepath) {
     std::string meta_file = filepath + "/dense_table/" + std::to_string(GetHandle())
                             + "/" + std::to_string(self_shard_id_) + "/meta";
 
-    FileReaderSource reader_source(file);
+    FileReaderSource reader_source(meta_file);
     boost::iostreams::stream<FileReaderSource> in_stream(reader_source);
 
     in_stream.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> total_elements_;

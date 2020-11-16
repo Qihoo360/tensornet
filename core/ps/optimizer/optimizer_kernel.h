@@ -147,6 +147,19 @@ public:
         return value_.DataSize();
     }
 
+    void DeSerialized(std::istream& is, int begin_offset, int end_offset, int index) {
+        const std::lock_guard<std::mutex> lock(*mu_);
+
+        std::string name;
+        is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> name;
+
+        CHECK_EQ(name, opt_->Name()) << "last trained model with optimizer is:" << name
+            << " but current model use:" << opt_->Name() << " instead."
+            << " you must make sure that use same optimizer when incremental training";
+
+        value_.DeSerialized(is, begin_offset, end_offset, index);
+    }
+
     friend std::ostream& operator<<(std::ostream& os, const DenseKernelBlock& block) {
         const std::lock_guard<std::mutex> lock(*block.mu_);
 
@@ -279,6 +292,10 @@ public:
                 int begin_offset = needed_cnt * PsCluster::Instance()->Rank() % needed_cnt;
                 int index = 0;
 
+                LOG(INFO) << "total_emelemt:" << total_element
+                          << ", old_shard:" << old_shard_num
+                          << ", old_cnt:" << file_element_cnt
+                          << ", new_cnt:" << needed_cnt;
                 while (needed_cnt > 0) {
                     std::string file = filepath;
                     file.append("/dense_block_").append(std::to_string(begin_index));
@@ -430,7 +447,7 @@ public:
         int self_shard_id = cluster->Rank();
 
         uint64_t sign = 0;
-        ValueType trash_can;
+        ValueType trash_can(block.dim_, block.opt_);
         while (is >> sign) {
             if (sign % shard_num != self_shard_id) {
                 is >> trash_can;

@@ -84,12 +84,14 @@ cc_library(
     ]),
     hdrs = glob([
         "ps/optimizer/*.h",
+        "ps/ps_*.h",
     ]) + [
         "//core/utility:random",
         "//core/utility:allocator",
     ],
     deps = [
         "//core/utility:file_io",
+        "//core/ps_interface:server_cc_proto",
         "@brpc//:brpc",
         "@boost//:iostreams",
         "@org_tensorflow//third_party/eigen3:eigen3",
