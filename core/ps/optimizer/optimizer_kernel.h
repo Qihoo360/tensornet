@@ -512,6 +512,12 @@ public:
     void Serialized(const std::string& filepath) {
         std::vector<std::thread> threads;
 
+        std::string meta_file = file_path + "/meta";
+        FileWriterSink meta_writer(meta_file);
+        boost::iostreams::stream<FileWriterSink> meta_out(meta_writer);
+        meta_out << "rank_num:" << PsCluster::Instance()->RankNum() << std::endl;
+        meta_out.flush();
+
         for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
             threads.push_back(std::thread([this, i, &filepath]() {
                 std::string file = filepath;
@@ -532,12 +538,17 @@ public:
     }
 
     void DeSerialized(const std::string& filepath) {
+        std::string meta_file = filepath + "/meta";
+        FileReaderSource meta_reader(file);
+        boost::iostreams::stream<FileReaderSource> meta_in(meta_reader);
+        int old_shard_num = 0;
+        meta_in.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> old_shard_num;
+
         std::vector<std::thread> threads;
 
         for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
             threads.push_back(std::thread([this, i, &filepath]() {
-                PsCluster* cluster = PsCluster::Instance();
-                for (int shard = 0; shard < cluster->RankNum(); ++shard) {
+                for (int shard = 0; shard < old_shard_num; ++shard) {
                     std::string file = filepath;
                     file.append("/rank_").append(std::to_string(shard))
                         .append("/sparse_block_").append(std::to_string(i)).append(".gz");
