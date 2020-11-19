@@ -54,28 +54,34 @@ void DenseAdamValue::Apply(const Adam* opt, const Eigen::ArrayXf& g) {
     w_ -= (m_ * alpha) / (v_.sqrt() + opt->epsilon);
 }
 
-void DenseAdamValue::DeSerialized(std::istream& is, int begin_offset, int end_offset, int index) {
+void DenseAdamValue::DeSerialized(std::istream& is, int& index, int begin_offset, int end_offset) {
+    int array_size = 0;
+
+    is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> array_size;
     is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> beta1_power_;
     is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> beta2_power_;
 
-    int last_index = w_.size() - 1;
-    for (int i = 0; i < end_offset; i++) {
-        if (i < begin_offset) {
-            is >> w_[last_index];
-            is >> m_[last_index];
-            is >> v_[last_index];
-        } else {
-            is >> w_[index];
-            is >> m_[index];
-            is >> v_[index];
-            index++;
-        }
+    //LOG(INFO) << "index:" << index << ", end_offset:" << end_offset << ", w size:" << w_.size() << ", array_size:" << array_size;
+    int cursor = begin_offset;
+    while(begin_offset--) {
+        is >> w_[index];
+        is >> m_[index];
+        is >> v_[index];
+    }
+
+    for (;cursor < end_offset && cursor < array_size; cursor++) {
+        //LOG(INFO) << "index:" << index << ", array_size:" << array_size << ", cursor:" << cursor;
+        is >> w_[index];
+        is >> m_[index];
+        is >> v_[index];
+        index++;
     }
 }
 
 std::ostream& operator<<(std::ostream& os, const DenseAdamValue& value) {
     int array_size = value.w_.size();
 
+    os << "array_size:" << array_size << std::endl;
     os << "beta1_power:" << value.beta1_power_ << std::endl;
     os << "beta2_power:" << value.beta2_power_ << std::endl;
 

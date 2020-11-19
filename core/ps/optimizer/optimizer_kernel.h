@@ -147,17 +147,17 @@ public:
         return value_.DataSize();
     }
 
-    void DeSerialized(std::istream& is, int begin_offset, int end_offset, int index) {
+    void DeSerialized(std::istream& is, int& index, int begin_offset, int end_offset) {
         const std::lock_guard<std::mutex> lock(*mu_);
 
-        std::string name;
+        std::string name = "";
         is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> name;
 
         CHECK_EQ(name, opt_->Name()) << "last trained model with optimizer is:" << name
             << " but current model use:" << opt_->Name() << " instead."
             << " you must make sure that use same optimizer when incremental training";
 
-        value_.DeSerialized(is, begin_offset, end_offset, index);
+        value_.DeSerialized(is, index, begin_offset, end_offset);
     }
 
     friend std::ostream& operator<<(std::ostream& os, const DenseKernelBlock& block) {
@@ -172,7 +172,7 @@ public:
     friend std::istream& operator>>(std::istream& is, DenseKernelBlock& block) {
         const std::lock_guard<std::mutex> lock(*block.mu_);
 
-        std::string name;
+        std::string name = "";
         is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> name;
 
         CHECK_EQ(name, block.opt_->Name()) << "last trained model with optimizer is:" << name
@@ -284,44 +284,49 @@ public:
                 meta_stream.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> total_element;
                 meta_stream.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> old_shard_num;
 
-                int shard_element_cnt = std::ceil(total_element * 1.0 / old_shard_num);
-                int needed_cnt = std::ceil(total_element * 1.0 / PsCluster::Instance()->RankNum());
+                int old_shard_cnt = std::ceil(total_element * 1.0 / old_shard_num);
+                int new_shard_cnt = std::ceil(total_element * 1.0 / PsCluster::Instance()->RankNum());
 
-                int begin_index = std::floor(needed_cnt * PsCluster::Instance()->Rank() * 1.0 
-                                             / shard_element_cnt);
-                int begin_offset = needed_cnt * PsCluster::Instance()->Rank() % shard_element_cnt;
+                int begin_shard = std::floor(new_shard_cnt * PsCluster::Instance()->Rank() * 1.0 
+                                             / old_shard_cnt);
+                int shard_offset = new_shard_cnt * PsCluster::Instance()->Rank() % old_shard_cnt;
+
                 int index = 0;
 
-                LOG(INFO) << "Shard:" << PsCluster::Instance()->Rank()
-                          << ",total_emelemt:" << total_element
-                          << ", old_shard:" << old_shard_num
-                          << ", old_cnt:" << shard_element_cnt
-                          << ", new_cnt:" << needed_cnt;
+                //LOG(INFO) << "Block:" << i
+                //          << ",total_emelemt:" << total_element
+                //          << ", old_shard:" << old_shard_num
+                //          << ", old_cnt:" << old_shard_cnt
+                //          << ", new_cnt:" << new_shard_cnt
+                //          << ", begin_shard:" << begin_shard
+                //          << ", shard_offset:" << shard_offset;
 
-                while (needed_cnt > 0) {
-                    int block_element_cnt = std::ceil(shard_element_cnt * 1.0 / blocks_.size());
-                    int block_index = begin_offset / block_element_cnt;
-                    begin_offset %= block_element_cnt;
+                int old_block_cnt = std::ceil(old_shard_cnt * 1.0 / blocks_.size());
+                int new_block_cnt = blocks_[i].BlockSize();
 
-                    for (int b = block_index; b < blocks_.size(); ++b) {
-                        std::string file = filepath;
-                        file.append(std::to_string(begin_index)).append("/dense_block_").append(std::to_string(b));
+                int begin_block = (shard_offset + new_block_cnt * i) / old_block_cnt;
+                int block_offset = (shard_offset + new_block_cnt * i) % old_block_cnt;
 
-                        FileReaderSource reader_source(file);
-                        boost::iostreams::stream<FileReaderSource> in_stream(reader_source);
+                while (new_block_cnt > index) {
+                    std::string file = filepath;
+                    file.append(std::to_string(begin_shard)).append("/dense_block_").append(std::to_string(begin_block));
+                    //LOG(INFO) << "file:" << file;
 
-                        int end_offset = begin_offset + needed_cnt;
-                        if (end_offset > block_element_cnt) {
-                            end_offset = block_element_cnt;
-                        }
+                    FileReaderSource reader_source(file);
+                    boost::iostreams::stream<FileReaderSource> in_stream(reader_source);
 
-                        blocks_[i].DeSerialized(in_stream, begin_offset, end_offset, index);
-                        needed_cnt -= end_offset - begin_offset;
-                        begin_offset = 0;
-                        index += end_offset - begin_offset;
+                    int end_offset = block_offset + new_block_cnt - index;
+                    if (end_offset > old_block_cnt) {
+                        end_offset = old_block_cnt;
                     }
+                    //LOG(INFO) << "Block:" << i << ", new_block_cnt:" << new_block_cnt
+                    //          << ", begin offset:" << block_offset << ", end_offset:" << end_offset 
+                    //          << ", file:" << file << ", index:" << index;
 
-                    begin_index++;
+                    blocks_[i].DeSerialized(in_stream, index, block_offset, end_offset);
+                    block_offset = 0;
+
+                    begin_block++;
                 }
             }));
         }
@@ -428,7 +433,7 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const SparseKernelBlock& block) {
         std::lock_guard<std::mutex> lock(*block.mutex_);
 
-        os << "opt_name:" << block.opt_->Name() << std::endl;
+        //os << "opt_name:" << block.opt_->Name() << std::endl;
         os << "dim:" << block.dim_ << std::endl;
 
         for (const auto& value : block.values_) {
@@ -441,12 +446,12 @@ public:
     friend std::istream& operator>>(std::istream& is, SparseKernelBlock& block) {
         std::lock_guard<std::mutex> lock(*block.mutex_);
 
-        std::string opt_name;
-        is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> opt_name;
+        //std::string opt_name;
+        //is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> opt_name;
 
-        CHECK_EQ(opt_name, block.opt_->Name()) << "last trained model with optimizer is:" << opt_name
-            << " but current model use:" << block.opt_->Name() << " instead."
-            << " you must make sure that use same optimizer when incremental training";
+        //CHECK_EQ(opt_name, block.opt_->Name()) << "last trained model with optimizer is:" << opt_name
+        //    << " but current model use:" << block.opt_->Name() << " instead."
+        //    << " you must make sure that use same optimizer when incremental training";
 
         is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> block.dim_;
 
@@ -456,15 +461,18 @@ public:
 
         uint64_t sign = 0;
         ValueType trash_can(block.dim_, block.opt_);
+        int count = 0;
         while (is >> sign) {
-            if (sign % shard_num != self_shard_id) {
+            if (static_cast<int>(sign % shard_num) != self_shard_id) {
                 is >> trash_can;
                 continue;
             }
             ValueType* value = block.alloc_.allocate(block.dim_, block.opt_);
             is >> *value;
             block.values_[sign] = value;
+            count++;
         }
+        //LOG(INFO) << "shard:" << self_shard_id << " load " << count;
 
         return is;
     }
@@ -512,7 +520,7 @@ public:
     void Serialized(const std::string& filepath) {
         std::vector<std::thread> threads;
 
-        std::string meta_file = file_path + "/meta";
+        std::string meta_file = filepath + "/meta";
         FileWriterSink meta_writer(meta_file);
         boost::iostreams::stream<FileWriterSink> meta_out(meta_writer);
         meta_out << "rank_num:" << PsCluster::Instance()->RankNum() << std::endl;
@@ -538,21 +546,23 @@ public:
     }
 
     void DeSerialized(const std::string& filepath) {
-        std::string meta_file = filepath + "/meta";
-        FileReaderSource meta_reader(file);
+        std::string meta_file = filepath + "/rank_0/meta";
+        FileReaderSource meta_reader(meta_file);
         boost::iostreams::stream<FileReaderSource> meta_in(meta_reader);
         int old_shard_num = 0;
         meta_in.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> old_shard_num;
+        //LOG(INFO) << "old_shard_num:" << old_shard_num;
 
         std::vector<std::thread> threads;
 
         for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
-            threads.push_back(std::thread([this, i, &filepath]() {
+            threads.push_back(std::thread([this, i, &filepath, old_shard_num]() {
                 for (int shard = 0; shard < old_shard_num; ++shard) {
                     std::string file = filepath;
                     file.append("/rank_").append(std::to_string(shard))
                         .append("/sparse_block_").append(std::to_string(i)).append(".gz");
 
+                    //LOG(INFO) << "block:" << i << "file:" << file;
                     FileReaderSource reader_source(file, FCT_ZLIB);
                     boost::iostreams::stream<FileReaderSource> in_stream(reader_source);
 

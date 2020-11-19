@@ -5,7 +5,7 @@ build:macos --host_cxxopt=-std=c++14
 build:windows --cxxopt=/std:c++14
 build:windows --host_cxxopt=/std:c++14
 
-build --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0"
+build --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=1"
 build --cxxopt=-std=c++14
 
 build --apple_platform_type=macos

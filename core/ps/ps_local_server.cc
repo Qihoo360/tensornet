@@ -58,7 +58,7 @@ void PsLocalServer::DensePushPullAsync(brpc::Controller *cntl,
                                        Callback done) const {
     DenseTable *table =
         DenseTableRegistry::Instance()->Get(request->table_handle());
-    CHECK(nullptr != table);
+    CHECK(nullptr != table) << "table handle needed:" << request->table_handle();
 
     int shard_id = PsCluster::Instance()->Rank();
 

@@ -41,7 +41,7 @@ public:
             + (m_.size() + v_.size() + w_.size()) * sizeof(float);
     }
 
-    void DeSerialized(std::istream& is, int begin_offset, int end_offset, int index);
+    void DeSerialized(std::istream& is, int& index, int begin_offset, int end_offset);
 
     friend std::ostream& operator<<(std::ostream& os, const DenseAdamValue& value);
     friend std::istream& operator>>(std::istream& is, DenseAdamValue& value);

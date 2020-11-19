@@ -139,7 +139,7 @@ void DenseTable::Load(std::string filepath) {
     butil::Timer timer(butil::Timer::STARTED);
 
     std::string meta_file = filepath + "/dense_table/" + std::to_string(GetHandle())
-                            + "/" + std::to_string(self_shard_id_) + "/meta";
+                            + "/0/meta";
 
     FileReaderSource reader_source(meta_file);
     boost::iostreams::stream<FileReaderSource> in_stream(reader_source);
@@ -175,6 +175,10 @@ uint32_t DenseTableRegistry::Register(DenseTable* table) {
     int table_handle = tables_.size();
 
     tables_.push_back(table);
+    LOG(INFO) << "table Register.";
+    if (tables_[0] == nullptr) {
+        LOG(INFO) << "Register nullptr table.";
+    }
 
     return table_handle;
 }
@@ -183,11 +187,18 @@ DenseTable* DenseTableRegistry::Get(uint32_t table_handle) {
     CHECK_LT(table_handle, tables_.size()) << " table_handle:" << table_handle
         << " table size:" <<tables_.size();
 
+    if (tables_[0] == nullptr) {
+        LOG(INFO) << "table size:" << tables_.size();
+    }
     return tables_[table_handle];
 }
 
 DenseTable* CreateDenseTable(const OptimizerBase* opt, int shard_num, int self_shard_id) {
     DenseTable* table = new DenseTable(opt, shard_num, self_shard_id);
+    if (table == nullptr) {
+        LOG(INFO) << "CreateDenseTable failed.";
+    }
+    LOG(INFO) << "CreateDenseTable shard_num:" << shard_num << ", self_shard_id:" << self_shard_id;
 
     table->SetHandle(DenseTableRegistry::Instance()->Register(table));
 
