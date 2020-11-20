@@ -84,7 +84,7 @@ SparseAdaGradValue::SparseAdaGradValue(int dim, const AdaGrad* opt) {
     auto distribution = std::normal_distribution<float>(0, 1 / sqrt(Dim()));
 
     for (int i = 0; i < Dim(); ++i) {
-        w_[i] = distribution(reng) * opt->initial_scale;
+        Weight()[i] = distribution(reng) * opt->initial_scale;
     }
 
     g2sum_ = opt->initial_g2sum;

@@ -68,11 +68,11 @@ public:
     }
 
     float* Weight() {
-        return w_;
+        return data_;
     }
 
     const float* Weight() const {
-        return w_;
+        return data_;
     }
 
     void Apply(const AdaGrad* opt, SparseGradInfo& grad_info);
@@ -86,7 +86,7 @@ private:
     float g2sum_;
     int dim_ = 0;
     float show_ = 0.0;
-    float w_[0];
+    float data_[0];
 };
 
 std::ostream& operator<<(std::ostream& os, const SparseAdaGradValue& value);

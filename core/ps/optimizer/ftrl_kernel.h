@@ -67,11 +67,11 @@ public:
     }
 
     float* Weight() {
-        return data + Dim() * 0;
+        return data_ + Dim() * 0;
     }
 
     const float* Weight() const {
-        return data + Dim() * 0;
+        return data_ + Dim() * 0;
     }
 
     void Apply(const Ftrl* opt, SparseGradInfo& grad_info);
@@ -83,25 +83,25 @@ public:
 
 protected:
     float* Z() {
-        return data + Dim() * 1;
+        return data_ + Dim() * 1;
     }
 
     const float* Z() const {
-        return data + Dim() * 1;
+        return data_ + Dim() * 1;
     }
 
     float* N() {
-        return data + Dim() * 2;
+        return data_ + Dim() * 2;
     }
 
     const float* N() const {
-        return data + Dim() * 2;
+        return data_ + Dim() * 2;
     }
 
 private:
     int dim_ = 0;
     float show_ = 0.0;
-    float data[0];
+    float data_[0];
 };
 
 std::ostream& operator<<(std::ostream& os, const SparseFtrlValue& value);

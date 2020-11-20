@@ -70,11 +70,11 @@ public:
     }
 
     float* Weight() {
-        return data;
+        return data_ + Dim() * 0;
     }
 
     const float* Weight() const {
-        return data;
+        return data_ + Dim() * 0;
     }
 
     void Apply(const Adam* opt, SparseGradInfo& grad_info);
@@ -84,19 +84,19 @@ public:
 protected:
 
     float* M() {
-        return data + Dim();
+        return data_ + Dim() * 1;
     }
 
     const float* M() const {
-        return data + Dim();
+        return data_ + Dim() * 1;
     }
 
     float* V() {
-        return data + Dim() * 2;
+        return data_ + Dim() * 2;
     }
 
     const float* V() const {
-        return data + Dim() * 2;
+        return data_ + Dim() * 2;
     }
 
     friend std::ostream& operator<<(std::ostream& os, const SparseAdamValue& value);
@@ -105,7 +105,7 @@ protected:
 private:
     int dim_ = 0;
     float show_ = 0.0;
-    float data[0];
+    float data_[0];
 };
 
 std::ostream& operator<<(std::ostream& os, const SparseAdamValue& value);
