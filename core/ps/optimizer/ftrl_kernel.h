@@ -52,24 +52,14 @@ private:
 std::ostream& operator<<(std::ostream& os, const DenseFtrlValue& value);
 std::istream& operator>>(std::istream& is, DenseFtrlValue& value);
 
-struct SparseFtrlValue {
+struct alignas(4) SparseFtrlValue {
 public:
     SparseFtrlValue(int dim, const Ftrl* opt);
 
     ~SparseFtrlValue() = default;
 
     static constexpr int DynSizeof(int dim) {
-        return sizeof(SparseFtrlValue) +
-            sizeof(float) * dim * 3 * (IsMiniDim(dim) ? 0 : 1);
-    }
-
-    static constexpr bool IsMiniDim(int dim) {
-        // UnionWeight could store two float
-        if (2 > dim) {
-            return true;
-        } else {
-            return false;
-        }
+        return sizeof(SparseFtrlValue) + sizeof(float) * dim * 3;
     }
 
     int Dim() const {
@@ -77,19 +67,11 @@ public:
     }
 
     float* Weight() {
-        if (IsMiniDim_()) {
-            return w_.v;
-        } else {
-            return w_.p;
-        }
+        return data + Dim() * 0;
     }
 
     const float* Weight() const {
-        if (IsMiniDim_()) {
-            return w_.v;
-        } else {
-            return w_.p;
-        }
+        return data + Dim() * 0;
     }
 
     void Apply(const Ftrl* opt, SparseGradInfo& grad_info);
@@ -101,46 +83,22 @@ public:
 
 protected:
     float* Z() {
-        if (IsMiniDim_()) {
-            return z_.v;
-        } else {
-            return z_.p;
-        }
+        return data + Dim() * 1;
     }
 
     const float* Z() const {
-        if (IsMiniDim_()) {
-            return z_.v;
-        } else {
-            return z_.p;
-        }
+        return data + Dim() * 1;
     }
 
     float* N() {
-        if (IsMiniDim_()) {
-            return n_.v;
-        } else {
-            return n_.p;
-        }
+        return data + Dim() * 2;
     }
 
     const float* N() const {
-        if (IsMiniDim_()) {
-            return n_.v;
-        } else {
-            return n_.p;
-        }
+        return data + Dim() * 2;
     }
 
 private:
-    bool IsMiniDim_() const {
-        return IsMiniDim(dim_);
-    }
-
-private:
-    UnionWeight w_;
-    UnionWeight z_;
-    UnionWeight n_;
     int dim_ = 0;
     float show_ = 0.0;
     float data[0];

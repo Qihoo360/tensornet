@@ -80,21 +80,11 @@ std::istream& operator>>(std::istream& is, DenseAdaGradValue& value) {
 SparseAdaGradValue::SparseAdaGradValue(int dim, const AdaGrad* opt) {
     dim_ = dim;
 
-    if (!IsMiniDim_()) {
-        w_.p = data;
-    }
-
     auto& reng = local_random_engine();
     auto distribution = std::normal_distribution<float>(0, 1 / sqrt(Dim()));
 
-    if (IsMiniDim_()) {
-        for (int i = 0; i < Dim(); ++i) {
-            w_.v[i] = distribution(reng) * opt->initial_scale;
-        }
-    } else {
-        for (int i = 0; i < Dim(); ++i) {
-            w_.p[i] = distribution(reng) * opt->initial_scale;
-        }
+    for (int i = 0; i < Dim(); ++i) {
+        w_[i] = distribution(reng) * opt->initial_scale;
     }
 
     g2sum_ = opt->initial_g2sum;

@@ -56,23 +56,13 @@ private:
 std::ostream& operator<<(std::ostream& os, const DenseAdamValue& value);
 std::istream& operator>>(std::istream& is, DenseAdamValue& value);
 
-struct SparseAdamValue {
+struct alignas(4) SparseAdamValue {
 public:
     SparseAdamValue(int dim, const Adam* opt);
     ~SparseAdamValue() = default;
 
     static constexpr int DynSizeof(int dim) {
-        return sizeof(SparseAdamValue) +
-            sizeof(float) * dim * 3 * (IsMiniDim(dim) ? 0 : 1);
-    }
-
-    static constexpr bool IsMiniDim(int dim) {
-        // UnionWeight could store two float
-        if (2 > dim) {
-            return true;
-        } else {
-            return false;
-        }
+        return sizeof(SparseAdamValue) + sizeof(float) * dim * 3;
     }
 
     int Dim() const {
@@ -80,19 +70,11 @@ public:
     }
 
     float* Weight() {
-        if (IsMiniDim_()) {
-            return w_.v;
-        } else {
-            return w_.p;
-        }
+        return data;
     }
 
     const float* Weight() const {
-        if (IsMiniDim_()) {
-            return w_.v;
-        } else {
-            return w_.p;
-        }
+        return data;
     }
 
     void Apply(const Adam* opt, SparseGradInfo& grad_info);
@@ -100,49 +82,27 @@ public:
     void ShowDecay(const Adam* opt) {}
 
 protected:
-    bool IsMiniDim_() const {
-        return IsMiniDim(dim_);
-    }
 
     float* M() {
-        if (IsMiniDim_()) {
-            return m_.v;
-        } else {
-            return m_.p;
-        }
+        return data + Dim();
     }
 
     const float* M() const {
-        if (IsMiniDim_()) {
-            return m_.v;
-        } else {
-            return m_.p;
-        }
+        return data + Dim();
     }
 
     float* V() {
-        if (IsMiniDim_()) {
-            return v_.v;
-        } else {
-            return v_.p;
-        }
+        return data + Dim() * 2;
     }
 
     const float* V() const {
-        if (IsMiniDim_()) {
-            return v_.v;
-        } else {
-            return v_.p;
-        }
+        return data + Dim() * 2;
     }
 
     friend std::ostream& operator<<(std::ostream& os, const SparseAdamValue& value);
     friend std::istream& operator>>(std::istream& is, SparseAdamValue& value);
 
 private:
-    UnionWeight w_;
-    UnionWeight m_;
-    UnionWeight v_;
     int dim_ = 0;
     float show_ = 0.0;
     float data[0];

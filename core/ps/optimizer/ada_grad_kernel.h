@@ -53,24 +53,14 @@ private:
 std::ostream& operator<<(std::ostream& os, const DenseAdaGradValue& value);
 std::istream& operator>>(std::istream& is, DenseAdaGradValue& value);
 
-struct SparseAdaGradValue {
+struct alignas(4) SparseAdaGradValue {
 public:
     SparseAdaGradValue(int dim, const AdaGrad* opt);
 
     ~SparseAdaGradValue() = default;
 
     static constexpr int DynSizeof(int dim) {
-        return sizeof(SparseAdaGradValue) +
-            sizeof(float) * dim * (IsMiniDim(dim) ? 0 : 1);
-    }
-
-    static constexpr bool IsMiniDim(int dim) {
-        // UnionWeight could store two float
-        if (2 > dim) {
-            return true;
-        } else {
-            return false;
-        }
+        return sizeof(SparseAdaGradValue) + sizeof(float) * dim;
     }
 
     int Dim() const {
@@ -78,19 +68,11 @@ public:
     }
 
     float* Weight() {
-        if (IsMiniDim_()) {
-            return w_.v;
-        } else {
-            return w_.p;
-        }
+        return w_;
     }
 
     const float* Weight() const {
-        if (IsMiniDim_()) {
-            return w_.v;
-        } else {
-            return w_.p;
-        }
+        return w_;
     }
 
     void Apply(const AdaGrad* opt, SparseGradInfo& grad_info);
@@ -101,16 +83,10 @@ public:
     friend std::istream& operator>>(std::istream& is, SparseAdaGradValue& value);
 
 private:
-    bool IsMiniDim_() const {
-        return IsMiniDim(dim_);
-    }
-
-private:
-    UnionWeight w_;
     float g2sum_;
     int dim_ = 0;
     float show_ = 0.0;
-    float data[0];
+    float w_[0];
 };
 
 std::ostream& operator<<(std::ostream& os, const SparseAdaGradValue& value);

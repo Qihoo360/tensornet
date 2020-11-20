@@ -91,27 +91,13 @@ std::istream& operator>>(std::istream& is, DenseAdamValue& value) {
 SparseAdamValue::SparseAdamValue(int dim, const Adam* opt) {
     dim_ = dim;
 
-    if (!IsMiniDim_()) {
-        w_.p = data + dim * 0;
-        m_.p = data + dim * 1;
-        v_.p = data + dim * 2;
-    }
-
     auto& reng = local_random_engine();
     auto distribution = std::normal_distribution<float>(0, 1 / sqrt(Dim()));
 
-    if (IsMiniDim_()) {
-        for (int i = 0; i < Dim(); ++i) {
-            w_.v[i] = distribution(reng) * opt->initial_scale;
-            m_.v[i] = 0;
-            v_.v[i] = 0;
-        }
-    } else {
-        for (int i = 0; i < Dim(); ++i) {
-            w_.p[i] = distribution(reng) * opt->initial_scale;
-            m_.p[i] = 0;
-            v_.p[i] = 0;
-        }
+    for (int i = 0; i < Dim(); ++i) {
+        Weight()[i] = distribution(reng) * opt->initial_scale;
+        M()[i] = 0;
+        V()[i] = 0;
     }
 }
 
