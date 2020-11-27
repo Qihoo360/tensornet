@@ -44,27 +44,13 @@ std::istream& operator>>(std::istream& is, DenseFtrlValue& value) {
 SparseFtrlValue::SparseFtrlValue(int dim, const Ftrl* opt) {
     dim_ = dim;
 
-    if (!IsMiniDim_()) {
-        w_.p = data + dim * 0;
-        z_.p = data + dim * 1;
-        n_.p = data + dim * 2;
-    }
-
     auto& reng = local_random_engine();
     auto distribution = std::normal_distribution<float>(0, 1 / sqrt(Dim()));
 
-    if (IsMiniDim_()) {
-        for (int i = 0; i < Dim(); ++i) {
-            w_.v[i] = distribution(reng) * opt->initial_range;
-            z_.v[i] = 0;
-            n_.v[i] = 0;
-        }
-    } else {
-        for (int i = 0; i < Dim(); ++i) {
-            w_.p[i] = distribution(reng) * opt->initial_range;
-            z_.p[i] = 0;
-            n_.p[i] = 0;
-        }
+    for (int i = 0; i < Dim(); ++i) {
+        Weight()[i] = distribution(reng) * opt->initial_range;
+        Z()[i] = 0;
+        N()[i] = 0;
     }
 }
 

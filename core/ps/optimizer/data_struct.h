@@ -17,11 +17,6 @@
 
 namespace tensornet {
 
-union UnionWeight {
-    float* p = nullptr;
-    float v[2];
-};
-
 struct SparseGradInfo {
     float* grad;
     int batch_show;
