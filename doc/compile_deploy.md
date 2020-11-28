@@ -35,7 +35,7 @@
 执行下面命令编译：
 
     sh ./configure.sh --openmpi_path /da2/zhangyansheng/openmpi-1.4.5
-    bazel build -c opt //core:_pywrap_tn
+    bazel build -c opt //core:_pywrap_tn.so
 **tips**:
 在tensorflow-2.2.0版本下编译时，修改`WORKSPACE`中tensorflow版本
 ```bash

@@ -1,7 +1,7 @@
 FROM ubuntu:18.04
 
 RUN apt-get update && apt-get install wget -y && \
-    apt-get install python3.6 -y && \
+    apt-get install python3.7 -y && \
     apt-get install python3-pip -y && \
     apt-get install git -y && \
     apt-get install libssl-dev -y && \
@@ -13,7 +13,7 @@ RUN wget https://github.com/bazelbuild/bazel/releases/download/3.1.0/bazel-3.1.0
     chmod a+x /usr/local/bin/bazel
 
 RUN pip3 install --upgrade pip && \
-    pip3 install tensorflow==2.2.0
+    pip3 install tensorflow==2.3.0
 
 RUN wget https://download.open-mpi.org/release/open-mpi/v1.4/openmpi-1.4.5.tar.gz && \
     mkdir -p /root/opt && \
@@ -25,7 +25,7 @@ RUN wget https://download.open-mpi.org/release/open-mpi/v1.4/openmpi-1.4.5.tar.g
     make install
 
 RUN git clone https://github.com/Qihoo360/tensornet.git && \
-    ln -s /usr/bin/python3.6 /usr/bin/python && \
+    ln -s /usr/bin/python3.7 /usr/bin/python && \
     cd /tensornet && \
     bash configure.sh --openmpi_path /root/opt/openmpi && \
     bazel build -c opt //core:_pywrap_tn && \
