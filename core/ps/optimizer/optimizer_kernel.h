@@ -343,6 +343,9 @@ public:
         os << "dim:" << block.dim_ << std::endl;
 
         for (const auto& value : block.values_) {
+            if ((*(value.second)).DeleteByShow(block.opt_)) {
+                continue;
+            }
             os << value.first << "\t" << *(value.second) << std::endl;
         }
 

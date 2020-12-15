@@ -78,6 +78,8 @@ public:
 
     void ShowDecay(const Ftrl* opt);
 
+    bool DeleteByShow(const Ftrl* opt);
+
     friend std::ostream& operator<<(std::ostream& os, const SparseFtrlValue& value);
     friend std::istream& operator>>(std::istream& is, SparseFtrlValue& value);
 

@@ -141,5 +141,9 @@ void SparseAdaGradValue::ShowDecay(const AdaGrad* opt) {
     show_ *= opt->show_decay_rate;
 }
 
+bool SparseAdaGradValue::DeleteByShow(const AdaGrad* opt) {
+    return show_ < opt->show_threshold;
+}
+
 } // namespace tensornet
 

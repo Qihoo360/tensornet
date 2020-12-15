@@ -78,14 +78,15 @@ class AdaGrad : public OptimizerBase {
 public:
     AdaGrad(float lr, float initial_g2sum, float initial_scale,
             float epsilon, float grad_decay_rate, float mom_decay_rate,
-            float show_decay_rate)
+            float show_decay_rate, float show_threshold)
         : OptimizerBase(lr)
         , initial_g2sum(initial_g2sum)
         , initial_scale(initial_scale)
         , epsilon(epsilon)
         , grad_decay_rate(grad_decay_rate)
         , mom_decay_rate(mom_decay_rate)
-        , show_decay_rate(show_decay_rate) {
+        , show_decay_rate(show_decay_rate)
+        , show_threshold(show_threshold) {
     }
 
     ~AdaGrad() { }
@@ -104,20 +105,23 @@ public:
     float initial_scale = 1.0;
     float epsilon = 1e-08;
     float grad_decay_rate = 1.0;
-    float mom_decay_rate = 0.9;
-    float show_decay_rate = 0.98;
+    float mom_decay_rate = 1.0;
+    float show_decay_rate = 1.0;
+    float show_threshold = 0.0;
 };
 
 class Ftrl : public OptimizerBase {
 public:
     Ftrl(float lr, float initial_range, float beta, 
-         float lambda1, float lambda2, float show_decay_rate)
+         float lambda1, float lambda2, float show_decay_rate,
+         float show_threshold)
         : OptimizerBase(lr)
         , initial_range(initial_range)
         , beta(beta)
         , lambda1(lambda1)
         , lambda2(lambda2)
-        ,show_decay_rate(show_decay_rate) {
+        ,show_decay_rate(show_decay_rate)
+        ,show_threshold(show_threshold) {
     }
 
     ~Ftrl() {}
@@ -136,7 +140,8 @@ public:
     float beta = 1;
     float lambda1 = 0.1;
     float lambda2 = 1;
-    float show_decay_rate = 0.98;
+    float show_decay_rate = 1.0;
+    float show_threshold = 0.0;
 };
 
 } // namespace tensornet {

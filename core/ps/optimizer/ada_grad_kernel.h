@@ -79,6 +79,8 @@ public:
 
     void ShowDecay(const AdaGrad* opt);
 
+    bool DeleteByShow(const AdaGrad* opt);
+
     friend std::ostream& operator<<(std::ostream& os, const SparseAdaGradValue& value);
     friend std::istream& operator>>(std::istream& is, SparseAdaGradValue& value);
 

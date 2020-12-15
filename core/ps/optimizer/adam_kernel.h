@@ -81,6 +81,8 @@ public:
 
     void ShowDecay(const Adam* opt) {}
 
+    bool DeleteByShow(const Adam* opt) { return false; }
+
 protected:
 
     float* M() {

@@ -112,5 +112,9 @@ void SparseFtrlValue::ShowDecay(const Ftrl* opt) {
     show_ *= opt->show_decay_rate;
 }
 
+bool SparseFtrlValue::DeleteByShow(const Ftrl* opt) {
+    return show_ < opt->show_threshold;
+}
+
 } // namespace tensornet
 

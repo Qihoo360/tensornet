@@ -60,7 +60,8 @@ PYBIND11_MODULE(_pywrap_tn, m) {
         float epsilon = 1e-8;
         float grad_decay_rate = 1.0;
         float mom_decay_rate = 1.0;
-        float show_decay_rate = 0.98;
+        float show_decay_rate = 1.0;
+        float show_threshold = 0.0;
 
         PyObject* item = PyDict_GetItemString(kwargs.ptr(), "learning_rate");
         if (NULL != item) {
@@ -92,9 +93,13 @@ PYBIND11_MODULE(_pywrap_tn, m) {
         if (NULL != item) {
             show_decay_rate = PyFloat_AsDouble(item);
         }
+        item = PyDict_GetItemString(kwargs.ptr(), "show_threshold");
+        if (NULL != item) {
+            show_threshold = PyFloat_AsDouble(item);
+        }
 
         auto opt = new AdaGrad(learning_rate, initial_g2sum, initial_scale, epsilon, 
-                grad_decay_rate, mom_decay_rate, show_decay_rate);
+                grad_decay_rate, mom_decay_rate, show_decay_rate, show_threshold);
 
         // NOTICE! opt will not delete until system exist
         PyObject* obj = PyCapsule_New(opt, nullptr, nullptr);
@@ -145,7 +150,8 @@ PYBIND11_MODULE(_pywrap_tn, m) {
         float beta = 1;
         float lambda1 = 0.1;
         float lambda2 = 1;
-        float show_decay_rate = 0.98;
+        float show_decay_rate = 1.0;
+        float show_threshold = 0.0;
 
         PyObject* item = PyDict_GetItemString(kwargs.ptr(), "learning_rate");
         if (NULL != item) {
@@ -176,8 +182,12 @@ PYBIND11_MODULE(_pywrap_tn, m) {
         if (NULL != item) {
             show_decay_rate = PyFloat_AsDouble(item);
         }
+        item = PyDict_GetItemString(kwargs.ptr(), "show_threshold");
+        if (NULL != item) {
+            show_threshold= PyFloat_AsDouble(item);
+        }
 
-        auto opt = new Ftrl(learning_rate, initial_range, beta, lambda1, lambda2, show_decay_rate);
+        auto opt = new Ftrl(learning_rate, initial_range, beta, lambda1, lambda2, show_decay_rate, show_threshold);
 
         // NOTICE! opt will not delete until system exist
         PyObject* obj = PyCapsule_New(opt, nullptr, nullptr);

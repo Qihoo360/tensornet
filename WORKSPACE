@@ -5,12 +5,21 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 http_archive(
     name = "org_tensorflow",
-    sha256 = "2595a5c401521f20a2734c4e5d54120996f8391f00bb62a57267d930bce95350",
-    strip_prefix = "tensorflow-2.3.0",
+    sha256 = "69cd836f87b8c53506c4f706f655d423270f5a563b76dc1cfa60fbc3184185a3",
+    strip_prefix = "tensorflow-2.2.0",
     urls = [
-        "https://github.com/tensorflow/tensorflow/archive/v2.3.0.tar.gz",
+        "https://github.com/tensorflow/tensorflow/archive/v2.2.0.tar.gz",
     ],
 )
+
+#http_archive(
+#    name = "org_tensorflow",
+#    sha256 = "2595a5c401521f20a2734c4e5d54120996f8391f00bb62a57267d930bce95350",
+#    strip_prefix = "tensorflow-2.3.0",
+#    urls = [
+#        "https://github.com/tensorflow/tensorflow/archive/v2.3.0.tar.gz",
+#    ],
+#)
 
 # copy from @org_tensorflow/WORKSPACE
 # TensorFlow build depends on these dependencies.
