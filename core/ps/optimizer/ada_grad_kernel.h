@@ -63,10 +63,6 @@ public:
         return sizeof(SparseAdaGradValue) + sizeof(float) * dim;
     }
 
-    int Dim() const {
-        return dim_;
-    }
-
     float* Weight() {
         return data_;
     }
@@ -75,16 +71,16 @@ public:
         return data_;
     }
 
-    void Apply(const AdaGrad* opt, SparseGradInfo& grad_info);
+    void Apply(const AdaGrad* opt, SparseGradInfo& grad_info, int dim);
 
     void ShowDecay(const AdaGrad* opt);
 
-    friend std::ostream& operator<<(std::ostream& os, const SparseAdaGradValue& value);
-    friend std::istream& operator>>(std::istream& is, SparseAdaGradValue& value);
+    void Serialize(std::ostream& os, int dim);
+
+    void DeSerialize(std::istream& is, int dim);
 
 private:
     float g2sum_;
-    int dim_ = 0;
     float show_ = 0.0;
     float data_[0];
 };

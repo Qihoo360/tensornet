@@ -65,51 +65,44 @@ public:
         return sizeof(SparseAdamValue) + sizeof(float) * dim * 3;
     }
 
-    int Dim() const {
-        return dim_;
-    }
-
     float* Weight() {
-        return data_ + Dim() * 0;
+        return data_;
     }
 
     const float* Weight() const {
-        return data_ + Dim() * 0;
+        return data_;
     }
 
-    void Apply(const Adam* opt, SparseGradInfo& grad_info);
+    void Apply(const Adam* opt, SparseGradInfo& grad_info, int dim);
 
     void ShowDecay(const Adam* opt) {}
 
+    void Serialize(std::ostream& os, int dim);
+
+    void DeSerialize(std::istream& is, int dim);
+
 protected:
 
-    float* M() {
-        return data_ + Dim() * 1;
+    float* M(int dim) {
+        return data_ + dim * 1;
     }
 
-    const float* M() const {
-        return data_ + Dim() * 1;
+    const float* M(int dim) const {
+        return data_ + dim * 1;
     }
 
-    float* V() {
-        return data_ + Dim() * 2;
+    float* V(int dim) {
+        return data_ + dim * 2;
     }
 
-    const float* V() const {
-        return data_ + Dim() * 2;
+    const float* V(int dim) const {
+        return data_ + dim * 2;
     }
-
-    friend std::ostream& operator<<(std::ostream& os, const SparseAdamValue& value);
-    friend std::istream& operator>>(std::istream& is, SparseAdamValue& value);
 
 private:
-    int dim_ = 0;
     float show_ = 0.0;
     float data_[0];
 };
-
-std::ostream& operator<<(std::ostream& os, const SparseAdamValue& value);
-std::istream& operator>>(std::istream& is, SparseAdamValue& value);
 
 } // namespace tensornet {
 

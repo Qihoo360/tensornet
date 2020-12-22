@@ -89,26 +89,28 @@ std::istream& operator>>(std::istream& is, DenseAdamValue& value) {
 }
 
 SparseAdamValue::SparseAdamValue(int dim, const Adam* opt) {
-    dim_ = dim;
-
     auto& reng = local_random_engine();
-    auto distribution = std::normal_distribution<float>(0, 1 / sqrt(Dim()));
+    auto distribution = std::normal_distribution<float>(0, 1 / sqrt(dim));
 
-    for (int i = 0; i < Dim(); ++i) {
-        Weight()[i] = distribution(reng) * opt->initial_scale;
-        M()[i] = 0;
-        V()[i] = 0;
+    float* w = Weight();
+    float* m = M(dim);
+    float* v = V(dim);
+
+    for (int i = 0; i < dim; ++i) {
+        w[i] = distribution(reng) * opt->initial_scale;
+        m[i] = 0;
+        v[i] = 0;
     }
 }
 
-void SparseAdamValue::Apply(const Adam* opt, SparseGradInfo& grad_info) {
+void SparseAdamValue::Apply(const Adam* opt, SparseGradInfo& grad_info, int dim) {
     show_ += grad_info.batch_show;
 
     float* w = Weight();
-    float* m = M();
-    float* v = V();
+    float* m = M(dim);
+    float* v = V(dim);
 
-    for (int i = 0; i < dim_; ++i) {
+    for (int i = 0; i < dim; ++i) {
         m[i] = opt->beta1 * m[i] + (1 - opt->beta1) * grad_info.grad[i];
         v[i] = opt->beta2 * v[i] + (1 - opt->beta2) * grad_info.grad[i] * grad_info.grad[i];
 
@@ -116,35 +118,32 @@ void SparseAdamValue::Apply(const Adam* opt, SparseGradInfo& grad_info) {
     }
 }
 
-std::ostream& operator<<(std::ostream& os, const SparseAdamValue& value) {
-    os << value.dim_ << "\t";
+void SparseAdamValue::Serialize(std::ostream& os, int dim) {
+    float* w = Weight();
+    float* m = M(dim);
+    float* v = V(dim);
 
-    for (int i = 0; i < value.dim_; i++) {
-        os << value.Weight()[i] << "\t";
-        os << value.M()[i] << "\t";
-        os << value.V()[i] << "\t";
+    for (int i = 0; i < dim; i++) {
+        os << w[i] << "\t";
+        os << m[i] << "\t";
+        os << v[i] << "\t";
     }
 
-    os << value.show_;
-
-    return os;
+    os << show_;
 }
 
-std::istream& operator>>(std::istream& is, SparseAdamValue& value) {
-    int dim;
-    is >> dim;
+void SparseAdamValue::DeSerialize(std::istream& is, int dim) {
+    float* w = Weight();
+    float* m = M(dim);
+    float* v = V(dim);
 
-    CHECK_EQ(dim, value.dim_);
-
-    for (int i = 0; i < value.dim_; i++) {
-        is >> value.Weight()[i];
-        is >> value.M()[i];
-        is >> value.V()[i];
+    for (int i = 0; i < dim; i++) {
+        is >> w[i];
+        is >> m[i];
+        is >> v[i];
     }
 
-    is >> value.show_;
-
-    return is;
+    is >> show_;
 }
 
 } // namespace tensornet {

@@ -42,24 +42,26 @@ std::istream& operator>>(std::istream& is, DenseFtrlValue& value) {
 }
 
 SparseFtrlValue::SparseFtrlValue(int dim, const Ftrl* opt) {
-    dim_ = dim;
-
     auto& reng = local_random_engine();
-    auto distribution = std::normal_distribution<float>(0, 1 / sqrt(Dim()));
+    auto distribution = std::normal_distribution<float>(0, 1 / sqrt(dim));
 
-    for (int i = 0; i < Dim(); ++i) {
-        Weight()[i] = distribution(reng) * opt->initial_range;
-        Z()[i] = 0;
-        N()[i] = 0;
+    float* w = Weight();
+    float* z = Z(dim);
+    float* n = N(dim);
+
+    for (int i = 0; i < dim; ++i) {
+        w[i] = distribution(reng) * opt->initial_range;
+        z[i] = 0;
+        n[i] = 0;
     }
 }
 
-void SparseFtrlValue::Apply(const Ftrl* opt, SparseGradInfo& grad_info) {
+void SparseFtrlValue::Apply(const Ftrl* opt, SparseGradInfo& grad_info, int dim) {
     float* w = Weight();
-    float* z = Z();
-    float* n = N();
+    float* z = Z(dim);
+    float* n = N(dim);
 
-    for (int i = 0; i < dim_; ++i) {
+    for (int i = 0; i < dim; ++i) {
         float g2 = grad_info.grad[i] * grad_info.grad[i];
 
         z[i] += grad_info.grad[i] - opt->learning_rate * (sqrt(n[i] + g2) - sqrt(n[i])) * w[i];
@@ -77,35 +79,32 @@ void SparseFtrlValue::Apply(const Ftrl* opt, SparseGradInfo& grad_info) {
     }
 }
 
-std::ostream& operator<<(std::ostream& os, const SparseFtrlValue& value) {
-    os << value.dim_ << "\t";
+void SparseFtrlValue::Serialize(std::ostream& os, int dim) {
+    float* w = Weight();
+    float* z = Z(dim);
+    float* n = N(dim);
 
-    for (int i = 0; i < value.dim_; i++) {
-        os << value.Weight()[i] << "\t";
-        os << value.Z()[i] << "\t";
-        os << value.N()[i] << "\t";
+    for (int i = 0; i < dim; i++) {
+        os << w[i] << "\t";
+        os << z[i] << "\t";
+        os << n[i] << "\t";
     }
 
-    os << value.show_;
-
-    return os;
+    os << show_;
 }
 
-std::istream& operator>>(std::istream& is, SparseFtrlValue& value) {
-    int dim;
-    is >> dim;
+void SparseFtrlValue::DeSerialize(std::istream& is, int dim) {
+    float* w = Weight();
+    float* z = Z(dim);
+    float* n = N(dim);
 
-    CHECK_EQ(dim, value.dim_);
-
-    for (int i = 0; i < value.dim_; i++) {
-        is >> value.Weight()[i];
-        is >> value.Z()[i];
-        is >> value.N()[i];
+    for (int i = 0; i < dim; i++) {
+        is >> w[i];
+        is >> z[i];
+        is >> n[i];
     }
 
-    is >> value.show_;
-
-    return is;
+    is >> show_;
 }
 
 void SparseFtrlValue::ShowDecay(const Ftrl* opt) {

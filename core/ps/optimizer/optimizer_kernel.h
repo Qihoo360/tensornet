@@ -329,7 +329,7 @@ public:
 
         ValueType* value = iter->second;
 
-        value->Apply(opt_, grad_info);
+        value->Apply(opt_, grad_info, dim_);
     }
 
     size_t Size() const {
@@ -343,7 +343,9 @@ public:
         os << "dim:" << block.dim_ << std::endl;
 
         for (const auto& value : block.values_) {
-            os << value.first << "\t" << *(value.second) << std::endl;
+            os << value.first << "\t";
+            value.second->Serialize(os, block.dim_);
+            os << std::endl;
         }
 
         return os;
@@ -364,7 +366,7 @@ public:
         uint64_t sign = 0;
         while (is >> sign) {
             ValueType* value = block.alloc_.allocate(block.dim_, block.opt_);
-            is >> *value;
+            value->DeSerialize(is, block.dim_);
             block.values_[sign] = value;
         }
 

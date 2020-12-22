@@ -62,50 +62,43 @@ public:
         return sizeof(SparseFtrlValue) + sizeof(float) * dim * 3;
     }
 
-    int Dim() const {
-        return dim_;
-    }
-
     float* Weight() {
-        return data_ + Dim() * 0;
+        return data_;
     }
 
     const float* Weight() const {
-        return data_ + Dim() * 0;
+        return data_;
     }
 
-    void Apply(const Ftrl* opt, SparseGradInfo& grad_info);
+    void Apply(const Ftrl* opt, SparseGradInfo& grad_info, int dim);
 
     void ShowDecay(const Ftrl* opt);
 
-    friend std::ostream& operator<<(std::ostream& os, const SparseFtrlValue& value);
-    friend std::istream& operator>>(std::istream& is, SparseFtrlValue& value);
+    void Serialize(std::ostream& os, int dim);
+
+    void DeSerialize(std::istream& is, int dim);
 
 protected:
-    float* Z() {
-        return data_ + Dim() * 1;
+    float* Z(int dim) {
+        return data_ + dim * 1;
     }
 
-    const float* Z() const {
-        return data_ + Dim() * 1;
+    const float* Z(int dim) const {
+        return data_ + dim * 1;
     }
 
-    float* N() {
-        return data_ + Dim() * 2;
+    float* N(int dim) {
+        return data_ + dim * 2;
     }
 
-    const float* N() const {
-        return data_ + Dim() * 2;
+    const float* N(int dim) const {
+        return data_ + dim * 2;
     }
 
 private:
-    int dim_ = 0;
     float show_ = 0.0;
     float data_[0];
 };
-
-std::ostream& operator<<(std::ostream& os, const SparseFtrlValue& value);
-std::istream& operator>>(std::istream& is, SparseFtrlValue& value);
 
 }  // namespace tensornet
 
