@@ -6,7 +6,6 @@ cc_test(
     ],
     deps = [
         "//core:_ps_optimizer",
-        "@brpc//:brpc",
         "@com_google_googletest//:gtest_main",
     ],
     copts = ["-g -ggdb"],

@@ -78,63 +78,50 @@ std::istream& operator>>(std::istream& is, DenseAdaGradValue& value) {
 }
 
 SparseAdaGradValue::SparseAdaGradValue(int dim, const AdaGrad* opt) {
-    dim_ = dim;
-
     auto& reng = local_random_engine();
-    auto distribution = std::normal_distribution<float>(0, 1 / sqrt(Dim()));
+    auto distribution = std::normal_distribution<float>(0, 1 / sqrt(dim));
 
-    for (int i = 0; i < Dim(); ++i) {
+    for (int i = 0; i < dim; ++i) {
         Weight()[i] = distribution(reng) * opt->initial_scale;
     }
 
     g2sum_ = opt->initial_g2sum;
 }
 
-void SparseAdaGradValue::Apply(const AdaGrad* opt, SparseGradInfo& grad_info) {
+void SparseAdaGradValue::Apply(const AdaGrad* opt, SparseGradInfo& grad_info, int dim) {
     show_ += grad_info.batch_show;
 
     float* w = Weight();
 
     double add_g2sum = 0;
 
-    for (int i = 0; i < dim_; ++i) {
+    for (int i = 0; i < dim; ++i) {
         add_g2sum += grad_info.grad[i] * grad_info.grad[i];
     }
 
-    g2sum_ += add_g2sum / dim_;
+    g2sum_ += add_g2sum / dim;
 
-    for (int i = 0; i < dim_; ++i) {
+    for (int i = 0; i < dim; ++i) {
         w[i] -= opt->learning_rate * grad_info.grad[i] / (opt->epsilon + sqrt(g2sum_));
     }
 }
 
-std::ostream& operator<<(std::ostream& os, const SparseAdaGradValue& value) {
-    os << value.dim_ << "\t";
-
-    for (int i = 0; i < value.dim_; i++) {
-        os << value.Weight()[i] << "\t";
+void SparseAdaGradValue::Serialize(std::ostream& os, int dim) {
+    for (int i = 0; i < dim; i++) {
+        os << Weight()[i] << "\t";
     }
 
-    os << value.g2sum_ << "\t";
-    os << value.show_;
-
-    return os;
+    os << g2sum_ << "\t";
+    os << show_;
 }
 
-std::istream& operator>>(std::istream& is, SparseAdaGradValue& value) {
-    int dim;
-    is >> dim;
-
-    CHECK_EQ(dim, value.dim_);
-
-    for (int i = 0; i < value.dim_; i++) {
-        is >> value.Weight()[i];
+void SparseAdaGradValue::DeSerialize(std::istream& is, int dim) {
+    for (int i = 0; i < dim; i++) {
+        is >> Weight()[i];
     }
 
-    is >> value.g2sum_;
-    is >> value.show_;
-
-    return is;
+    is >> g2sum_;
+    is >> show_;
 }
 
 void SparseAdaGradValue::ShowDecay(const AdaGrad* opt) {
