@@ -184,13 +184,13 @@ PYBIND11_MODULE(_pywrap_tn, m) {
 
         return py::reinterpret_steal<py::object>(obj);
     })
-    .def("create_sparse_table", [](py::object obj, int dimension) {
+    .def("create_sparse_table", [](py::object obj, std::string name, int dimension) {
         OptimizerBase* opt =
                static_cast<OptimizerBase*>(PyCapsule_GetPointer(obj.ptr(), nullptr));
 
         PsCluster* cluster = PsCluster::Instance();
 
-        SparseTable* table = CreateSparseTable(opt, dimension, cluster->RankNum(), cluster->Rank());
+        SparseTable* table = CreateSparseTable(opt, name, dimension, cluster->RankNum(), cluster->Rank());
 
         return table->GetHandle();
     })
