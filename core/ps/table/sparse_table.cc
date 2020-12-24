@@ -26,12 +26,13 @@
 
 namespace tensornet {
 
-SparseTable::SparseTable(const OptimizerBase* opt, int dimension,
-        int shard_num, int self_shard_id)
+SparseTable::SparseTable(const OptimizerBase* opt, const std::string& name,
+        int dimension, int shard_num, int self_shard_id)
     : shard_num_(shard_num)
     , self_shard_id_(self_shard_id)
     , opt_(opt)
-    , dim_(dimension) {
+    , dim_(dimension)
+    , name_(name) {
     CHECK(opt_ != nullptr);
 
     op_kernel_ = opt_->CreateSparseOptKernel(dim_);
@@ -81,14 +82,22 @@ void SparseTable::Push(const SparsePushRequest* req, butil::IOBuf& grad_buf, Spa
 void SparseTable::Save(const std::string& filepath) const {
     butil::Timer timer(butil::Timer::STARTED);
 
-    std::string file = filepath + "/sparse_table/" + std::to_string(GetHandle())
-                             + "/rank_" + std::to_string(self_shard_id_);
+    std::string file = filepath + "/sparse_table/";
+
+    if (name_.empty()) {
+        file += std::to_string(GetHandle());
+    } else {
+        file += name_;
+    }
+
+    file += "/rank_" + std::to_string(self_shard_id_);
 
     op_kernel_->Serialized(file);
 
     timer.stop();
 
     LOG(INFO) << "SparseTable save. rank:" << self_shard_id_
+              << " table_name:" << name_
               << " table_id:" << GetHandle()
               << " latency:" << timer.s_elapsed() << "s"
               << " keys_count:" << op_kernel_->KeyCount();
@@ -97,13 +106,22 @@ void SparseTable::Save(const std::string& filepath) const {
 void SparseTable::Load(const std::string& filepath) const {
     butil::Timer timer(butil::Timer::STARTED);
 
-    std::string file = filepath + "/sparse_table/" + std::to_string(GetHandle())
-                             + "/rank_" + std::to_string(self_shard_id_);
+    std::string file = filepath + "/sparse_table/";
+
+    if (name_.empty()) {
+        file += std::to_string(GetHandle());
+    } else {
+        file += name_;
+    }
+
+    file += "/rank_" + std::to_string(self_shard_id_);
+
     op_kernel_->DeSerialized(file);
 
     timer.stop();
 
     LOG(INFO) << "SparseTable load. rank:" << self_shard_id_
+              << " table_name:" << name_
               << " table_id:" << GetHandle()
               << " latency:" << timer.s_elapsed() << "s"
               << " keys_count:" << op_kernel_->KeyCount();
@@ -132,9 +150,9 @@ uint32_t SparseTableRegistry::Register(SparseTable* table) {
     return table_handle;
 }
 
-SparseTable* CreateSparseTable(const OptimizerBase* opt, int dimension,
-        int shard_num, int self_shard_id) {
-    SparseTable* table = new SparseTable(opt, dimension, shard_num, self_shard_id);
+SparseTable* CreateSparseTable(const OptimizerBase* opt, const std::string& name,
+        int dimension, int shard_num, int self_shard_id) {
+    SparseTable* table = new SparseTable(opt, name, dimension, shard_num, self_shard_id);
 
     table->SetHandle(SparseTableRegistry::Instance()->Register(table));
 
