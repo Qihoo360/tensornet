@@ -79,7 +79,7 @@ void SparseTable::Push(const SparsePushRequest* req, butil::IOBuf& grad_buf, Spa
     }
 }
 
-void SparseTable::Save(const std::string& filepath) const {
+void SparseTable::Save(const std::string& filepath) {
     butil::Timer timer(butil::Timer::STARTED);
 
     std::string file = filepath + "/sparse_table/";
@@ -96,14 +96,19 @@ void SparseTable::Save(const std::string& filepath) const {
 
     timer.stop();
 
+    int new_key_count = op_kernel_->KeyCount();
+
     LOG(INFO) << "SparseTable save. rank:" << self_shard_id_
-              << " table_name:" << name_
-              << " table_id:" << GetHandle()
+              << " name:" << name_
+              << " handle:" << GetHandle()
               << " latency:" << timer.s_elapsed() << "s"
-              << " keys_count:" << op_kernel_->KeyCount();
+              << " key_count:" << new_key_count
+              << " increased key_count:" << new_key_count - saved_key_count_;
+
+    saved_key_count_ = new_key_count;
 }
 
-void SparseTable::Load(const std::string& filepath) const {
+void SparseTable::Load(const std::string& filepath) {
     butil::Timer timer(butil::Timer::STARTED);
 
     std::string file = filepath + "/sparse_table/";
@@ -120,11 +125,13 @@ void SparseTable::Load(const std::string& filepath) const {
 
     timer.stop();
 
+    saved_key_count_ = op_kernel_->KeyCount();
+
     LOG(INFO) << "SparseTable load. rank:" << self_shard_id_
-              << " table_name:" << name_
-              << " table_id:" << GetHandle()
+              << " name:" << name_
+              << " handle:" << GetHandle()
               << " latency:" << timer.s_elapsed() << "s"
-              << " keys_count:" << op_kernel_->KeyCount();
+              << " key_count:" << saved_key_count_;
 }
 
 void SparseTable::ShowDecay() const {
