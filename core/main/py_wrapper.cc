@@ -33,6 +33,15 @@ using std::string;
 
 using namespace tensornet;
 
+#define PYDICT_PARSE_KWARGS(kwargs, name, default_value)                        \
+    opt->name = default_value;                                                  \
+    {                                                                           \
+        PyObject* item = PyDict_GetItemString(kwargs.ptr(), #name);             \
+        if (NULL != item) {                                                     \
+            opt->name = PyFloat_AsDouble(item);                                 \
+        }                                                                       \
+    }
+
 PYBIND11_MODULE(_pywrap_tn, m) {
     m.def("init", []() {
         PsCluster* cluster = PsCluster::Instance();
@@ -54,47 +63,17 @@ PYBIND11_MODULE(_pywrap_tn, m) {
         return true;
     })
     .def("AdaGrad", [](py::kwargs kwargs) {
-        float learning_rate = 0.01;
-        float initial_g2sum = 0;
-        float initial_scale = 1;
-        float epsilon = 1e-8;
-        float grad_decay_rate = 1.0;
-        float mom_decay_rate = 1.0;
-        float show_decay_rate = 0.98;
+        auto opt = new AdaGrad();
 
-        PyObject* item = PyDict_GetItemString(kwargs.ptr(), "learning_rate");
-        if (NULL != item) {
-            learning_rate = PyFloat_AsDouble(item);
-        }
+        PYDICT_PARSE_KWARGS(kwargs, learning_rate, 0.01);
+        PYDICT_PARSE_KWARGS(kwargs, show_decay_rate, 0.98);
+        PYDICT_PARSE_KWARGS(kwargs, feature_drop_show, 1 - opt->show_decay_rate);
 
-        item = PyDict_GetItemString(kwargs.ptr(), "initial_g2sum");
-        if (NULL != item) {
-            initial_g2sum = PyFloat_AsDouble(item);
-        }
-
-        item = PyDict_GetItemString(kwargs.ptr(), "initial_scale");
-        if (NULL != item) {
-            initial_scale = PyFloat_AsDouble(item);
-        }
-        item = PyDict_GetItemString(kwargs.ptr(), "epsilon");
-        if (NULL != item) {
-            epsilon = PyFloat_AsDouble(item);
-        }
-        item = PyDict_GetItemString(kwargs.ptr(), "grad_decay_rate");
-        if (NULL != item) {
-            grad_decay_rate = PyFloat_AsDouble(item);
-        }
-        item = PyDict_GetItemString(kwargs.ptr(), "mom_decay_rate");
-        if (NULL != item) {
-            mom_decay_rate = PyFloat_AsDouble(item);
-        }
-        item = PyDict_GetItemString(kwargs.ptr(), "show_decay_rate");
-        if (NULL != item) {
-            show_decay_rate = PyFloat_AsDouble(item);
-        }
-
-        auto opt = new AdaGrad(learning_rate, initial_g2sum, initial_scale, epsilon, 
-                grad_decay_rate, mom_decay_rate, show_decay_rate);
+        PYDICT_PARSE_KWARGS(kwargs, initial_g2sum, 0);
+        PYDICT_PARSE_KWARGS(kwargs, initial_scale, 1);
+        PYDICT_PARSE_KWARGS(kwargs, epsilon, 1e-8);
+        PYDICT_PARSE_KWARGS(kwargs, grad_decay_rate, 1.0);
+        PYDICT_PARSE_KWARGS(kwargs, mom_decay_rate, 1.0);
 
         // NOTICE! opt will not delete until system exist
         PyObject* obj = PyCapsule_New(opt, nullptr, nullptr);
@@ -102,37 +81,16 @@ PYBIND11_MODULE(_pywrap_tn, m) {
         return py::reinterpret_steal<py::object>(obj);
     })
     .def("Adam", [](py::kwargs kwargs) {
-        float learning_rate = 0.001;
-        float beta1 = 0.9;
-        float beta2 = 0.999;
-        float epsilon = 1e-8;
-        float initial_scale = 1.0;
+        auto opt = new Adam();
 
-        PyObject* item = PyDict_GetItemString(kwargs.ptr(), "learning_rate");
-        if (NULL != item) {
-            learning_rate = PyFloat_AsDouble(item);
-        }
+        PYDICT_PARSE_KWARGS(kwargs, learning_rate, 0.001);
+        PYDICT_PARSE_KWARGS(kwargs, show_decay_rate, 0.98);
+        PYDICT_PARSE_KWARGS(kwargs, feature_drop_show, 1 - opt->show_decay_rate);
 
-        item = PyDict_GetItemString(kwargs.ptr(), "beta1");
-        if (NULL != item) {
-            beta1 = PyFloat_AsDouble(item);
-        }
-
-        item = PyDict_GetItemString(kwargs.ptr(), "beta2");
-        if (NULL != item) {
-            beta2 = PyFloat_AsDouble(item);
-        }
-
-        item = PyDict_GetItemString(kwargs.ptr(), "epsilon");
-        if (NULL != item) {
-            epsilon = PyFloat_AsDouble(item);
-        }
-        item = PyDict_GetItemString(kwargs.ptr(), "initial_scale");
-        if (NULL != item) {
-            initial_scale = PyFloat_AsDouble(item);
-        }
-
-        auto opt = new Adam(learning_rate, beta1, beta2, epsilon, initial_scale);
+        PYDICT_PARSE_KWARGS(kwargs, beta1, 0.9);
+        PYDICT_PARSE_KWARGS(kwargs, beta2, 0.999);
+        PYDICT_PARSE_KWARGS(kwargs, epsilon, 1e-8);
+        PYDICT_PARSE_KWARGS(kwargs, initial_scale, 1.0);
 
         // NOTICE! opt will not delete until system exist
         PyObject* obj = PyCapsule_New(opt, nullptr, nullptr);
@@ -140,44 +98,16 @@ PYBIND11_MODULE(_pywrap_tn, m) {
         return py::reinterpret_steal<py::object>(obj);
     })
     .def("Ftrl", [](py::kwargs kwargs) {
-        float learning_rate = 0.05;
-        float initial_range = 0;
-        float beta = 1;
-        float lambda1 = 0.1;
-        float lambda2 = 1;
-        float show_decay_rate = 0.98;
+        auto opt = new Ftrl();
 
-        PyObject* item = PyDict_GetItemString(kwargs.ptr(), "learning_rate");
-        if (NULL != item) {
-            learning_rate = PyFloat_AsDouble(item);
-        }
+        PYDICT_PARSE_KWARGS(kwargs, learning_rate, 0.05);
+        PYDICT_PARSE_KWARGS(kwargs, show_decay_rate, 0.98);
+        PYDICT_PARSE_KWARGS(kwargs, feature_drop_show, 1 - opt->show_decay_rate);
 
-        item = PyDict_GetItemString(kwargs.ptr(), "initial_range");
-        if (NULL != item) {
-            initial_range = PyFloat_AsDouble(item);
-        }
-
-        item = PyDict_GetItemString(kwargs.ptr(), "beta");
-        if (NULL != item) {
-            beta = PyFloat_AsDouble(item);
-        }
-
-        item = PyDict_GetItemString(kwargs.ptr(), "lambda1");
-        if (NULL != item) {
-            lambda1 = PyFloat_AsDouble(item);
-        }
-
-        item = PyDict_GetItemString(kwargs.ptr(), "lambda2");
-        if (NULL != item) {
-            lambda2 = PyFloat_AsDouble(item);
-        }
-
-        item = PyDict_GetItemString(kwargs.ptr(), "show_decay_rate");
-        if (NULL != item) {
-            show_decay_rate = PyFloat_AsDouble(item);
-        }
-
-        auto opt = new Ftrl(learning_rate, initial_range, beta, lambda1, lambda2, show_decay_rate);
+        PYDICT_PARSE_KWARGS(kwargs, beta, 1);
+        PYDICT_PARSE_KWARGS(kwargs, lambda1, 0.1);
+        PYDICT_PARSE_KWARGS(kwargs, lambda2, 1);
+        PYDICT_PARSE_KWARGS(kwargs, initial_scale, 1.0);
 
         // NOTICE! opt will not delete until system exist
         PyObject* obj = PyCapsule_New(opt, nullptr, nullptr);

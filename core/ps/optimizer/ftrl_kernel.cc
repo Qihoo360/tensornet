@@ -50,13 +50,15 @@ SparseFtrlValue::SparseFtrlValue(int dim, const Ftrl* opt) {
     float* n = N(dim);
 
     for (int i = 0; i < dim; ++i) {
-        w[i] = distribution(reng) * opt->initial_range;
+        w[i] = distribution(reng) * opt->initial_scale;
         z[i] = 0;
         n[i] = 0;
     }
 }
 
 void SparseFtrlValue::Apply(const Ftrl* opt, SparseGradInfo& grad_info, int dim) {
+    delta_show += grad_info.batch_show;
+
     float* w = Weight();
     float* z = Z(dim);
     float* n = N(dim);
@@ -90,7 +92,7 @@ void SparseFtrlValue::Serialize(std::ostream& os, int dim) {
         os << n[i] << "\t";
     }
 
-    os << show_;
+    os << show;
 }
 
 void SparseFtrlValue::DeSerialize(std::istream& is, int dim) {
@@ -104,11 +106,7 @@ void SparseFtrlValue::DeSerialize(std::istream& is, int dim) {
         is >> n[i];
     }
 
-    is >> show_;
-}
-
-void SparseFtrlValue::ShowDecay(const Ftrl* opt) {
-    show_ *= opt->show_decay_rate;
+    is >> show;
 }
 
 } // namespace tensornet

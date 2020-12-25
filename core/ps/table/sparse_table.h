@@ -46,9 +46,9 @@ public:
         return handle_;
     }
 
-    void Save(const std::string& filepath) const;
+    void Save(const std::string& filepath);
 
-    void Load(const std::string& filepath) const;
+    void Load(const std::string& filepath);
 
     void ShowDecay() const;
 
@@ -59,6 +59,7 @@ private:
     const OptimizerBase* opt_ = nullptr;
     std::shared_ptr<SparseOptimizerKernelBase> op_kernel_;
     int dim_;
+    int saved_key_count_ = 0;
     std::string name_;
 };
 

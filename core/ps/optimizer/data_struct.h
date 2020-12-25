@@ -22,6 +22,16 @@ struct SparseGradInfo {
     int batch_show;
 };
 
+struct alignas(4) SparseOptValue {
+    float show = 0.0;
+    int delta_show = 0;
+
+    void ShowDecay(float decay_rate) {
+        show = (1 - decay_rate) * delta_show + decay_rate * show;
+        delta_show = 0;
+    }
+};
+
 } // namespace tensornet {
 
 #endif // !TENSORNET_OPTIMIZER_DATA_STRUCT_H_

@@ -89,7 +89,7 @@ SparseAdaGradValue::SparseAdaGradValue(int dim, const AdaGrad* opt) {
 }
 
 void SparseAdaGradValue::Apply(const AdaGrad* opt, SparseGradInfo& grad_info, int dim) {
-    show_ += grad_info.batch_show;
+    delta_show += grad_info.batch_show;
 
     float* w = Weight();
 
@@ -112,7 +112,7 @@ void SparseAdaGradValue::Serialize(std::ostream& os, int dim) {
     }
 
     os << g2sum_ << "\t";
-    os << show_;
+    os << show;
 }
 
 void SparseAdaGradValue::DeSerialize(std::istream& is, int dim) {
@@ -121,11 +121,7 @@ void SparseAdaGradValue::DeSerialize(std::istream& is, int dim) {
     }
 
     is >> g2sum_;
-    is >> show_;
-}
-
-void SparseAdaGradValue::ShowDecay(const AdaGrad* opt) {
-    show_ *= opt->show_decay_rate;
+    is >> show;
 }
 
 } // namespace tensornet

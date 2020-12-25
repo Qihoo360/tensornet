@@ -104,7 +104,7 @@ SparseAdamValue::SparseAdamValue(int dim, const Adam* opt) {
 }
 
 void SparseAdamValue::Apply(const Adam* opt, SparseGradInfo& grad_info, int dim) {
-    show_ += grad_info.batch_show;
+    delta_show += grad_info.batch_show;
 
     float* w = Weight();
     float* m = M(dim);
@@ -129,7 +129,7 @@ void SparseAdamValue::Serialize(std::ostream& os, int dim) {
         os << v[i] << "\t";
     }
 
-    os << show_;
+    os << show;
 }
 
 void SparseAdamValue::DeSerialize(std::istream& is, int dim) {
@@ -143,7 +143,7 @@ void SparseAdamValue::DeSerialize(std::istream& is, int dim) {
         is >> v[i];
     }
 
-    is >> show_;
+    is >> show;
 }
 
 } // namespace tensornet {
