@@ -56,7 +56,8 @@ private:
 std::ostream& operator<<(std::ostream& os, const DenseAdamValue& value);
 std::istream& operator>>(std::istream& is, DenseAdamValue& value);
 
-struct alignas(4) SparseAdamValue {
+struct alignas(4) SparseAdamValue
+    : public SparseOptValue {
 public:
     SparseAdamValue(int dim, const Adam* opt);
     ~SparseAdamValue() = default;
@@ -74,8 +75,6 @@ public:
     }
 
     void Apply(const Adam* opt, SparseGradInfo& grad_info, int dim);
-
-    void ShowDecay(const Adam* opt) {}
 
     void Serialize(std::ostream& os, int dim);
 
@@ -100,7 +99,6 @@ protected:
     }
 
 private:
-    float show_ = 0.0;
     float data_[0];
 };
 

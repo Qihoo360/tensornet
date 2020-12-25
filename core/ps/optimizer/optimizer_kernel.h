@@ -343,9 +343,11 @@ public:
         os << "dim:" << block.dim_ << std::endl;
 
         for (const auto& value : block.values_) {
-            os << value.first << "\t";
-            value.second->Serialize(os, block.dim_);
-            os << std::endl;
+            if (value.second->show > block.opt_->feature_drop_show) {
+                os << value.first << "\t";
+                value.second->Serialize(os, block.dim_);
+                os << std::endl;
+            }
         }
 
         return os;
@@ -376,7 +378,7 @@ public:
     void ShowDecay() {
         for (auto& iter : values_) {
             ValueType* value = iter.second;
-            value->ShowDecay(opt_);
+            value->ShowDecay(opt_->show_decay_rate);
         }
     }
 
@@ -419,7 +421,7 @@ public:
         for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
             threads.push_back(std::thread([this, i, &filepath]() {
                 std::string file = filepath;
-                file.append("/sparse_block_").append(std::to_string(i)).append(".gz");
+                file.append("/block_").append(std::to_string(i)).append(".gz");
 
                 FileWriterSink writer_sink(file, FCT_ZLIB);
 
@@ -441,7 +443,7 @@ public:
         for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
             threads.push_back(std::thread([this, i, &filepath]() {
                 std::string file = filepath;
-                file.append("/sparse_block_").append(std::to_string(i)).append(".gz");
+                file.append("/block_").append(std::to_string(i)).append(".gz");
 
                 FileReaderSource reader_source(file, FCT_ZLIB);
                 boost::iostreams::stream<FileReaderSource> in_stream(reader_source);

@@ -29,12 +29,6 @@ typedef std::shared_ptr<SparseOptimizerKernelBase> SparseOptKernelSharedPtr;
 
 class OptimizerBase {
 public:
-    OptimizerBase(float lr)
-        : learning_rate(lr) {
-    }
-
-    virtual ~OptimizerBase() { }
-
     virtual DenseOptKernelSharedPtr CreateDenseOptKernel(
         int offset_begin, int offset_end) const = 0;
 
@@ -44,20 +38,12 @@ public:
 
 public:
     float learning_rate = 0.01;
+    float show_decay_rate = 0.98;
+    float feature_drop_show = 0.02;
 };
 
 class Adam : public OptimizerBase {
 public:
-    Adam(float lr, float b1, float b2, float eps, float initial_scale)
-        : OptimizerBase(lr)
-        , beta1(b1)
-        , beta2(b2)
-        , epsilon(eps)
-        , initial_scale(initial_scale) {
-    }
-
-    ~Adam() { }
-
     virtual DenseOptKernelSharedPtr CreateDenseOptKernel(
         int offset_begin, int offset_end) const;
 
@@ -76,20 +62,6 @@ public:
 
 class AdaGrad : public OptimizerBase {
 public:
-    AdaGrad(float lr, float initial_g2sum, float initial_scale,
-            float epsilon, float grad_decay_rate, float mom_decay_rate,
-            float show_decay_rate)
-        : OptimizerBase(lr)
-        , initial_g2sum(initial_g2sum)
-        , initial_scale(initial_scale)
-        , epsilon(epsilon)
-        , grad_decay_rate(grad_decay_rate)
-        , mom_decay_rate(mom_decay_rate)
-        , show_decay_rate(show_decay_rate) {
-    }
-
-    ~AdaGrad() { }
-
     virtual DenseOptKernelSharedPtr CreateDenseOptKernel(
         int offset_begin, int offset_end) const;
 
@@ -105,23 +77,10 @@ public:
     float epsilon = 1e-08;
     float grad_decay_rate = 1.0;
     float mom_decay_rate = 0.9;
-    float show_decay_rate = 0.98;
 };
 
 class Ftrl : public OptimizerBase {
 public:
-    Ftrl(float lr, float initial_range, float beta, 
-         float lambda1, float lambda2, float show_decay_rate)
-        : OptimizerBase(lr)
-        , initial_range(initial_range)
-        , beta(beta)
-        , lambda1(lambda1)
-        , lambda2(lambda2)
-        ,show_decay_rate(show_decay_rate) {
-    }
-
-    ~Ftrl() {}
-
     virtual DenseOptKernelSharedPtr CreateDenseOptKernel(
         int offset_begin, int offset_end) const;
 
@@ -132,11 +91,10 @@ public:
     }
 
 public:
-    float initial_range = 0;
+    float initial_scale = 0;
     float beta = 1;
     float lambda1 = 0.1;
     float lambda2 = 1;
-    float show_decay_rate = 0.98;
 };
 
 } // namespace tensornet {

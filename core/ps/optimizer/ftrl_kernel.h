@@ -52,7 +52,8 @@ private:
 std::ostream& operator<<(std::ostream& os, const DenseFtrlValue& value);
 std::istream& operator>>(std::istream& is, DenseFtrlValue& value);
 
-struct alignas(4) SparseFtrlValue {
+struct alignas(4) SparseFtrlValue
+    : public SparseOptValue {
 public:
     SparseFtrlValue(int dim, const Ftrl* opt);
 
@@ -71,8 +72,6 @@ public:
     }
 
     void Apply(const Ftrl* opt, SparseGradInfo& grad_info, int dim);
-
-    void ShowDecay(const Ftrl* opt);
 
     void Serialize(std::ostream& os, int dim);
 
@@ -96,7 +95,6 @@ protected:
     }
 
 private:
-    float show_ = 0.0;
     float data_[0];
 };
 
