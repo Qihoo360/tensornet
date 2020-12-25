@@ -146,11 +146,11 @@ class StateManagerImpl(fc.StateManager):
     def get_feature_mapping_values(self, column_name):
         return self.pulled_mapping_values[column_name]
 
-    def save_sparse_table(self, filepath):
-        return tn.core.save_sparse_table(self.sparse_table_handle, filepath)
+    def save_sparse_table(self, filepath, mode):
+        return tn.core.save_sparse_table(self.sparse_table_handle, filepath, mode)
 
-    def load_sparse_table(self, filepath):
-        return tn.core.load_sparse_table(self.sparse_table_handle, filepath)
+    def load_sparse_table(self, filepath, mode):
+        return tn.core.load_sparse_table(self.sparse_table_handle, filepath, mode)
 
     def show_decay(self):
         return tn.core.show_decay(self.sparse_table_handle)
@@ -265,11 +265,11 @@ class EmbeddingFeatures(Layer):
 
         return new_features
 
-    def save_sparse_table(self, filepath):
-        return self._state_manager.save_sparse_table(filepath)
+    def save_sparse_table(self, filepath, mode):
+        return self._state_manager.save_sparse_table(filepath, mode)
 
-    def load_sparse_table(self, filepath):
-        return self._state_manager.load_sparse_table(filepath)
+    def load_sparse_table(self, filepath, mode):
+        return self._state_manager.load_sparse_table(filepath, mode)
 
     def show_decay(self):
         return self._state_manager.show_decay()

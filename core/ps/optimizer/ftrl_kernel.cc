@@ -57,7 +57,7 @@ SparseFtrlValue::SparseFtrlValue(int dim, const Ftrl* opt) {
 }
 
 void SparseFtrlValue::Apply(const Ftrl* opt, SparseGradInfo& grad_info, int dim) {
-    delta_show += grad_info.batch_show;
+    delta_show_ += grad_info.batch_show;
 
     float* w = Weight();
     float* z = Z(dim);
@@ -81,7 +81,7 @@ void SparseFtrlValue::Apply(const Ftrl* opt, SparseGradInfo& grad_info, int dim)
     }
 }
 
-void SparseFtrlValue::Serialize(std::ostream& os, int dim) {
+void SparseFtrlValue::SerializeTxt_(std::ostream& os, int dim) {
     float* w = Weight();
     float* z = Z(dim);
     float* n = N(dim);
@@ -92,10 +92,10 @@ void SparseFtrlValue::Serialize(std::ostream& os, int dim) {
         os << n[i] << "\t";
     }
 
-    os << show;
+    os << show_;
 }
 
-void SparseFtrlValue::DeSerialize(std::istream& is, int dim) {
+void SparseFtrlValue::DeSerializeTxt_(std::istream& is, int dim) {
     float* w = Weight();
     float* z = Z(dim);
     float* n = N(dim);
@@ -106,7 +106,21 @@ void SparseFtrlValue::DeSerialize(std::istream& is, int dim) {
         is >> n[i];
     }
 
-    is >> show;
+    is >> show_;
+}
+
+void SparseFtrlValue::SerializeBin_(std::ostream& os, int dim) {
+    os.write(reinterpret_cast<const char*>(Weight()), dim * sizeof(float));
+    os.write(reinterpret_cast<const char*>(Z(dim)), dim * sizeof(float));
+    os.write(reinterpret_cast<const char*>(N(dim)), dim * sizeof(float));
+    os.write(reinterpret_cast<const char*>(&show_), sizeof(show_));
+}
+
+void SparseFtrlValue::DeSerializeBin_(std::istream& is, int dim) {
+    is.read(reinterpret_cast<char*>(Weight()), dim * sizeof(float));
+    is.read(reinterpret_cast<char*>(Z(dim)), dim * sizeof(float));
+    is.read(reinterpret_cast<char*>(N(dim)), dim * sizeof(float));
+    is.read(reinterpret_cast<char*>(&show_), sizeof(show_));
 }
 
 } // namespace tensornet

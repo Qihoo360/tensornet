@@ -104,7 +104,7 @@ SparseAdamValue::SparseAdamValue(int dim, const Adam* opt) {
 }
 
 void SparseAdamValue::Apply(const Adam* opt, SparseGradInfo& grad_info, int dim) {
-    delta_show += grad_info.batch_show;
+    delta_show_ += grad_info.batch_show;
 
     float* w = Weight();
     float* m = M(dim);
@@ -118,7 +118,7 @@ void SparseAdamValue::Apply(const Adam* opt, SparseGradInfo& grad_info, int dim)
     }
 }
 
-void SparseAdamValue::Serialize(std::ostream& os, int dim) {
+void SparseAdamValue::SerializeTxt_(std::ostream& os, int dim) {
     float* w = Weight();
     float* m = M(dim);
     float* v = V(dim);
@@ -129,10 +129,10 @@ void SparseAdamValue::Serialize(std::ostream& os, int dim) {
         os << v[i] << "\t";
     }
 
-    os << show;
+    os << show_;
 }
 
-void SparseAdamValue::DeSerialize(std::istream& is, int dim) {
+void SparseAdamValue::DeSerializeTxt_(std::istream& is, int dim) {
     float* w = Weight();
     float* m = M(dim);
     float* v = V(dim);
@@ -143,7 +143,21 @@ void SparseAdamValue::DeSerialize(std::istream& is, int dim) {
         is >> v[i];
     }
 
-    is >> show;
+    is >> show_;
+}
+
+void SparseAdamValue::SerializeBin_(std::ostream& os, int dim) {
+    os.write(reinterpret_cast<const char*>(Weight()), dim * sizeof(float));
+    os.write(reinterpret_cast<const char*>(M(dim)), dim * sizeof(float));
+    os.write(reinterpret_cast<const char*>(V(dim)), dim * sizeof(float));
+    os.write(reinterpret_cast<const char*>(&show_), sizeof(show_));
+}
+
+void SparseAdamValue::DeSerializeBin_(std::istream& is, int dim) {
+    is.read(reinterpret_cast<char*>(Weight()), dim * sizeof(float));
+    is.read(reinterpret_cast<char*>(M(dim)), dim * sizeof(float));
+    is.read(reinterpret_cast<char*>(V(dim)), dim * sizeof(float));
+    is.read(reinterpret_cast<char*>(&show_), sizeof(show_));
 }
 
 } // namespace tensornet {

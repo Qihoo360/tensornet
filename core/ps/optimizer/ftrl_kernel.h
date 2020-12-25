@@ -52,7 +52,7 @@ private:
 std::ostream& operator<<(std::ostream& os, const DenseFtrlValue& value);
 std::istream& operator>>(std::istream& is, DenseFtrlValue& value);
 
-struct alignas(4) SparseFtrlValue
+class alignas(4) SparseFtrlValue
     : public SparseOptValue {
 public:
     SparseFtrlValue(int dim, const Ftrl* opt);
@@ -73,10 +73,6 @@ public:
 
     void Apply(const Ftrl* opt, SparseGradInfo& grad_info, int dim);
 
-    void Serialize(std::ostream& os, int dim);
-
-    void DeSerialize(std::istream& is, int dim);
-
 protected:
     float* Z(int dim) {
         return data_ + dim * 1;
@@ -93,6 +89,11 @@ protected:
     const float* N(int dim) const {
         return data_ + dim * 2;
     }
+
+    virtual void SerializeTxt_(std::ostream& os, int dim);
+    virtual void DeSerializeTxt_(std::istream& is, int dim);
+    virtual void SerializeBin_(std::ostream& os, int dim);
+    virtual void DeSerializeBin_(std::istream& is, int dim);
 
 private:
     float data_[0];

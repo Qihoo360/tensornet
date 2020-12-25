@@ -22,14 +22,38 @@ struct SparseGradInfo {
     int batch_show;
 };
 
-struct alignas(4) SparseOptValue {
-    float show = 0.0;
-    int delta_show = 0;
+extern int const SERIALIZE_FMT_ID;
 
+enum SerializeFormat {
+    SF_TXT,
+    SF_BIN,
+};
+
+class alignas(4) SparseOptValue {
+public:
     void ShowDecay(float decay_rate) {
-        show = (1 - decay_rate) * delta_show + decay_rate * show;
-        delta_show = 0;
+        show_ = (1 - decay_rate) * delta_show_ + decay_rate * show_;
+        delta_show_ = 0;
     }
+
+    void Serialize(std::ostream& os, int dim);
+
+    void DeSerialize(std::istream& is, int dim);
+
+    float Show() const {
+        return show_;
+    }
+
+protected:
+    virtual void SerializeTxt_(std::ostream& os, int dim) = 0;
+    virtual void DeSerializeTxt_(std::istream& is, int dim) = 0;
+    virtual void SerializeBin_(std::ostream& os, int dim) = 0;
+    virtual void DeSerializeBin_(std::istream& is, int dim) = 0;
+
+protected:
+    float show_ = 0.0;
+    int delta_show_ = 0;
+
 };
 
 } // namespace tensornet {

@@ -53,7 +53,7 @@ private:
 std::ostream& operator<<(std::ostream& os, const DenseAdaGradValue& value);
 std::istream& operator>>(std::istream& is, DenseAdaGradValue& value);
 
-struct alignas(4) SparseAdaGradValue
+class alignas(4) SparseAdaGradValue
     : public SparseOptValue {
 public:
     SparseAdaGradValue(int dim, const AdaGrad* opt);
@@ -74,9 +74,11 @@ public:
 
     void Apply(const AdaGrad* opt, SparseGradInfo& grad_info, int dim);
 
-    void Serialize(std::ostream& os, int dim);
-
-    void DeSerialize(std::istream& is, int dim);
+protected:
+    virtual void SerializeTxt_(std::ostream& os, int dim);
+    virtual void DeSerializeTxt_(std::istream& is, int dim);
+    virtual void SerializeBin_(std::ostream& os, int dim);
+    virtual void DeSerializeBin_(std::istream& is, int dim);
 
 private:
     float g2sum_;

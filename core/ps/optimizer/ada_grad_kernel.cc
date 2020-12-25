@@ -89,7 +89,7 @@ SparseAdaGradValue::SparseAdaGradValue(int dim, const AdaGrad* opt) {
 }
 
 void SparseAdaGradValue::Apply(const AdaGrad* opt, SparseGradInfo& grad_info, int dim) {
-    delta_show += grad_info.batch_show;
+    delta_show_ += grad_info.batch_show;
 
     float* w = Weight();
 
@@ -106,22 +106,34 @@ void SparseAdaGradValue::Apply(const AdaGrad* opt, SparseGradInfo& grad_info, in
     }
 }
 
-void SparseAdaGradValue::Serialize(std::ostream& os, int dim) {
+void SparseAdaGradValue::SerializeTxt_(std::ostream& os, int dim) {
     for (int i = 0; i < dim; i++) {
         os << Weight()[i] << "\t";
     }
 
     os << g2sum_ << "\t";
-    os << show;
+    os << show_;
 }
 
-void SparseAdaGradValue::DeSerialize(std::istream& is, int dim) {
+void SparseAdaGradValue::DeSerializeTxt_(std::istream& is, int dim) {
     for (int i = 0; i < dim; i++) {
         is >> Weight()[i];
     }
 
     is >> g2sum_;
-    is >> show;
+    is >> show_;
+}
+
+void SparseAdaGradValue::SerializeBin_(std::ostream& os, int dim) {
+    os.write(reinterpret_cast<const char*>(Weight()), dim * sizeof(float));
+    os.write(reinterpret_cast<const char*>(&g2sum_), sizeof(g2sum_));
+    os.write(reinterpret_cast<const char*>(&show_), sizeof(show_));
+}
+
+void SparseAdaGradValue::DeSerializeBin_(std::istream& is, int dim) {
+    is.read(reinterpret_cast<char*>(Weight()), dim * sizeof(float));
+    is.read(reinterpret_cast<char*>(&g2sum_), sizeof(g2sum_));
+    is.read(reinterpret_cast<char*>(&show_), sizeof(show_));
 }
 
 } // namespace tensornet
