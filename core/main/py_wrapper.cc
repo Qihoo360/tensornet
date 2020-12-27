@@ -134,13 +134,15 @@ PYBIND11_MODULE(_pywrap_tn, m) {
 
         return table->GetHandle();
     })
-    .def("save_sparse_table", [](uint32_t table_handle, std::string filepath) {
+    .def("save_sparse_table", [](uint32_t table_handle, std::string filepath,
+                const std::string& mode="txt") {
         SparseTable* table = SparseTableRegistry::Instance()->Get(table_handle);
-        return table->Save(filepath);
+        return table->Save(filepath, mode);
     })
-    .def("load_sparse_table", [](uint32_t table_handle, std::string filepath) {
+    .def("load_sparse_table", [](uint32_t table_handle, std::string filepath,
+                const std::string& mode="txt") {
         SparseTable* table = SparseTableRegistry::Instance()->Get(table_handle);
-        return table->Load(filepath);
+        return table->Load(filepath, mode);
     })
     .def("save_dense_table", [](uint32_t table_handle, std::string filepath) {
         DenseTable* table = DenseTableRegistry::Instance()->Get(table_handle);

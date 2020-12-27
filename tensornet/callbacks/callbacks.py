@@ -22,13 +22,17 @@ from tensorflow.python.keras.callbacks import Callback
 class PsWeightCheckpoint(Callback):
     """Save ps weight after every fit.
     """
-    def __init__(self, checkpoint_dir, need_save_model=False, dt=None):
+    def __init__(self, checkpoint_dir, need_save_model=True, save_mode="txt", dt=None):
         """
         :param checkpoint_dir: path of save model
         :param need_save_model: whether save model
+        :param save_mode:
+            'txt' : model will save with text format.
+            'bin' : model will save with binary format
         """
         self.checkpoint_dir = checkpoint_dir
         self.need_save_model = need_save_model
+        self.save_mode = save_mode
         self.dt = dt
 
         super(PsWeightCheckpoint, self).__init__()
@@ -36,7 +40,7 @@ class PsWeightCheckpoint(Callback):
     def load_model(self):
         tn.core.barrier()
 
-        self.model.load_weights(self.checkpoint_dir)
+        self.model.load_weights(self.checkpoint_dir, mode=self.save_mode)
 
         tn.core.barrier()
 
@@ -62,7 +66,7 @@ class PsWeightCheckpoint(Callback):
         if not self.need_save_model:
             return
 
-        self.model.save_weights(self.checkpoint_dir, dt=self.dt)
+        self.model.save_weights(self.checkpoint_dir, dt=self.dt, mode=self.save_mode)
 
     def on_predict_begin(self, logs=None):
         self.load_model()

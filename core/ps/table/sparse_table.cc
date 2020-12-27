@@ -79,7 +79,7 @@ void SparseTable::Push(const SparsePushRequest* req, butil::IOBuf& grad_buf, Spa
     }
 }
 
-void SparseTable::Save(const std::string& filepath) {
+void SparseTable::Save(const std::string& filepath, const std::string& mode) {
     butil::Timer timer(butil::Timer::STARTED);
 
     std::string file = filepath + "/sparse_table/";
@@ -92,7 +92,7 @@ void SparseTable::Save(const std::string& filepath) {
 
     file += "/rank_" + std::to_string(self_shard_id_);
 
-    op_kernel_->Serialized(file);
+    op_kernel_->Serialized(file, mode);
 
     timer.stop();
 
@@ -108,7 +108,7 @@ void SparseTable::Save(const std::string& filepath) {
     saved_key_count_ = new_key_count;
 }
 
-void SparseTable::Load(const std::string& filepath) {
+void SparseTable::Load(const std::string& filepath, const std::string& mode) {
     butil::Timer timer(butil::Timer::STARTED);
 
     std::string file = filepath + "/sparse_table/";
@@ -121,7 +121,7 @@ void SparseTable::Load(const std::string& filepath) {
 
     file += "/rank_" + std::to_string(self_shard_id_);
 
-    op_kernel_->DeSerialized(file);
+    op_kernel_->DeSerialized(file, mode);
 
     timer.stop();
 

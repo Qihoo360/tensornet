@@ -46,9 +46,9 @@ public:
         return handle_;
     }
 
-    void Save(const std::string& filepath);
+    void Save(const std::string& filepath, const std::string& mode);
 
-    void Load(const std::string& filepath);
+    void Load(const std::string& filepath, const std::string& mode);
 
     void ShowDecay() const;
 

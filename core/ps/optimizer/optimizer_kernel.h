@@ -88,9 +88,9 @@ public:
 
     virtual void Apply(uint64_t sign, SparseGradInfo& grad_info) = 0;
 
-    virtual void Serialized(const std::string& filepath) = 0;
+    virtual void Serialized(const std::string& filepath, const std::string& mode) = 0;
 
-    virtual void DeSerialized(const std::string& filepath) = 0;
+    virtual void DeSerialized(const std::string& filepath, const std::string& mode) = 0;
 
     virtual size_t KeyCount() const = 0;
 
@@ -339,15 +339,38 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const SparseKernelBlock& block) {
         std::lock_guard<std::mutex> lock(*block.mutex_);
 
-        os << "opt_name:" << block.opt_->Name() << std::endl;
-        os << "dim:" << block.dim_ << std::endl;
+        auto serialize_txt = [](std::ostream& os, const SparseKernelBlock& block) {
+            os << "opt_name:" << block.opt_->Name() << std::endl;
+            os << "dim:" << block.dim_ << std::endl;
 
-        for (const auto& value : block.values_) {
-            if (value.second->show > block.opt_->feature_drop_show) {
-                os << value.first << "\t";
-                value.second->Serialize(os, block.dim_);
-                os << std::endl;
+            for (const auto& value : block.values_) {
+                if (value.second->Show() > block.opt_->feature_drop_show) {
+                    os << value.first << "\t";
+                    value.second->Serialize(os, block.dim_);
+                    os << std::endl;
+                }
             }
+        };
+
+        auto serialize_bin = [](std::ostream& os, const SparseKernelBlock& block) {
+            os.write(reinterpret_cast<const char*>(&block.dim_), sizeof(block.dim_));
+
+            for (const auto& value : block.values_) {
+                if (value.second->Show() <= block.opt_->feature_drop_show) {
+                    continue;
+                }
+                os.write(reinterpret_cast<const char*>(&value.first), sizeof(value.first));
+                value.second->Serialize(os, block.dim_);
+            }
+        };
+
+        switch (os.iword(SERIALIZE_FMT_ID)) {
+            case SF_TXT:
+                serialize_txt(os, block);
+                break;
+            case SF_BIN:
+                serialize_bin(os, block);
+                break;
         }
 
         return os;
@@ -356,20 +379,42 @@ public:
     friend std::istream& operator>>(std::istream& is, SparseKernelBlock& block) {
         std::lock_guard<std::mutex> lock(*block.mutex_);
 
-        std::string opt_name;
-        is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> opt_name;
+        auto deserialize_txt = [](std::istream& is, SparseKernelBlock& block) {
+            std::string opt_name;
+            is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> opt_name;
 
-        CHECK_EQ(opt_name, block.opt_->Name()) << "last trained model with optimizer is:" << opt_name
-            << " but current model use:" << block.opt_->Name() << " instead."
-            << " you must make sure that use same optimizer when incremental training";
+            CHECK_EQ(opt_name, block.opt_->Name()) << "last trained model with optimizer is:" << opt_name
+                << " but current model use:" << block.opt_->Name() << " instead."
+                << " you must make sure that use same optimizer when incremental training";
 
-        is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> block.dim_;
+            is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> block.dim_;
 
-        uint64_t sign = 0;
-        while (is >> sign) {
-            ValueType* value = block.alloc_.allocate(block.dim_, block.opt_);
-            value->DeSerialize(is, block.dim_);
-            block.values_[sign] = value;
+            uint64_t sign = 0;
+            while (is >> sign) {
+                ValueType* value = block.alloc_.allocate(block.dim_, block.opt_);
+                value->DeSerialize(is, block.dim_);
+                block.values_[sign] = value;
+            }
+        };
+
+        auto deserialize_bin = [](std::istream& is, SparseKernelBlock& block) {
+            is.read(reinterpret_cast<char*>(&block.dim_), sizeof(block.dim_));
+
+            uint64_t sign = 0;
+            while (is.read(reinterpret_cast<char*>(&sign), sizeof(sign))) {
+                ValueType* value = block.alloc_.allocate(block.dim_, block.opt_);
+                value->DeSerialize(is, block.dim_);
+                block.values_[sign] = value;
+            }
+        };
+
+        switch (is.iword(SERIALIZE_FMT_ID)) {
+            case SF_TXT:
+                deserialize_txt(is, block);
+                break;
+            case SF_BIN:
+                deserialize_bin(is, block);
+                break;
         }
 
         return is;
@@ -415,17 +460,23 @@ public:
         blocks_[block_num].Apply(sign, grad_info);
     }
 
-    void Serialized(const std::string& filepath) {
+    void Serialized(const std::string& filepath, const std::string& mode) {
         std::vector<std::thread> threads;
 
         for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
-            threads.push_back(std::thread([this, i, &filepath]() {
+            threads.push_back(std::thread([this, i, &mode, &filepath]() {
                 std::string file = filepath;
                 file.append("/block_").append(std::to_string(i)).append(".gz");
 
                 FileWriterSink writer_sink(file, FCT_ZLIB);
 
                 boost::iostreams::stream<FileWriterSink> out_stream(writer_sink);
+
+                if (mode == "bin") {
+                    out_stream.iword(SERIALIZE_FMT_ID) = SF_BIN;
+                } else {
+                    out_stream.iword(SERIALIZE_FMT_ID) = SF_TXT;
+                }
 
                 out_stream << blocks_[i] << std::endl;
                 out_stream.flush();
@@ -437,16 +488,22 @@ public:
         });
     }
 
-    void DeSerialized(const std::string& filepath) {
+    void DeSerialized(const std::string& filepath, const std::string& mode) {
         std::vector<std::thread> threads;
 
         for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
-            threads.push_back(std::thread([this, i, &filepath]() {
+            threads.push_back(std::thread([this, i, &mode, &filepath]() {
                 std::string file = filepath;
                 file.append("/block_").append(std::to_string(i)).append(".gz");
 
                 FileReaderSource reader_source(file, FCT_ZLIB);
                 boost::iostreams::stream<FileReaderSource> in_stream(reader_source);
+
+                if (mode == "bin") {
+                    in_stream.iword(SERIALIZE_FMT_ID) = SF_BIN;
+                } else {
+                    in_stream.iword(SERIALIZE_FMT_ID) = SF_TXT;
+                }
 
                 in_stream >> blocks_[i];
             }));
