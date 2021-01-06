@@ -26,6 +26,7 @@
 #include "core/ps/ps_cluster.h"
 
 namespace tensorflow {
+namespace data {
 
 class BalanceDatasetOp : public UnaryDatasetOpKernel {
 public:
@@ -153,6 +154,7 @@ public:
     std::map<uint32_t, BufferQueueWithLock*> op_elements_;
 };
 
+}  // namespace data
 }  // namespace tensorflow
 
 #endif  // TENSORNET_CORE_KERNELS_DATA_BALANCE_DATASET_OP_H_

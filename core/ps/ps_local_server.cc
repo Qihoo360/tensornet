@@ -79,7 +79,7 @@ void PsLocalServer::DatasetPullAsync(brpc::Controller *cntl,
                                      const DatasetPullRequest *request,
                                      DatasetPullResponse *response,
                                      Callback done) const {
-    tensorflow::BalanceInputDataInfo::Instance()
+    tensorflow::data::BalanceInputDataInfo::Instance()
         ->ProcessBrpcDatasetPullReq(request, response);
 
     done();

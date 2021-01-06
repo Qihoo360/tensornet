@@ -33,6 +33,7 @@
 using namespace tensornet;
 
 namespace tensorflow {
+namespace data {
 
 // See documentation in ../../ops/dataset_ops.cc for a high-level
 // description of the following op.
@@ -143,10 +144,10 @@ void BalanceInputDataInfo::CopyDataToBuffer(const DatasetPullResponse* resp, uin
     q->put(std::move(brpc_data));
 }
 
-class BalanceDatasetOp::Dataset : public DatasetBase {
+class BalanceDatasetOp::Dataset : public data::DatasetBase {
 public:
-    Dataset(OpKernelContext* ctx, const DatasetBase* input)
-        : DatasetBase(DatasetContext(ctx))
+    Dataset(OpKernelContext* ctx, const data::DatasetBase* input)
+        : data::DatasetBase(DatasetContext(ctx))
         , input_(input) {
         input_->Ref();
         auto* data_info = BalanceInputDataInfo::Instance();
@@ -324,7 +325,7 @@ private:
         bool first_brpc_req_ = true;
     };
 
-    const DatasetBase* const input_;
+    const data::DatasetBase* const input_;
     std::vector<PartialTensorShape> output_shapes_;
 
     uint32_t balance_handle_;
@@ -335,8 +336,8 @@ BalanceDatasetOp::BalanceDatasetOp(OpKernelConstruction* ctx)
     : UnaryDatasetOpKernel(ctx) {
 }
 
-void BalanceDatasetOp::MakeDataset(OpKernelContext* ctx, DatasetBase* input,
-                                  DatasetBase** output) {
+void BalanceDatasetOp::MakeDataset(OpKernelContext* ctx, data::DatasetBase* input,
+                                  data::DatasetBase** output) {
     *output = new Dataset(ctx, input);
 }
 
@@ -344,4 +345,5 @@ namespace {
 REGISTER_KERNEL_BUILDER(Name("BalanceDataset").Device(DEVICE_CPU),
                         BalanceDatasetOp);
 }  // namespace
+}  // namespace data
 }  // namespace tensorflow

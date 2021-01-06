@@ -6,3 +6,5 @@ __pycache__/
 .vscode/
 .idea/
 *.swo
+bazel_cache/
+bazel_output/

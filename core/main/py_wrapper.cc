@@ -54,7 +54,7 @@ PYBIND11_MODULE(_pywrap_tn, m) {
             throw py::value_error("Init tensornet fail");
         }
 
-        tensorflow::BalanceInputDataInfo* data_info = tensorflow::BalanceInputDataInfo::Instance();
+        tensorflow::data::BalanceInputDataInfo* data_info = tensorflow::data::BalanceInputDataInfo::Instance();
 
         if (data_info->Init(cluster->RankNum(), cluster->Rank()) < 0) {
             throw py::value_error("Init BalanceInputDataInfo fail");
@@ -171,7 +171,7 @@ PYBIND11_MODULE(_pywrap_tn, m) {
     })
     .def("reset_balance_dataset", []() {
         PsCluster* cluster = PsCluster::Instance();
-        tensorflow::BalanceInputDataInfo* data_info = tensorflow::BalanceInputDataInfo::Instance();
+        tensorflow::data::BalanceInputDataInfo* data_info = tensorflow::data::BalanceInputDataInfo::Instance();
         if (data_info->Init(cluster->RankNum(), cluster->Rank()) < 0) {
             throw py::value_error("reset_balance_dataset fail");
         }

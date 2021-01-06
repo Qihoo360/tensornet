@@ -4,19 +4,53 @@
 
     git clone git@github.com:Qihoo360/tensornet.git
 
-## 准备环境
+## 在docker中编译
+
+1. 创建镜像：
+    ```
+    docker build -t tensornet-dev . -f Dockerfile
+    ```
+
+2. 配置编译环境
+    ```
+    docker run -v $(pwd):/tensornet -w /tensornet -t tensornet-dev \
+        bash configure.sh --openmpi_path /opt/openmpi
+    ```
+
+3. 编译：
+    ```
+    docker run -v $(pwd):/tensornet -w /tensornet -t tensornet-dev \
+        bazel --output_base=/tensornet/bazel_output \
+            build --repository_cache=/tensornet/bazel_cache -c opt //core:_pywrap_tn.so
+    ```
+
+4. 将编译好的so拷贝到tensornet python包中
+    ```
+    docker run -v $(pwd):/tensornet -w /tensornet -t tensornet-dev \
+        cp -f /tensornet/bazel-bin/core/_pywrap_tn.so /tensornet/tensornet/core
+    ```
+
+5. 使用（需要设置PYTHONPATH和LD_LIBRARY_PATH环境变量，请参考Dockerfile中的设置）
+    ```
+    docker run -v $(pwd):/tensornet -w /tensornet -t tensornet-dev \
+        python3 -c "import tensorflow as tf; import tensornet as tn; print(tn.version)"
+    ```
+
+## 手动编译
+
+### 准备环境
 1. 安装anaconda3。
 
-2. 安装tensorflow。目前支持2.2.0~2.3.0，tensorflow版本更新后陆续会适配。
+2. 安装tensorflow。
 
     ```
-    pip install tensorflow==2.3.0
+    pip install tensorflow==2.4.0
     ```
 
 3. 安装bazel。
 
-    bazel的版本最好使用2.2.0，tensorflow每个版本使用的bazel版本不一样，具体版本请看：[https://github.com/tensorflow/tensorflow/blob/master/.bazelversion](https://github.com/tensorflow/tensorflow/blob/master/.bazelversion)。
-    bazel的安装最好使用github中已经release预编译好的binary，具体请参考：[https://docs.bazel.build/versions/master/install-os-x.html](https://docs.bazel.build/versions/master/install-ubuntu.html#install-with-installer-ubuntu)
+    bazel的版本最好使用3.7.2，tensorflow每个版本使用的bazel版本不一样，具体版本请看：[https://github.com/tensorflow/tensorflow/blob/master/.bazelversion](https://github.com/tensorflow/tensorflow/blob/master/.bazelversion)。
+    bazel的安装最好使用github中已经release预编译好的binary，具体请参考：[https://docs.bazel.build/versions/master/install-ubuntu.html](https://docs.bazel.build/versions/master/install-ubuntu.html#install-with-installer-ubuntu)
 
 4. 安装Open MPI。
 
@@ -30,14 +64,16 @@
     make install
     ```
 
-## 编译
+### 编译
 
 执行下面命令编译：
 
     sh ./configure.sh --openmpi_path /da2/zhangyansheng/openmpi-1.4.5
     bazel build -c opt //core:_pywrap_tn.so
+
 **tips**:
-在tensorflow-2.2.0版本下编译时，修改`WORKSPACE`中tensorflow版本
+如果需要使用tensorflow其它版本，请修改`WORKSPACE`中的`org_tensorflow`选项，如对于2.2.0，可以如下修改
+
 ```bash
 http_archive(
     name = "org_tensorflow",
@@ -49,13 +85,11 @@ http_archive(
 )
 ```
 
-
-
-## 部署
+### 部署
 
 编译完成之后的so在`bazal-bin/core`目录下，其拷贝到python包所在的目录就可以随意使用了。
 
-    cp -f bazel-bin/core/_pywrap_tn.so tensornet/core 
+    cp -f bazel-bin/core/_pywrap_tn.so tensornet/core
     export PYTHONPATH=$(pwd):${PYTHONPATH}
     export LD_LIBRARY_PATH="/da2/zhangyansheng/openmpi-1.4.5/lib:${LD_LIBRARY_PATH}"
     python -c "import tensorflow as tf; import tensornet as tn; print(tn.version)"

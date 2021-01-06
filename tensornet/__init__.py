@@ -22,4 +22,4 @@ from . import optimizer
 from . import model
 from . import data
 
-version = "0.1.0"
+version = "0.1.1"

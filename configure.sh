@@ -5,7 +5,7 @@ readonly THIS_FILE="${WORKSPACE_DIR}/$(basename "${BASH_SOURCE[0]}")"
 
 pushd $WORKSPACE_DIR > /dev/null
 
-readonly PYTHON_PATH="$(which python)"
+readonly PYTHON_PATH="$(which python3)"
 
 # global parameter
 OPENMPI_PATH=""
@@ -55,11 +55,11 @@ function check_tf_version()
 {
     echo "checking tensorflow version installed..."
 
-    local tf_version=$(python -c "import tensorflow as tf; print(tf.version.VERSION)")
+    local tf_version=$(python3 -c "import tensorflow as tf; print(tf.version.VERSION)")
     local tf_major_version=`echo ${tf_version} | awk -F'.' 'BEGIN{OFS="."}{print $1 OFS $2}'`
 
-    if [[ "x${tf_major_version}" != "x2.2" ]] && [[ "x${tf_major_version}" != "x2.3" ]]; then
-        echo "tensorflow version is ${tf_version}, please use 2.2.0 ~ 2.3.0 instead"
+    if [[ "x${tf_major_version}" != "x2.4" ]]; then
+        echo "tensorflow version is ${tf_version}, please use 2.4.0 instead"
         exit 1
     fi
 
@@ -80,8 +80,8 @@ function link_mpi_thirdparty()
 
 function link_tf_thirdparty()
 {
-    local tf_include_path=$(python -c "import tensorflow as tf;print(tf.sysconfig.get_include())")
-    local tf_lib_path=$(python -c "import tensorflow as tf;print(tf.sysconfig.get_lib())")
+    local tf_include_path=$(python3 -c "import tensorflow as tf;print(tf.sysconfig.get_include())")
+    local tf_lib_path=$(python3 -c "import tensorflow as tf;print(tf.sysconfig.get_lib())")
 
     echo "using tensorflow lib path:${tf_lib_path}"
 
