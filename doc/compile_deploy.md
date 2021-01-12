@@ -34,9 +34,10 @@
 
 执行下面命令编译：
 
-    sh ./configure.sh --openmpi_path /da2/zhangyansheng/openmpi-1.4.5
+    bash configure.sh --openmpi_path /da2/zhangyansheng/openmpi-1.4.5
     bazel build -c opt //core:_pywrap_tn.so
 **tips**:
+如果bazel build出错，有可能是因为下载太慢导致，下方有解决方案。
 在tensorflow-2.2.0版本下编译时，修改`WORKSPACE`中tensorflow版本
 ```bash
 http_archive(
