@@ -73,7 +73,3 @@ TensorNet最核心的优化是将模型的embedding tensor优化到了最小。
 
 [Apache License 2.0](LICENSE)
 
-## concat us
-
-email: 张彦升(zhangyansheng@360.cn),姚磊(yaolei@360.cn)
-
