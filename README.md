@@ -4,10 +4,6 @@
 
 ## TensorNet训练架构
 
-TensorNet支持异步和同步模式训练。异步模式在仅有CPU的集群中速度提升十分显著，同步模式在网卡速度超过100GbE的GPU集群中表现突出。
-
-### TensorNet异步训练架构
-
 在仅有CPU的集群中使用参数服务器的异步训练模式是训练模型速度最快的方法，TensorNet异步训练架构与TensorFlow的异步训练架构有很大的区别：
 
 1. TensorNet将sparse参数和与dense参数分别使用不同的parameter server管理。
@@ -16,17 +12,6 @@ TensorNet支持异步和同步模式训练。异步模式在仅有CPU的集群�
 4. TensorNet将模型的所有dense参数合并后使用分布式数组切分到不同的机器上，每次pull和push参数的时候只有一次网络请求。相较于TensorFlow对每个tensor都有一次网络请求的方法极大的减少了网络请求的次数从而提升了模型训练的速度。
 
 ![async-arch.png](./doc/async-arch.png)
-
-### TensorNet同步训练架构
-
-TensorNet同步训练架构基本与TensorFlow的MultiWorkerMirroredStrategy架构一致，主要区别如下：
-
-1. TensorNet使用单独的sparse parameter server节点保存所有sparse参数。通过parameter server可以解决TensorFlow支持的sparse特征维度不能太大的问题。
-2. TensorNet对sparse参数做了特殊的定制化的同步。TensorNet在训练时由于每个batch内的sparse参数的`IndexedSlices`指向的内容与TensorFlow默认的不同，我们对此做了定制化的同步。
-
-![sync-arch](./doc/sync-arch.png)
-
-注：当前release的版本中不包含同步版，同步版还未完成稳定性测试，等测试稳定了会很快发布。
 
 ## TensorNet离线训练优化
 
