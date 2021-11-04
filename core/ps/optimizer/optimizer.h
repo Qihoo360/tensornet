@@ -78,7 +78,7 @@ class AdaGrad : public OptimizerBase {
 public:
     AdaGrad(float lr, float initial_g2sum, float initial_scale,
             float epsilon, float grad_decay_rate, float mom_decay_rate,
-            float show_decay_rate, float show_threshold)
+            float show_decay_rate, float show_threshold, int no_show_days)
         : OptimizerBase(lr)
         , initial_g2sum(initial_g2sum)
         , initial_scale(initial_scale)
@@ -86,7 +86,8 @@ public:
         , grad_decay_rate(grad_decay_rate)
         , mom_decay_rate(mom_decay_rate)
         , show_decay_rate(show_decay_rate)
-        , show_threshold(show_threshold) {
+        , show_threshold(show_threshold)
+        , no_show_days(no_show_days) {
     }
 
     ~AdaGrad() { }
@@ -108,6 +109,7 @@ public:
     float mom_decay_rate = 1.0;
     float show_decay_rate = 1.0;
     float show_threshold = 0.0;
+    int no_show_days = 1000;
 };
 
 class Ftrl : public OptimizerBase {

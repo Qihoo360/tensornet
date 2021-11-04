@@ -94,7 +94,7 @@ public:
 
     virtual size_t KeyCount() const = 0;
 
-    virtual void ShowDecay() = 0;
+    virtual void ShowDecay(int delta_days) = 0;
 };
 
 template <typename OptType, typename ValueType>
@@ -374,10 +374,10 @@ public:
         return is;
     }
 
-    void ShowDecay() {
+    void ShowDecay(int delta_days) {
         for (auto& iter : values_) {
             ValueType* value = iter.second;
-            value->ShowDecay(opt_);
+            value->ShowDecay(opt_, delta_days);
         }
     }
 
@@ -465,9 +465,9 @@ public:
         return key_count;
     }
 
-    void ShowDecay() {
+    void ShowDecay(int delta_days) {
         for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
-            blocks_[i].ShowDecay();
+            blocks_[i].ShowDecay(delta_days);
         }
     }
 

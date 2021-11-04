@@ -50,7 +50,7 @@ public:
 
     void Load(const std::string& filepath) const;
 
-    void ShowDecay() const;
+    void ShowDecay(int delta_days) const;
 
 private:
     int shard_num_ = 0;

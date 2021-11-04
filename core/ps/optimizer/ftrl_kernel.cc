@@ -108,7 +108,7 @@ std::istream& operator>>(std::istream& is, SparseFtrlValue& value) {
     return is;
 }
 
-void SparseFtrlValue::ShowDecay(const Ftrl* opt) {
+void SparseFtrlValue::ShowDecay(const Ftrl* opt, int /*delta_days*/) {
     show_ *= opt->show_decay_rate;
 }
 

@@ -92,6 +92,7 @@ SparseAdaGradValue::SparseAdaGradValue(int dim, const AdaGrad* opt) {
 
 void SparseAdaGradValue::Apply(const AdaGrad* opt, SparseGradInfo& grad_info) {
     show_ += grad_info.batch_show;
+    no_show_days_ = 0;
 
     float* w = Weight();
 
@@ -116,7 +117,8 @@ std::ostream& operator<<(std::ostream& os, const SparseAdaGradValue& value) {
     }
 
     os << value.g2sum_ << "\t";
-    os << value.show_;
+    os << value.show_ << "\t";
+    os << value.no_show_days_;
 
     return os;
 }
@@ -133,16 +135,18 @@ std::istream& operator>>(std::istream& is, SparseAdaGradValue& value) {
 
     is >> value.g2sum_;
     is >> value.show_;
+    is >> value.no_show_days_;
 
     return is;
 }
 
-void SparseAdaGradValue::ShowDecay(const AdaGrad* opt) {
+void SparseAdaGradValue::ShowDecay(const AdaGrad* opt, int delta_days) {
     show_ *= opt->show_decay_rate;
+    no_show_days_ += delta_days;
 }
 
 bool SparseAdaGradValue::DeleteByShow(const AdaGrad* opt) {
-    return show_ < opt->show_threshold;
+    return show_ < opt->show_threshold && no_show_days_ > opt->no_show_days;
 }
 
 } // namespace tensornet

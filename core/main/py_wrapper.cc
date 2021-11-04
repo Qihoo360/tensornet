@@ -62,6 +62,7 @@ PYBIND11_MODULE(_pywrap_tn, m) {
         float mom_decay_rate = 1.0;
         float show_decay_rate = 1.0;
         float show_threshold = 0.0;
+        int no_show_days = 1000;
 
         PyObject* item = PyDict_GetItemString(kwargs.ptr(), "learning_rate");
         if (NULL != item) {
@@ -97,9 +98,13 @@ PYBIND11_MODULE(_pywrap_tn, m) {
         if (NULL != item) {
             show_threshold = PyFloat_AsDouble(item);
         }
+        item = PyDict_GetItemString(kwargs.ptr(), "no_show_days");
+        if (NULL != item) {
+            no_show_days = PyFloat_AsDouble(item);
+        }
 
         auto opt = new AdaGrad(learning_rate, initial_g2sum, initial_scale, epsilon, 
-                grad_decay_rate, mom_decay_rate, show_decay_rate, show_threshold);
+                grad_decay_rate, mom_decay_rate, show_decay_rate, show_threshold, no_show_days);
 
         // NOTICE! opt will not delete until system exist
         PyObject* obj = PyCapsule_New(opt, nullptr, nullptr);
@@ -254,9 +259,9 @@ PYBIND11_MODULE(_pywrap_tn, m) {
             throw py::value_error("reset_balance_dataset fail");
         }
     })
-    .def("show_decay", [](uint32_t table_handle) {
+    .def("show_decay", [](uint32_t table_handle, int delta_days) {
         SparseTable* table = SparseTableRegistry::Instance()->Get(table_handle);
-        return table->ShowDecay();
+        return table->ShowDecay(delta_days);
     })
     ;
 };

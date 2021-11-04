@@ -22,7 +22,7 @@ from tensorflow.python.keras.callbacks import Callback
 class PsWeightCheckpoint(Callback):
     """Save ps weight after every fit.
     """
-    def __init__(self, checkpoint_dir, need_save_model=False, dt=None):
+    def __init__(self, checkpoint_dir, need_save_model=False, dt=None, delta_days=0):
         """
         :param checkpoint_dir: path of save model
         :param need_save_model: whether save model
@@ -30,6 +30,7 @@ class PsWeightCheckpoint(Callback):
         self.checkpoint_dir = checkpoint_dir
         self.need_save_model = need_save_model
         self.dt = dt
+        self.delta_days = delta_days
 
         super(PsWeightCheckpoint, self).__init__()
 
@@ -57,7 +58,7 @@ class PsWeightCheckpoint(Callback):
     def on_train_end(self, logs=None):
         tn.core.barrier()
 
-        self.model.show_decay()
+        self.model.show_decay(self.delta_days)
 
         if not self.need_save_model:
             return

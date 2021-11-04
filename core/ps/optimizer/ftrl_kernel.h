@@ -76,7 +76,7 @@ public:
 
     void Apply(const Ftrl* opt, SparseGradInfo& grad_info);
 
-    void ShowDecay(const Ftrl* opt);
+    void ShowDecay(const Ftrl* opt, int delta_days);
 
     bool DeleteByShow(const Ftrl* opt);
 
