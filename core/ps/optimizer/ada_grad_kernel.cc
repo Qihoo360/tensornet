@@ -16,6 +16,7 @@
 
 #include <butil/logging.h>
 #include <butil/rand_util.h>
+#include <cstdlib>
 
 #include "core/utility/random.h"
 
@@ -79,12 +80,18 @@ std::istream& operator>>(std::istream& is, DenseAdaGradValue& value) {
 
 SparseAdaGradValue::SparseAdaGradValue(int dim, const AdaGrad* opt) {
     dim_ = dim;
+    auto spare_env = std::getenv("SPARSE_INIT_ZERO");
+    if (spare_env != nullptr) {
+        for (int i = 0; i < Dim(); ++i) {
+            Weight()[i] = 0.0;
+        }
+    } else {
+        auto& reng = local_random_engine();
+        auto distribution = std::normal_distribution<float>(0, 1 / sqrt(Dim()));
 
-    auto& reng = local_random_engine();
-    auto distribution = std::normal_distribution<float>(0, 1 / sqrt(Dim()));
-
-    for (int i = 0; i < Dim(); ++i) {
-        Weight()[i] = distribution(reng) * opt->initial_scale;
+        for (int i = 0; i < Dim(); ++i) {
+            Weight()[i] = distribution(reng) * opt->initial_scale;
+        }
     }
 
     g2sum_ = opt->initial_g2sum;

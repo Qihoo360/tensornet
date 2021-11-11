@@ -112,6 +112,33 @@ class Model(tf.keras.Model):
 
         return y, y_pred, sample_weight
 
+    def predict(self,
+                x,
+                batch_size=None,
+                verbose=0,
+                steps=None,
+                callbacks=None,
+                max_queue_size=10,
+                workers=1,
+                use_multiprocessing=False,
+                **kwargs):
+        os.environ['SPARSE_INIT_ZERO'] = '1'
+        from tensorflow.python.ops import logging_ops
+        logging_ops.print_v2("Now in new predict function.")
+        predictions = super(Model, self).predict(
+            x=x,
+            batch_size=batch_size,
+            verbose=verbose,
+            steps=steps,
+            callbacks=callbacks,
+            max_queue_size=max_queue_size,
+            workers=workers,
+            use_multiprocessing=use_multiprocessing,
+            **kwargs
+        )
+        os.environ.pop('SPARSE_INIT_ZERO')
+        return predictions
+
     def backwards(self, grads_and_vars):
         backward_ops = []
 

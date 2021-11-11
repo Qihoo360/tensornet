@@ -15,6 +15,7 @@
 #include "core/ps/optimizer/adam_kernel.h"
 
 #include <butil/logging.h>
+#include <cstdlib>
 
 #include "core/utility/random.h"
 
@@ -91,13 +92,22 @@ std::istream& operator>>(std::istream& is, DenseAdamValue& value) {
 SparseAdamValue::SparseAdamValue(int dim, const Adam* opt) {
     dim_ = dim;
 
-    auto& reng = local_random_engine();
-    auto distribution = std::normal_distribution<float>(0, 1 / sqrt(Dim()));
+    auto spare_env = std::getenv("SPARSE_INIT_ZERO");
+    if (spare_env != nullptr) {
+        for (int i = 0; i < Dim(); ++i) {
+            Weight()[i] = 0.0;
+            M()[i] = 0;
+            V()[i] = 0;
+        }
+    } else {
+        auto& reng = local_random_engine();
+        auto distribution = std::normal_distribution<float>(0, 1 / sqrt(Dim()));
 
-    for (int i = 0; i < Dim(); ++i) {
-        Weight()[i] = distribution(reng) * opt->initial_scale;
-        M()[i] = 0;
-        V()[i] = 0;
+        for (int i = 0; i < Dim(); ++i) {
+            Weight()[i] = distribution(reng) * opt->initial_scale;
+            M()[i] = 0;
+            V()[i] = 0;
+        }
     }
 }
 
