@@ -151,8 +151,8 @@ class StateManagerImpl(fc.StateManager):
     def load_sparse_table(self, filepath):
         return tn.core.load_sparse_table(self.sparse_table_handle, filepath)
 
-    def show_decay(self):
-        return tn.core.show_decay(self.sparse_table_handle)
+    def show_decay(self, delta_days=0):
+        return tn.core.show_decay(self.sparse_table_handle, delta_days)
 
 
 class EmbeddingFeatures(Layer):
@@ -270,8 +270,8 @@ class EmbeddingFeatures(Layer):
     def load_sparse_table(self, filepath):
         return self._state_manager.load_sparse_table(filepath)
 
-    def show_decay(self):
-        return self._state_manager.show_decay()
+    def show_decay(self, delta_days=0):
+        return self._state_manager.show_decay(delta_days)
 
     def _target_shape(self, input_shape, total_elements):
         return (input_shape[0], total_elements)

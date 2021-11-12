@@ -22,13 +22,19 @@ from tensorflow.python.keras.callbacks import Callback
 class PsWeightCheckpoint(Callback):
     """Save ps weight after every fit.
     """
-    def __init__(self, checkpoint_dir, need_save_model=False, dt=None, delta_days=0):
+
+    def __init__(self, checkpoint_dir, checkpoint_save=None, need_save_model=False, dt=None, delta_days=0,
+                 model_path_incl_dt=False):
         """
         :param checkpoint_dir: path of save model
         :param need_save_model: whether save model
+        :param checkpoint_save: path of the saving model path [None in predict or evaluate mode]
+        :param model_path_incl_dt: path checkpoint_dir include dt[train & predict are different]
         """
         self.checkpoint_dir = checkpoint_dir
+        self.checkpoint_save = checkpoint_save if checkpoint_save else checkpoint_dir
         self.need_save_model = need_save_model
+        self.model_path_incl_dt = model_path_incl_dt
         self.dt = dt
         self.delta_days = delta_days
 
@@ -37,16 +43,18 @@ class PsWeightCheckpoint(Callback):
     def load_model(self):
         tn.core.barrier()
 
-        self.model.load_weights(self.checkpoint_dir)
+        self.model.load_weights(self.checkpoint_dir, include_dt=self.model_path_incl_dt)
 
         tn.core.barrier()
 
     def reset_balance_dataset(self):
+        from tensorflow.python.ops import logging_ops
+        logging_ops.print_v2("wxd: start reset_balance_dataset")
         tn.core.barrier()
-
         tn.core.reset_balance_dataset()
-
+        logging_ops.print_v2("wxd: finish core.reset_balance_dataset")
         tn.core.barrier()
+        logging_ops.print_v2("wxd: finish reset_balance_dataset")
 
     def on_train_begin(self, logs=None):
         assert isinstance(self.model.optimizer, tn.optimizer.Optimizer)
@@ -63,15 +71,20 @@ class PsWeightCheckpoint(Callback):
         if not self.need_save_model:
             return
 
-        self.model.save_weights(self.checkpoint_dir, dt=self.dt)
+        self.model.save_weights(self.checkpoint_save, dt=self.dt)
 
     def on_predict_begin(self, logs=None):
+        from tensorflow.python.ops import logging_ops
+        logging_ops.print_v2("wxd: start on_predict_begin")
         self.load_model()
-
+        logging_ops.print_v2("wxd: finish load model")
         self.reset_balance_dataset()
+        logging_ops.print_v2("wxd: finish reset_balance_dataset")
 
     def on_predict_end(self, logs=None):
+        from tensorflow.python.ops import logging_ops
         tn.core.barrier()
+        logging_ops.print_v2("wxd: finish on_predict_end")
 
     def on_test_begin(self, logs=None):
         self.load_model()
@@ -80,4 +93,3 @@ class PsWeightCheckpoint(Callback):
 
     def on_test_end(self, logs=None):
         tn.core.barrier()
-

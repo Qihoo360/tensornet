@@ -106,11 +106,11 @@ class Model(tf.keras.Model):
         """override parent inference step, support return y label together
         """
         data = data_adapter.expand_1d(data)
-        x, y, sample_weight = data_adapter.unpack_x_y_sample_weight(data)
+        x, y, _ = data_adapter.unpack_x_y_sample_weight(data)
 
         y_pred = self(x, training=False)
 
-        return y, y_pred, sample_weight
+        return y, y_pred
 
     def predict(self,
                 x,
@@ -184,14 +184,18 @@ class Model(tf.keras.Model):
 
         self.is_loaded_from_checkpoint = True
 
-    def load_weights(self, filepath, by_name=False, skip_mismatch=False, root=True):
-        last_train_dt = read_last_train_dt(filepath)
-
-        # not saved model info found
-        if not last_train_dt:
-            return
-
-        cp_dir = os.path.join(filepath, last_train_dt)
+    def load_weights(self, filepath, by_name=False, skip_mismatch=False, include_dt=False, root=True):
+        if not include_dt:
+            last_train_dt = read_last_train_dt(filepath)
+            # not saved model info found
+            if not last_train_dt:
+                return
+            cp_dir = os.path.join(filepath, last_train_dt)
+        else:
+            model_ckpt = os.path.join(filepath, 'checkpoint')
+            if not tf.io.gfile.exists(model_ckpt):
+                return
+            cp_dir = filepath
 
         if not self.is_loaded_from_checkpoint:
             # sparse weight
@@ -199,7 +203,7 @@ class Model(tf.keras.Model):
                 assert type(layer) != tf.keras.Model, "not support direct use keras.Model, use tn.model.Model instead"
 
                 if isinstance(layer, type(self)):
-                    layer.load_weights(filepath, by_name, skip_mismatch, False)
+                    layer.load_weights(filepath, by_name, skip_mismatch, include_dt, False)
                 elif isinstance(layer, tn.layers.EmbeddingFeatures):
                     layer.load_sparse_table(cp_dir)
 
