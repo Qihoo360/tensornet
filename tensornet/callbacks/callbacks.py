@@ -22,33 +22,33 @@ from tensorflow.python.keras.callbacks import Callback
 class PsWeightCheckpoint(Callback):
     """Save ps weight after every fit.
     """
-    def __init__(self, checkpoint_dir, need_save_model=True, save_mode="txt", dt=None):
+
+    def __init__(self, checkpoint_dir, checkpoint_save=None, need_save_model=False, dt=None, delta_days=0, save_mode="txt",
+                 model_path_incl_dt=False):
         """
         :param checkpoint_dir: path of save model
         :param need_save_model: whether save model
-        :param save_mode:
-            'txt' : model will save with text format.
-            'bin' : model will save with binary format
+        :param checkpoint_save: path of the saving model path [None in predict or evaluate mode]
+        :param model_path_incl_dt: path checkpoint_dir include dt[train & predict are different]
         """
         self.checkpoint_dir = checkpoint_dir
+        self.checkpoint_save = checkpoint_save if checkpoint_save else checkpoint_dir
         self.need_save_model = need_save_model
         self.save_mode = save_mode
+        self.model_path_incl_dt = model_path_incl_dt
         self.dt = dt
+        self.delta_days = delta_days
 
         super(PsWeightCheckpoint, self).__init__()
 
     def load_model(self):
         tn.core.barrier()
-
-        self.model.load_weights(self.checkpoint_dir, mode=self.save_mode)
-
+        self.model.load_weights(self.checkpoint_dir, include_dt=self.model_path_incl_dt, mode=self.save_mode)
         tn.core.barrier()
 
     def reset_balance_dataset(self):
         tn.core.barrier()
-
         tn.core.reset_balance_dataset()
-
         tn.core.barrier()
 
     def on_train_begin(self, logs=None):
@@ -60,17 +60,13 @@ class PsWeightCheckpoint(Callback):
 
     def on_train_end(self, logs=None):
         tn.core.barrier()
-
-        self.model.show_decay()
-
+        self.model.show_decay(self.delta_days)
         if not self.need_save_model:
             return
-
         self.model.save_weights(self.checkpoint_dir, dt=self.dt, mode=self.save_mode)
 
     def on_predict_begin(self, logs=None):
         self.load_model()
-
         self.reset_balance_dataset()
 
     def on_predict_end(self, logs=None):
@@ -83,4 +79,3 @@ class PsWeightCheckpoint(Callback):
 
     def on_test_end(self, logs=None):
         tn.core.barrier()
-

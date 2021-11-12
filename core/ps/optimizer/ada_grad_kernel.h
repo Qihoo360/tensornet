@@ -72,7 +72,11 @@ public:
         return data_;
     }
 
-    void Apply(const AdaGrad* opt, SparseGradInfo& grad_info, int dim);
+    void Apply(const AdaGrad* opt, SparseGradInfo& grad_info);
+
+    void ShowDecay(const AdaGrad* opt, int delta_days);
+
+    bool DeleteByShow(const AdaGrad* opt);
 
 protected:
     virtual void SerializeTxt_(std::ostream& os, int dim);
@@ -82,6 +86,9 @@ protected:
 
 private:
     float g2sum_;
+    int dim_ = 0;
+    float show_ = 0.0;
+    int no_show_days_ = 0;
     float data_[0];
 };
 

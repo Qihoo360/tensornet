@@ -16,6 +16,7 @@
 
 #include <butil/logging.h>
 #include <butil/rand_util.h>
+#include <cstdlib>
 
 #include "core/utility/random.h"
 
@@ -78,32 +79,72 @@ std::istream& operator>>(std::istream& is, DenseAdaGradValue& value) {
 }
 
 SparseAdaGradValue::SparseAdaGradValue(int dim, const AdaGrad* opt) {
-    auto& reng = local_random_engine();
-    auto distribution = std::normal_distribution<float>(0, 1 / sqrt(dim));
+    dim_ = dim;
+    auto spare_env = std::getenv("SPARSE_INIT_ZERO");
+    if (spare_env != nullptr) {
+        for (int i = 0; i < Dim(); ++i) {
+            Weight()[i] = 0.0;
+        }
+    } else {
+        auto& reng = local_random_engine();
+        auto distribution = std::normal_distribution<float>(0, 1 / sqrt(Dim()));
 
-    for (int i = 0; i < dim; ++i) {
-        Weight()[i] = distribution(reng) * opt->initial_scale;
+        for (int i = 0; i < Dim(); ++i) {
+            Weight()[i] = distribution(reng) * opt->initial_scale;
+        }
     }
 
     g2sum_ = opt->initial_g2sum;
 }
 
-void SparseAdaGradValue::Apply(const AdaGrad* opt, SparseGradInfo& grad_info, int dim) {
-    delta_show_ += grad_info.batch_show;
+void SparseAdaGradValue::Apply(const AdaGrad* opt, SparseGradInfo& grad_info) {
+    show_ += grad_info.batch_show;
+    no_show_days_ = 0;
 
     float* w = Weight();
 
     double add_g2sum = 0;
 
-    for (int i = 0; i < dim; ++i) {
+    for (int i = 0; i < dim_; ++i) {
         add_g2sum += grad_info.grad[i] * grad_info.grad[i];
     }
 
-    g2sum_ += add_g2sum / dim;
+    g2sum_ += add_g2sum / dim_;
 
-    for (int i = 0; i < dim; ++i) {
+    for (int i = 0; i < dim_; ++i) {
         w[i] -= opt->learning_rate * grad_info.grad[i] / (opt->epsilon + sqrt(g2sum_));
     }
+}
+
+std::ostream& operator<<(std::ostream& os, const SparseAdaGradValue& value) {
+    os << value.dim_ << "\t";
+
+    for (int i = 0; i < value.dim_; i++) {
+        os << value.Weight()[i] << "\t";
+    }
+
+    os << value.g2sum_ << "\t";
+    os << value.show_ << "\t";
+    os << value.no_show_days_;
+
+    return os;
+}
+
+std::istream& operator>>(std::istream& is, SparseAdaGradValue& value) {
+    int dim;
+    is >> dim;
+
+    CHECK_EQ(dim, value.dim_);
+
+    for (int i = 0; i < value.dim_; i++) {
+        is >> value.Weight()[i];
+    }
+
+    is >> value.g2sum_;
+    is >> value.show_;
+    is >> value.no_show_days_;
+
+    return is;
 }
 
 void SparseAdaGradValue::SerializeTxt_(std::ostream& os, int dim) {
@@ -124,6 +165,7 @@ void SparseAdaGradValue::DeSerializeTxt_(std::istream& is, int dim) {
     is >> show_;
 }
 
+
 void SparseAdaGradValue::SerializeBin_(std::ostream& os, int dim) {
     os.write(reinterpret_cast<const char*>(Weight()), dim * sizeof(float));
     os.write(reinterpret_cast<const char*>(&g2sum_), sizeof(g2sum_));
@@ -134,6 +176,15 @@ void SparseAdaGradValue::DeSerializeBin_(std::istream& is, int dim) {
     is.read(reinterpret_cast<char*>(Weight()), dim * sizeof(float));
     is.read(reinterpret_cast<char*>(&g2sum_), sizeof(g2sum_));
     is.read(reinterpret_cast<char*>(&show_), sizeof(show_));
+}
+
+void SparseAdaGradValue::ShowDecay(const AdaGrad* opt, int delta_days) {
+    show_ *= opt->show_decay_rate;
+    no_show_days_ += delta_days;
+}
+
+bool SparseAdaGradValue::DeleteByShow(const AdaGrad* opt) {
+    return show_ < opt->show_threshold && no_show_days_ > opt->no_show_days;
 }
 
 } // namespace tensornet

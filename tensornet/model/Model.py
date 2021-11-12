@@ -106,11 +106,38 @@ class Model(tf.keras.Model):
         """override parent inference step, support return y label together
         """
         data = data_adapter.expand_1d(data)
-        x, y, sample_weight = data_adapter.unpack_x_y_sample_weight(data)
+        x, y, _ = data_adapter.unpack_x_y_sample_weight(data)
 
         y_pred = self(x, training=False)
 
-        return y, y_pred, sample_weight
+        return y, y_pred
+
+    def predict(self,
+                x,
+                batch_size=None,
+                verbose=0,
+                steps=None,
+                callbacks=None,
+                max_queue_size=10,
+                workers=1,
+                use_multiprocessing=False,
+                **kwargs):
+        os.environ['SPARSE_INIT_ZERO'] = '1'
+        from tensorflow.python.ops import logging_ops
+        logging_ops.print_v2("Now in new predict function.")
+        predictions = super(Model, self).predict(
+            x=x,
+            batch_size=batch_size,
+            verbose=verbose,
+            steps=steps,
+            callbacks=callbacks,
+            max_queue_size=max_queue_size,
+            workers=workers,
+            use_multiprocessing=use_multiprocessing,
+            **kwargs
+        )
+        os.environ.pop('SPARSE_INIT_ZERO')
+        return predictions
 
     def backwards(self, grads_and_vars):
         backward_ops = []
@@ -157,14 +184,18 @@ class Model(tf.keras.Model):
 
         self.is_loaded_from_checkpoint = True
 
-    def load_weights(self, filepath, by_name=False, skip_mismatch=False, mode="txt", root=True):
-        last_train_dt = read_last_train_dt(filepath)
-
-        # not saved model info found
-        if not last_train_dt:
-            return
-
-        cp_dir = os.path.join(filepath, last_train_dt)
+    def load_weights(self, filepath, by_name=False, skip_mismatch=False, include_dt=False, mode="txt", root=True):
+        if not include_dt:
+            last_train_dt = read_last_train_dt(filepath)
+            # not saved model info found
+            if not last_train_dt:
+                return
+            cp_dir = os.path.join(filepath, last_train_dt)
+        else:
+            model_ckpt = os.path.join(filepath, 'checkpoint')
+            if not tf.io.gfile.exists(model_ckpt):
+                return
+            cp_dir = filepath
 
         if not self.is_loaded_from_checkpoint:
             # sparse weight
@@ -172,7 +203,7 @@ class Model(tf.keras.Model):
                 assert type(layer) != tf.keras.Model, "not support direct use keras.Model, use tn.model.Model instead"
 
                 if isinstance(layer, type(self)):
-                    layer.load_weights(filepath, by_name, skip_mismatch, mode, False)
+                    layer.load_weights(filepath, by_name, skip_mismatch, include_dt, False)
                 elif isinstance(layer, tn.layers.EmbeddingFeatures):
                     layer.load_sparse_table(cp_dir, mode)
 
@@ -186,11 +217,11 @@ class Model(tf.keras.Model):
             tf_cp_file = os.path.join(cp_dir, "tf_checkpoint")
             super(Model, self).load_weights(tf_cp_file, by_name, skip_mismatch)
 
-    def show_decay(self):
+    def show_decay(self, delta_days=0):
         for layer in self.layers:
             assert type(layer) != tf.keras.Model, "not support direct use keras.Model, use tn.model.Model instead"
 
             if isinstance(layer, type(self)):
-                layer.show_decay()
+                layer.show_decay(delta_days)
             elif isinstance(layer, tn.layers.EmbeddingFeatures):
-                layer.show_decay()
+                layer.show_decay(delta_days)

@@ -134,8 +134,8 @@ void SparseTable::Load(const std::string& filepath, const std::string& mode) {
               << " key_count:" << saved_key_count_;
 }
 
-void SparseTable::ShowDecay() const {
-    op_kernel_->ShowDecay();
+void SparseTable::ShowDecay(int delta_days) const {
+    op_kernel_->ShowDecay(delta_days);
 }
 
 SparseTableRegistry* SparseTableRegistry::Instance() {

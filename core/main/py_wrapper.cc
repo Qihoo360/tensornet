@@ -74,6 +74,7 @@ PYBIND11_MODULE(_pywrap_tn, m) {
         PYDICT_PARSE_KWARGS(kwargs, epsilon, 1e-8);
         PYDICT_PARSE_KWARGS(kwargs, grad_decay_rate, 1.0);
         PYDICT_PARSE_KWARGS(kwargs, mom_decay_rate, 1.0);
+        PYDICT_PARSE_KWARGS(kwargs, no_show_days, 1000);
 
         // NOTICE! opt will not delete until system exist
         PyObject* obj = PyCapsule_New(opt, nullptr, nullptr);
@@ -99,9 +100,9 @@ PYBIND11_MODULE(_pywrap_tn, m) {
     })
     .def("Ftrl", [](py::kwargs kwargs) {
         auto opt = new Ftrl();
-
         PYDICT_PARSE_KWARGS(kwargs, learning_rate, 0.05);
         PYDICT_PARSE_KWARGS(kwargs, show_decay_rate, 0.98);
+        PYDICT_PARSE_KWARGS(kwargs, show_threshold, 0.0);
         PYDICT_PARSE_KWARGS(kwargs, feature_drop_show, 1 - opt->show_decay_rate);
 
         PYDICT_PARSE_KWARGS(kwargs, beta, 1);
@@ -176,9 +177,9 @@ PYBIND11_MODULE(_pywrap_tn, m) {
             throw py::value_error("reset_balance_dataset fail");
         }
     })
-    .def("show_decay", [](uint32_t table_handle) {
+    .def("show_decay", [](uint32_t table_handle, int delta_days) {
         SparseTable* table = SparseTableRegistry::Instance()->Get(table_handle);
-        return table->ShowDecay();
+        return table->ShowDecay(delta_days);
     })
     ;
 };

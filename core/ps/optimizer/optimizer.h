@@ -76,7 +76,10 @@ public:
     float initial_scale = 1.0;
     float epsilon = 1e-08;
     float grad_decay_rate = 1.0;
-    float mom_decay_rate = 0.9;
+    float mom_decay_rate = 1.0;
+    float show_decay_rate = 1.0;
+    float show_threshold = 0.0;
+    int no_show_days = 1000;
 };
 
 class Ftrl : public OptimizerBase {
@@ -95,6 +98,8 @@ public:
     float beta = 1;
     float lambda1 = 0.1;
     float lambda2 = 1;
+    float show_decay_rate = 1.0;
+    float show_threshold = 0.0;
 };
 
 } // namespace tensornet {

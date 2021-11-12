@@ -71,7 +71,14 @@ public:
         return data_;
     }
 
-    void Apply(const Ftrl* opt, SparseGradInfo& grad_info, int dim);
+    void Apply(const Ftrl* opt, SparseGradInfo& grad_info);
+
+    void ShowDecay(const Ftrl* opt, int delta_days);
+
+    bool DeleteByShow(const Ftrl* opt);
+
+    friend std::ostream& operator<<(std::ostream& os, const SparseFtrlValue& value);
+    friend std::istream& operator>>(std::istream& is, SparseFtrlValue& value);
 
 protected:
     float* Z(int dim) {

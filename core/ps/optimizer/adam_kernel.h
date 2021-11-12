@@ -74,7 +74,11 @@ public:
         return data_;
     }
 
-    void Apply(const Adam* opt, SparseGradInfo& grad_info, int dim);
+    void Apply(const Adam* opt, SparseGradInfo& grad_info);
+
+    void ShowDecay(const Adam* opt, int delta_days) {}
+
+    bool DeleteByShow(const Adam* opt) { return false; }
 
 protected:
     float* M(int dim) {
