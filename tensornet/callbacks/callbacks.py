@@ -48,13 +48,9 @@ class PsWeightCheckpoint(Callback):
         tn.core.barrier()
 
     def reset_balance_dataset(self):
-        from tensorflow.python.ops import logging_ops
-        logging_ops.print_v2("wxd: start reset_balance_dataset")
         tn.core.barrier()
         tn.core.reset_balance_dataset()
-        logging_ops.print_v2("wxd: finish core.reset_balance_dataset")
         tn.core.barrier()
-        logging_ops.print_v2("wxd: finish reset_balance_dataset")
 
     def on_train_begin(self, logs=None):
         assert isinstance(self.model.optimizer, tn.optimizer.Optimizer)
@@ -74,17 +70,11 @@ class PsWeightCheckpoint(Callback):
         self.model.save_weights(self.checkpoint_save, dt=self.dt)
 
     def on_predict_begin(self, logs=None):
-        from tensorflow.python.ops import logging_ops
-        logging_ops.print_v2("wxd: start on_predict_begin")
         self.load_model()
-        logging_ops.print_v2("wxd: finish load model")
         self.reset_balance_dataset()
-        logging_ops.print_v2("wxd: finish reset_balance_dataset")
 
     def on_predict_end(self, logs=None):
-        from tensorflow.python.ops import logging_ops
         tn.core.barrier()
-        logging_ops.print_v2("wxd: finish on_predict_end")
 
     def on_test_begin(self, logs=None):
         self.load_model()
