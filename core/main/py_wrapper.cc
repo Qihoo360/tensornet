@@ -67,7 +67,7 @@ PYBIND11_MODULE(_pywrap_tn, m) {
 
         PYDICT_PARSE_KWARGS(kwargs, learning_rate, 0.01);
         PYDICT_PARSE_KWARGS(kwargs, show_decay_rate, 0.98);
-        PYDICT_PARSE_KWARGS(kwargs, feature_drop_show, 1 - opt->show_decay_rate);
+        PYDICT_PARSE_KWARGS(kwargs, show_threshold, 0.0);
 
         PYDICT_PARSE_KWARGS(kwargs, initial_g2sum, 0);
         PYDICT_PARSE_KWARGS(kwargs, initial_scale, 1);
@@ -86,7 +86,6 @@ PYBIND11_MODULE(_pywrap_tn, m) {
 
         PYDICT_PARSE_KWARGS(kwargs, learning_rate, 0.001);
         PYDICT_PARSE_KWARGS(kwargs, show_decay_rate, 0.98);
-        PYDICT_PARSE_KWARGS(kwargs, feature_drop_show, 1 - opt->show_decay_rate);
 
         PYDICT_PARSE_KWARGS(kwargs, beta1, 0.9);
         PYDICT_PARSE_KWARGS(kwargs, beta2, 0.999);
@@ -103,7 +102,6 @@ PYBIND11_MODULE(_pywrap_tn, m) {
         PYDICT_PARSE_KWARGS(kwargs, learning_rate, 0.05);
         PYDICT_PARSE_KWARGS(kwargs, show_decay_rate, 0.98);
         PYDICT_PARSE_KWARGS(kwargs, show_threshold, 0.0);
-        PYDICT_PARSE_KWARGS(kwargs, feature_drop_show, 1 - opt->show_decay_rate);
 
         PYDICT_PARSE_KWARGS(kwargs, beta, 1);
         PYDICT_PARSE_KWARGS(kwargs, lambda1, 0.1);

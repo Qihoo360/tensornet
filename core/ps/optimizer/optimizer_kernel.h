@@ -344,11 +344,12 @@ public:
             os << "dim:" << block.dim_ << std::endl;
 
             for (const auto& value : block.values_) {
-                if (value.second->Show() > block.opt_->feature_drop_show) {
-                    os << value.first << "\t";
-                    value.second->Serialize(os, block.dim_);
-                    os << std::endl;
+                if ((*(value.second)).DeleteByShow(block.opt_)) {
+                    continue;
                 }
+                os << value.first << "\t";
+                value.second->Serialize(os, block.dim_);
+                os << std::endl;
             }
         };
 
@@ -356,7 +357,7 @@ public:
             os.write(reinterpret_cast<const char*>(&block.dim_), sizeof(block.dim_));
 
             for (const auto& value : block.values_) {
-                if (value.second->Show() <= block.opt_->feature_drop_show) {
+                if ((*(value.second)).DeleteByShow(block.opt_)) {
                     continue;
                 }
                 os.write(reinterpret_cast<const char*>(&value.first), sizeof(value.first));

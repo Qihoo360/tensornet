@@ -72,7 +72,7 @@ public:
         return data_;
     }
 
-    void Apply(const AdaGrad* opt, SparseGradInfo& grad_info);
+    void Apply(const AdaGrad* opt, SparseGradInfo& grad_info, int dim);
 
     void ShowDecay(const AdaGrad* opt, int delta_days);
 
@@ -86,7 +86,6 @@ protected:
 
 private:
     float g2sum_;
-    int dim_ = 0;
     float show_ = 0.0;
     int no_show_days_ = 0;
     float data_[0];

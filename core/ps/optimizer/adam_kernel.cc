@@ -90,71 +90,42 @@ std::istream& operator>>(std::istream& is, DenseAdamValue& value) {
 }
 
 SparseAdamValue::SparseAdamValue(int dim, const Adam* opt) {
-    dim_ = dim;
+    float* w = Weight();
+    float* m = M(dim);
+    float* v = V(dim);
 
     auto spare_env = std::getenv("SPARSE_INIT_ZERO");
     if (spare_env != nullptr) {
-        for (int i = 0; i < Dim(); ++i) {
-            Weight()[i] = 0.0;
-            M()[i] = 0;
-            V()[i] = 0;
+        for (int i = 0; i < dim; ++i) {
+            w[i] = 0.0;
+            m[i] = 0;
+            v[i] = 0;
         }
     } else {
         auto& reng = local_random_engine();
-        auto distribution = std::normal_distribution<float>(0, 1 / sqrt(Dim()));
+        auto distribution = std::normal_distribution<float>(0, 1 / sqrt(dim));
 
-        for (int i = 0; i < Dim(); ++i) {
-            Weight()[i] = distribution(reng) * opt->initial_scale;
-            M()[i] = 0;
-            V()[i] = 0;
+        for (int i = 0; i < dim; ++i) {
+            w[i] = distribution(reng) * opt->initial_scale;
+            m[i] = 0;
+            v[i] = 0;
         }
     }
 }
 
-void SparseAdamValue::Apply(const Adam* opt, SparseGradInfo& grad_info) {
+void SparseAdamValue::Apply(const Adam* opt, SparseGradInfo& grad_info, int dim) {
     delta_show_ += grad_info.batch_show;
 
     float* w = Weight();
-    float* m = M(dim_);
-    float* v = V(dim_);
+    float* m = M(dim);
+    float* v = V(dim);
 
-    for (int i = 0; i < Dim(); ++i) {
+    for (int i = 0; i < dim; ++i) {
         m[i] = opt->beta1 * m[i] + (1 - opt->beta1) * grad_info.grad[i];
         v[i] = opt->beta2 * v[i] + (1 - opt->beta2) * grad_info.grad[i] * grad_info.grad[i];
 
         w[i] -= opt->learning_rate * m[i] / (opt->epsilon + sqrt(v[i]));
     }
-}
-
-std::ostream& operator<<(std::ostream& os, const SparseAdamValue& value) {
-    os << value.dim_ << "\t";
-
-    for (int i = 0; i < value.dim_; i++) {
-        os << value.Weight()[i] << "\t";
-        os << value.M()[i] << "\t";
-        os << value.V()[i] << "\t";
-    }
-
-    os << value.show_;
-
-    return os;
-}
-
-std::istream& operator>>(std::istream& is, SparseAdamValue& value) {
-    int dim;
-    is >> dim;
-
-    CHECK_EQ(dim, value.dim_);
-
-    for (int i = 0; i < value.dim_; i++) {
-        is >> value.Weight()[i];
-        is >> value.M()[i];
-        is >> value.V()[i];
-    }
-
-    is >> value.show_;
-
-    return is;
 }
 
 void SparseAdamValue::SerializeTxt_(std::ostream& os, int dim) {

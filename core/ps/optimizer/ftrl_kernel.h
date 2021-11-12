@@ -71,7 +71,7 @@ public:
         return data_;
     }
 
-    void Apply(const Ftrl* opt, SparseGradInfo& grad_info);
+    void Apply(const Ftrl* opt, SparseGradInfo& grad_info, int dim);
 
     void ShowDecay(const Ftrl* opt, int delta_days);
 
@@ -103,6 +103,7 @@ protected:
     virtual void DeSerializeBin_(std::istream& is, int dim);
 
 private:
+    float show_ = 0.0;
     float data_[0];
 };
 

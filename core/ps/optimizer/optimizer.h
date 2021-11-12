@@ -39,7 +39,6 @@ public:
 public:
     float learning_rate = 0.01;
     float show_decay_rate = 0.98;
-    float feature_drop_show = 0.02;
 };
 
 class Adam : public OptimizerBase {
