@@ -156,14 +156,14 @@ class Model(tf.keras.Model):
 
         return
 
-    def save_weights(self, filepath, overwrite=True, save_format=None, dt="", mode="txt", root=True):
+    def save_weights(self, filepath, overwrite=True, save_format=None, dt="", root=True, mode="txt"):
         cp_dir = os.path.join(filepath, dt)
         # sparse weight
         for layer in self.layers:
             assert type(layer) != tf.keras.Model, "not support direct use keras.Model, use tn.model.Model instead"
 
             if isinstance(layer, type(self)):
-                layer.save_weights(filepath, overwrite, save_format, dt, mode, False)
+                layer.save_weights(filepath, overwrite, save_format, dt, False, mode)
             elif isinstance(layer, tn.layers.EmbeddingFeatures):
                 layer.save_sparse_table(cp_dir, mode)
 
@@ -184,7 +184,7 @@ class Model(tf.keras.Model):
 
         self.is_loaded_from_checkpoint = True
 
-    def load_weights(self, filepath, by_name=False, skip_mismatch=False, include_dt=False, mode="txt", root=True):
+    def load_weights(self, filepath, by_name=False, skip_mismatch=False, include_dt=False, root=True, mode="txt"):
         if not include_dt:
             last_train_dt = read_last_train_dt(filepath)
             # not saved model info found
@@ -203,7 +203,7 @@ class Model(tf.keras.Model):
                 assert type(layer) != tf.keras.Model, "not support direct use keras.Model, use tn.model.Model instead"
 
                 if isinstance(layer, type(self)):
-                    layer.load_weights(filepath, by_name, skip_mismatch, include_dt, False)
+                    layer.load_weights(filepath, by_name, skip_mismatch, include_dt, False, mode)
                 elif isinstance(layer, tn.layers.EmbeddingFeatures):
                     layer.load_sparse_table(cp_dir, mode)
 
