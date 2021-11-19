@@ -63,7 +63,7 @@ class PsWeightCheckpoint(Callback):
         self.model.show_decay(self.delta_days)
         if not self.need_save_model:
             return
-        self.model.save_weights(self.checkpoint_dir, dt=self.dt, mode=self.save_mode)
+        self.model.save_weights(self.checkpoint_save, dt=self.dt, mode=self.save_mode)
 
     def on_predict_begin(self, logs=None):
         self.load_model()
