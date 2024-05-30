@@ -59,7 +59,7 @@ jobs:
     name: Upload to pypi
     if: startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
     needs:
-    - build
+    - tn_build
     runs-on: ubuntu-latest 
     permissions:
       id-token: write  # mandatory for trusted publishing
