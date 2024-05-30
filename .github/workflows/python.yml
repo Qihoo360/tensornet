@@ -13,6 +13,8 @@ on:
 jobs:
   tn_build:
     runs-on: ubuntu-latest 
+    env:
+      NEED_ACTIVATE_ENV: "false"
     steps:
       - name: checkout repository
         uses: actions/checkout@v4
