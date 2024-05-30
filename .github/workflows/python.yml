@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest 
     env:
       NEED_ACTIVATE_ENV: "false"
+      DEBUG: "true"
     steps:
       - name: checkout repository
         uses: actions/checkout@v4

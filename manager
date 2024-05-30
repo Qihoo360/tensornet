@@ -63,8 +63,8 @@ start_build(){
     [[ ${NEED_ACTIVATE_ENV} == true ]] && _activate_env
     _build_config
     extra_opts=("$@")
-    [[ ${DEBUG-} != true ]] || extra_opts+=(--sandbox_debug)
-    bazel build "${extra_opts[@]}" -c opt //core:_pywrap_tn.so
+    # [[ ${DEBUG-} != true ]] || extra_opts+=(--sandbox_debug)
+    bazel build --spawn_strategy=standalone "${extra_opts[@]}" -c opt //core:_pywrap_tn.so
 }
 
 only_build(){
