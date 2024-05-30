@@ -27,7 +27,9 @@ jobs:
           cache-downloads: true
           post-cleanup: 'none'
       - name: Run custom command in micromamba environment
-        run: ./manager build
+        run: |
+          ./manager build
+          echo "build finish"
         shell: micromamba-shell {0}
 
       - name: Create setup dist
