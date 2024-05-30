@@ -1,0 +1,32 @@
+tn_build:
+  stage: build
+  tags:
+    - image-unlocked
+  image:
+    name: r.addops.soft.360.cn/sycp-container/centos7.2:base
+
+  variables:
+    NEED_PREPARE_ENV: "true"
+
+  before_script:
+    - mkdir -p ${HOME}/.config/pip
+    - |
+      cat > "${HOME}/.config/pip/pip.conf" <<END
+      [global]
+      index-url = ${NEXUS3_PYPI_REPO}
+      END
+
+  script:
+    - sed -i "s|https://github.com|${NEXUS3_HEADER}/github.com|g" WORKSPACE
+    - ./manager build
+    - ./manager deploy
+  cache:
+    - key: cache-$CI_COMMIT_REF_NAME
+      paths:
+        - /root/.cache/bazel/_bazel_root/cache
+        - /root/.cache/bazel/_bazel_root/install
+        - /root/micromamba/pkgs
+  when: manual
+  #only:
+  #- tags
+

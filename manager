@@ -1,0 +1,159 @@
+#!/usr/bin/env bash
+
+[[ ${DEBUG-} != true ]] || set -x
+
+readonly WORKSPACE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly TN_BUILD_ENV_NAME=tn_build
+
+export MAMBA_EXE=${HOME}/.local/bin/micromamba
+export MAMBA_ROOT_PREFIX=${HOME}/micromamba
+
+: ${NEED_PREPARE_ENV:=false}
+: ${NEED_ACTIVATE_ENV:=true}
+
+die() {
+  local err=$? err_fmt=
+  (( err )) && err_fmt=" (err=$err)" || err=1
+  printf >&2 "[ERROR]$err_fmt %s\n" "$*"
+  exit $err
+}
+
+_prepare_mamba_env(){
+   if ! type micromamba >/dev/null 2>&1;then
+     HTTPS_PROXY=${PROXY_URL:=${HTTPS_PROXY}} "${SHELL}" <(curl -L micro.mamba.pm/install.sh)
+   fi
+   _mamba_source
+   [[ -z ${NEXUS3_HEADER} ]] || {
+       ${MAMBA_EXE} config set --file "${MAMBA_ROOT_PREFIX}/.mambarc" channel_alias ${NEXUS3_HEADER}/conda
+   }
+   micromamba create -y -f ${WORKSPACE_DIR}/config/${TN_BUILD_ENV_NAME}.yaml
+   micromamba activate ${TN_BUILD_ENV_NAME}
+}
+
+_mamba_source() {
+    [[ -e ${MAMBA_EXE} ]] || { echo "no micromamba exe found, run ./manager prepare_build_env to create env"; exit 1;}
+    __mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
+    if [ $? -eq 0 ]; then
+        eval "$__mamba_setup"
+    else
+        alias micromamba="$MAMBA_EXE"  # Fallback on help from mamba activate
+    fi
+    unset __mamba_setup
+}
+
+_activate_env() {
+    _mamba_source
+    micromamba activate ${TN_BUILD_ENV_NAME}
+}
+
+_prepare_compile_env() {
+    CUR_ENV_PATH=$(ompi_info --parsable --path prefix 2>/dev/null | awk -F":" '{print $NF}')
+    export C_INCLUDE_PATH=${CUR_ENV_PATH}/include
+    export CPLUS_INCLUDE_PATH=${CUR_ENV_PATH}/include
+}
+
+_build_config(){
+    CUR_ENV_PATH=$(ompi_info --parsable --path prefix 2>/dev/null | awk -F":" '{print $NF}')
+    cd ${WORKSPACE_DIR}; bash configure.sh --openmpi_path ${CUR_ENV_PATH}
+    _prepare_compile_env
+}
+
+start_build(){
+    [[ ${NEED_PREPARE_ENV} == true ]] && _prepare_mamba_env
+    [[ ${NEED_ACTIVATE_ENV} == true ]] && _activate_env
+    _build_config
+    extra_opts=("$@")
+    [[ ${DEBUG-} != true ]] || extra_opts+=(--sandbox_debug)
+    bazel build "${extra_opts[@]}" -c opt //core:_pywrap_tn.so
+}
+
+only_build(){
+    [[ ${NEED_ACTIVATE_ENV} == true ]] && _activate_env
+    _prepare_compile_env
+    extra_opts=("$@")
+    [[ ${DEBUG-} != true ]] || extra_opts+=(--sandbox_debug)
+    bazel build "${extra_opts[@]}" -c opt //core:_pywrap_tn.so
+}
+
+
+start_copy_libs(){
+    rm -f tensornet/core/_pywrap_tn.so || true
+    cp bazel-bin/core/_pywrap_tn.so tensornet/core/_pywrap_tn.so
+}
+
+start_test(){
+    python -c "import tensorflow as tf;import tensornet as tn;tn.core.init()"
+}
+
+
+start_only_upload(){
+    [[ ${NEED_ACTIVATE_ENV} == true ]] && _activate_env
+    export TWINE_USERNAME=${TWINE_USERNAME:=${NEXUS3_USERNAME}}
+    export TWINE_PASSWORD=${TWINE_PASSWORD:=${NEXUS3_PASSWORD}}
+    if [[ -z "$TWINE_USERNAME" || -z "$TWINE_PASSWORD" ]];then
+        echo "need username/password auth, no env "
+        echo "export NEXUS3_USERNAME=xxxx"
+        echo "export NEXUS3_PASSWORD=xxxx"
+        exit 0
+    fi
+    [[ -z ${NEXUS3_PYPI_HOST} ]] && { echo "need pypi host address, export NEXUS3_PYPI_HOST=xxx"; exit 0; }
+    twine upload --verbose --repository-url ${NEXUS3_PYPI_HOST} dist/*
+}
+
+start_create_dist(){
+    [[ ${NEED_PREPARE_ENV} == true ]] && _prepare_mamba_env
+    [[ ${NEED_ACTIVATE_ENV} == true ]] && _activate_env
+    rm -rf dist/* || true
+    start_copy_libs
+    [[ $# > 0 ]] && export TN_VERSION=$1
+    PY_VERSION=$(python -c "import sys; print('cp' + ''.join(map(str, sys.version_info[:2])))")
+    python setup.py bdist_wheel --plat-name manylinux2010_x86_64 --python-tag ${PY_VERSION}
+}
+
+start_upload(){
+    start_create_dist
+    start_only_upload
+}
+
+case "$1" in
+(prepare_build_env)
+  _prepare_mamba_env
+  ;;
+(build)
+  shift 1
+  start_build "$@"
+  ;;
+(only-build)
+  shift 1
+  only_build "$@"
+  ;;
+(deploy)
+  shift 1
+  start_upload "$@"
+  ;;
+(copy-libs)
+  start_copy_libs 
+  ;;
+(create_dist)
+  shift 1
+  start_create_dist "$@"
+  ;;
+(help)
+  cmd=$(basename -- "$0")
+  cat <<-END
+   Usage:
+     $cmd help - Print this help.
+
+     $cmd prepare_build_env - install micromamba environment.
+
+     $cmd build [args..] - Build tn so file.
+
+     $cmd only-build [args..] - Build tn so file without config mpi
+
+     $cmd deploy [version] - deploy tn to pypi
+
+     $cmd create_dist [version] - create setup dist without upload
+END
+  ;;
+(*) die Unknown command "$1" ;;
+esac

@@ -12,17 +12,6 @@ http_archive(
     ],
 )
 
-#http_archive(
-#    name = "org_tensorflow",
-#    sha256 = "2595a5c401521f20a2734c4e5d54120996f8391f00bb62a57267d930bce95350",
-#    strip_prefix = "tensorflow-2.3.0",
-#    urls = [
-#        "https://github.com/tensorflow/tensorflow/archive/v2.3.0.tar.gz",
-#    ],
-#)
-
-# copy from @org_tensorflow/WORKSPACE
-# TensorFlow build depends on these dependencies.
 http_archive(
     name = "io_bazel_rules_closure",
     sha256 = "5b00383d08dd71f28503736db0500b6fb4dda47489ff5fc6bed42557c07c6ba9",
@@ -36,10 +25,9 @@ http_archive(
 http_archive(
     name = "brpc",
     urls = [
-    "https://github.com/apache/incubator-brpc/archive/0.9.7.tar.gz"
+    "https://github.com/apache/brpc/archive/0.9.7.tar.gz"
     ],
-    sha256 = "722cd342baf3b05189ca78ecf6c56ea6ffec22e62fc2938335e4e5bab545a49c",
-    strip_prefix = "incubator-brpc-0.9.7",
+    strip_prefix = "brpc-0.9.7",
 )
 
 # depend by brpc
@@ -50,12 +38,13 @@ http_archive(
     url = "https://github.com/google/leveldb/archive/a53934a3ae1244679f812d998a4f16f2c7f309a6.tar.gz"
 )
 
-git_repository(
-    name = "com_github_nelhage_rules_boost",
-    commit = "fe9a0795e909f10f2bfb6bfa4a51e66641e36557",
-    remote = "https://github.com/nelhage/rules_boost",
-    shallow_since = "1570056263 -0700",
-)
+http_archive(
+        name = "com_github_nelhage_rules_boost",
+        urls = [
+        "https://github.com/nelhage/rules_boost/archive/fe9a0795e909f10f2bfb6bfa4a51e66641e36557.tar.gz",
+        ],
+        strip_prefix = "rules_boost-fe9a0795e909f10f2bfb6bfa4a51e66641e36557",
+    )
 
 load("@com_github_nelhage_rules_boost//:boost/boost.bzl", "boost_deps")
 boost_deps()
