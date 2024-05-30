@@ -29,8 +29,10 @@ jobs:
           post-cleanup: 'none'
       - name: Run custom command in micromamba environment
         run: |
+          du -sh /home/runner/.cache
           ./manager build
           echo "build finish"
+          rm -rf /home/runner/.cache/bazel
         shell: micromamba-shell {0}
 
       - name: Create setup dist

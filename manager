@@ -64,6 +64,7 @@ start_build(){
     _build_config
     extra_opts=("$@")
     # [[ ${DEBUG-} != true ]] || extra_opts+=(--sandbox_debug)
+    bazel clean --expunge
     bazel build --spawn_strategy=standalone "${extra_opts[@]}" -c opt //core:_pywrap_tn.so
 }
 
