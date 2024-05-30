@@ -7,6 +7,8 @@ setup(
     name='qihoo-tensornet',
     version=version,
     description='tensornet',
+    long_description=open('README.md').read(),
+    long_description_content_type='text/markdown',
     author='jiangxinglei',
     author_email='jiangxinglei@360.cn',
     url='https://github.com/Qihoo360/tensornet',

@@ -36,7 +36,7 @@ jobs:
       - name: Create setup dist
         run: |
           ./manager create_dist 
-          twine check 
+          twine check dist/*
         shell: micromamba-shell {0}
 
       - name: Store wheels
