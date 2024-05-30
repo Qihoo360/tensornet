@@ -1,0 +1,71 @@
+name: Build Tensornet
+
+on:
+  push:
+    branches:
+    - '**'        # matches every branch
+    tags:
+    - 'v[0-9]+'
+    - 'v[0-9]+\.[0-9]+'
+    - 'v[0-9]+\.[0-9]+\.[0-9]+'
+  pull_request:
+
+jobs:
+  tn_build:
+    runs-on: ubuntu-latest 
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+
+      - uses: mamba-org/setup-micromamba@v1
+        with:
+          micromamba-version: '1.5.8-0'
+          environment-file: config/tn_build.yaml
+          init-shell: bash
+          cache-downloads: true
+          post-cleanup: 'none'
+      - name: Run custom command in micromamba environment
+        run: ./manager build
+        shell: micromamba-shell {0}
+
+      - name: Create setup dist
+        run: ./manager create_dist 
+        shell: micromamba-shell {0}
+
+      - name: Store wheels
+        uses: actions/upload-artifact@v4
+        with:
+          path: dist/
+          retention-days: 7
+
+  publish-to-test-pypi:
+    name: Upload to test-pypi
+    needs:
+    - tn_build
+    permissions:
+      id-token: write  # mandatory for trusted publishing
+    steps:
+    - name: Download wheels
+      uses: actions/download-artifact@v4
+      with:
+        path: dist/
+    - name: Publish wheels to test-PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
+
+  publish-to-pypi:
+    name: Upload to pypi
+    if: startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
+    needs:
+    - build
+    permissions:
+      id-token: write  # mandatory for trusted publishing
+    steps:
+    - name: Download wheels
+      uses: actions/download-artifact@v4
+      with:
+        path: dist/
+    - name: Publish wheels to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+

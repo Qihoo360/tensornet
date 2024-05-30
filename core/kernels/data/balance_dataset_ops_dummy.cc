@@ -119,7 +119,7 @@ private:
             return data::model::MakeKnownRatioNode(std::move(args), /*ratio=*/1);
         }
 
-#if defined(TN_COMPATIBLE_INTERFACE_2_2_0)
+#if defined(TN_COMPATIBLE_INTERFACE_2_2)
         Status SaveInternal(IteratorStateWriter* writer) override {
             mutex_lock l(mu_);
             if (!input_impl_) {
