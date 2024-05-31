@@ -104,13 +104,13 @@ start_create_dist(){
     [[ ${NEED_PREPARE_ENV} == true ]] && _prepare_mamba_env
     [[ ${NEED_ACTIVATE_ENV} == true ]] && _activate_env
     rm -rf dist/* || true
-    start_copy_libs
     [[ $# > 0 ]] && export TN_VERSION=$1
     PY_VERSION=$(python -c "import sys; print('cp' + ''.join(map(str, sys.version_info[:2])))")
     python setup.py bdist_wheel --plat-name manylinux2010_x86_64 --python-tag ${PY_VERSION}
 }
 
 start_upload(){
+    start_copy_libs
     start_create_dist
     start_only_upload
 }
