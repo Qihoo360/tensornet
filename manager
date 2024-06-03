@@ -107,6 +107,7 @@ start_create_dist(){
     [[ $# > 0 ]] && export TN_VERSION=$1
     PY_VERSION=$(python -c "import sys; print('cp' + ''.join(map(str, sys.version_info[:2])))")
     python setup.py bdist_wheel --plat-name manylinux2010_x86_64 --python-tag ${PY_VERSION}
+    twine check dist/*
 }
 
 start_upload(){
