@@ -145,5 +145,12 @@ cc_binary(
         "@boost//:random",
         "@boost//:iostreams",
     ],
+    linkopts = [
+     "-Wl,-rpath,$$ORIGIN/../libs",
+     "-Wl,-rpath,$$ORIGIN/../../../../../lib",
+     "-Wl,-rpath,$$ORIGIN/../../tensorflow",
+     "-Wl,-rpath,$$ORIGIN/../../tensorflow/python"
+    ],
+
     linkshared = 1,
 )
