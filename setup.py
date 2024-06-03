@@ -1,7 +1,11 @@
 import os
 from setuptools import setup, find_packages
+from importlib.machinery import SourceFileLoader
 
-version = os.environ.get('TN_VERSION', '0.1.2')
+# use importlib to avoid import so file
+_version = SourceFileLoader('version', 'tensornet/version.py').load_module()
+version = _version.VERSION
+
 
 setup(
     name='qihoo-tensornet',
