@@ -35,6 +35,7 @@ jobs:
 
       - name: Create setup dist
         run: |
+          ldd --version
           ./manager create_dist 
         shell: micromamba-shell {0}
 

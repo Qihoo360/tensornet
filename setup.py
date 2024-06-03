@@ -1,9 +1,7 @@
 import os
 from setuptools import setup, find_packages
-import tensorflow as tf
-import tensornet as tn
 
-version = tn.__version__
+version = "0.13.0.dev0"
 
 setup(
     name='qihoo-tensornet',
