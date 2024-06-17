@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+import tensorflow as tf
 import tensornet as tn
 
 from tensornet.core import gen_dense_table_ops
@@ -21,6 +21,11 @@ from tensorflow.python.keras.optimizer_v2 import optimizer_v2
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import control_flow_ops
 from tensorflow.python.ops import array_ops
+from tensorflow.python.eager import backprop
+from tensorflow.python.util import nest
+from tensorflow.python.keras import backend
+import numpy as np
+import random
 
 
 class Optimizer(optimizer_v2.OptimizerV2):
@@ -74,3 +79,68 @@ class Optimizer(optimizer_v2.OptimizerV2):
     def get_config(self):
         config = super(Optimizer, self).get_config()
         return config
+
+
+class PCGrad(Optimizer):
+    """
+    """
+    def __init__(self,
+                 dense_opt,
+                 name='TensornetPCGrad',
+                 **kwargs):
+
+        super(PCGrad, self).__init__(dense_opt, name, **kwargs)
+
+    def compute_gradients(self, loss, var_list, tape, grad_loss=None):
+        assert type(loss) is list
+        num_tasks = len(loss)
+        tf.random.shuffle(loss)
+        #loss = tf.stack(loss)
+        #tf.random.shuffle(loss)
+        #print('loss:%s' % loss)
+
+        def sub_loss_compute(x, tape, var_list, grad_loss):
+            print('x:%s' % x)
+            temp_loss_value = []
+            gradients = tape.gradient(x, var_list, grad_loss)
+            for grad in gradients:
+                if grad is not None:
+                    temp_loss_value.append(tf.reshape(grad, [-1,]))
+
+            return tf.concat(temp_loss_value, axis=0)
+
+        #compute gradient projections
+        def proj_grad(grad_task):
+            for k in range(num_tasks):
+                inner_product = tf.reduce_sum(grad_task * grads_task[k])
+                proj_direction = inner_product / tf.reduce_sum(grads_task[k] * grads_task[k])
+                grad_task = grad_task - tf.minimum(proj_direction, 0.) * grads_task[k]
+            return grad_task
+
+        #compute per-task gradients
+        proj_grads_flatten = []
+        grads_task = []
+        for ls in loss:
+            grad_task = sub_loss_compute(ls, tape, var_list, grad_loss)
+            grads_task.append(grad_task)
+
+        for grad_task in grads_task:
+            proj_grads_flatten.append(proj_grad(grad_task))
+
+        #unpack flattened projected gradients back to their original shapes
+        proj_grads = []
+        for j in range(num_tasks):
+            start_idx = 0
+            for idx, var in enumerate(var_list):
+                grad_shape = var.get_shape()
+                flatten_dim = np.prod([grad_shape.dims[i].value for i in range(len(grad_shape.dims))])
+                proj_grad = proj_grads_flatten[j][start_idx:start_idx+flatten_dim]
+                proj_grad = tf.reshape(proj_grad, grad_shape)
+                proj_grad = self._clip_gradients(proj_grad)
+                if len(proj_grads) < len(var_list):
+                    proj_grads.append(proj_grad)
+                else:
+                    proj_grads[idx] += proj_grad
+                start_idx += flatten_dim
+        grads_and_vars = list(zip(proj_grads, var_list))
+        return grads_and_vars

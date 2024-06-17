@@ -26,6 +26,8 @@
 #include <butil/iobuf.h>
 #include <butil/logging.h>
 #include <Eigen/Dense>
+#include <cstring>
+#include <cstdio>
 
 #include <boost/iostreams/stream.hpp>
 
@@ -389,10 +391,22 @@ public:
                 << " you must make sure that use same optimizer when incremental training";
 
             is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> block.dim_;
+            
+	    std::tuple<bool, std::string> tuple = block.opt_->NeedOldCompat(is, block.dim_);
+            bool need_old_compat = std::get<0>(tuple);
+            std::string sample_line = std::get<1>(tuple);
+            std::istringstream sample_is(sample_line);
 
             uint64_t sign = 0;
+	    while (sample_is >> sign) {
+		    ValueType* value = block.alloc_.allocate(block.dim_, block.opt_);
+		    value->SetOldCompat(need_old_compat);
+		    value->DeSerialize(sample_is, block.dim_);
+		    block.values_[sign] = value;
+	    }
             while (is >> sign) {
                 ValueType* value = block.alloc_.allocate(block.dim_, block.opt_);
+		value->SetOldCompat(need_old_compat);
                 value->DeSerialize(is, block.dim_);
                 block.values_[sign] = value;
             }
@@ -495,7 +509,11 @@ public:
         for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
             threads.push_back(std::thread([this, i, &mode, &filepath]() {
                 std::string file = filepath;
-                file.append("/block_").append(std::to_string(i)).append(".gz");
+                if(FileUtils::CheckFileExists(filepath + "/block_" + std::to_string(i) + ".gz")){
+                    file.append("/block_").append(std::to_string(i)).append(".gz");
+                } else {
+                    file.append("/sparse_block_").append(std::to_string(i)).append(".gz");
+                }
 
                 FileReaderSource reader_source(file, FCT_ZLIB);
                 boost::iostreams::stream<FileReaderSource> in_stream(reader_source);

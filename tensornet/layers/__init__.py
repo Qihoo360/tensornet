@@ -13,3 +13,4 @@
 # limitations under the License.
 
 from .embedding_features import EmbeddingFeatures
+from .sequence_embedding_features import SequenceEmbeddingFeatures

@@ -82,7 +82,14 @@ start_copy_libs(){
 }
 
 start_test(){
-    python -c "import tensorflow as tf;import tensornet as tn;tn.core.init()"
+    [[ ${NEED_ACTIVATE_ENV} == true ]] && _activate_env
+    export PYTHONPATH=${WORKSPACE_DIR}:${PYTHONPATH}
+    MPI_LIB_PATH=$(ompi_info --parsable --path prefix 2>/dev/null | awk -F":" '{print $NF}')
+    export LD_LIBRARY_PATH=${MPI_LIB_PATH}/lib:${LD_LIBRARY_PATH}
+    cd examples
+    rm -rf data model || true
+    python gen_example_data.py
+    python main.py 
 }
 
 
@@ -138,6 +145,10 @@ case "$1" in
 (create_dist)
   shift 1
   start_create_dist "$@"
+  ;;
+(test)
+  shift 1
+  start_test "$@"
   ;;
 (help)
   cmd=$(basename -- "$0")

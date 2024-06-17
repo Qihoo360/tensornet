@@ -139,7 +139,6 @@ FileReaderSource::FileReaderSource(const std::string& file,
     reader_ = std::make_shared<ReaderInternal>(reader.release(), compression_type);
 }
 
-
 FileReaderSource::~FileReaderSource() {
     reader_ = nullptr;
 }
@@ -160,6 +159,10 @@ std::streamsize FileReaderSource::read(char_type* str, std::streamsize n) {
     std::copy(buffer.begin(), buffer.end(), str);
 
     return buffer.size();
+}
+
+bool FileUtils::CheckFileExists(const std::string& filepath) {
+   return tensorflow::Env::Default()-> FileExists(filepath).ok();
 }
 
 } // namespace tensornet

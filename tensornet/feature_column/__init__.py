@@ -13,3 +13,4 @@
 # limitations under the License.
 
 from .category_column import *
+from .sequence_category_column import *

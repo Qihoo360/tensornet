@@ -70,6 +70,12 @@ private:
 
 };
 
+class FileUtils {
+public:
+    static bool CheckFileExists(const std::string& filepath);
+
+};
+
 }  // namespace tensornet
 
 #endif  // TENSORNET_UTILITY_SEMAPHORE_H_
