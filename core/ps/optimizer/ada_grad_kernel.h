@@ -85,6 +85,7 @@ protected:
     virtual void DeSerializeBin_(std::istream& is, int dim);
 
 private:
+    int dim_;
     float g2sum_;
     float show_ = 0.0;
     int no_show_days_ = 0;

@@ -13,3 +13,4 @@
 # limitations under the License.
 
 from .Model import *
+from .compile_utils import *

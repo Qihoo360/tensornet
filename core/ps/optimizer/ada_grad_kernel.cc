@@ -95,6 +95,8 @@ SparseAdaGradValue::SparseAdaGradValue(int dim, const AdaGrad* opt) {
     }
 
     g2sum_ = opt->initial_g2sum;
+    old_compat_ = false;
+    no_show_days_ = 0;
 }
 
 void SparseAdaGradValue::Apply(const AdaGrad* opt, SparseGradInfo& grad_info, int dim) {
@@ -117,33 +119,43 @@ void SparseAdaGradValue::Apply(const AdaGrad* opt, SparseGradInfo& grad_info, in
 }
 
 void SparseAdaGradValue::SerializeTxt_(std::ostream& os, int dim) {
+    os << dim << "\t";
     for (int i = 0; i < dim; i++) {
         os << Weight()[i] << "\t";
     }
 
     os << g2sum_ << "\t";
-    os << show_;
+    os << show_ << "\t";
+    os << no_show_days_;
 }
 
 void SparseAdaGradValue::DeSerializeTxt_(std::istream& is, int dim) {
+    is >> dim_;
     for (int i = 0; i < dim; i++) {
         is >> Weight()[i];
     }
 
     is >> g2sum_;
     is >> show_;
+    if(!old_compat_) {
+        is >> no_show_days_;
+    }
 }
 
 void SparseAdaGradValue::SerializeBin_(std::ostream& os, int dim) {
     os.write(reinterpret_cast<const char*>(Weight()), dim * sizeof(float));
     os.write(reinterpret_cast<const char*>(&g2sum_), sizeof(g2sum_));
     os.write(reinterpret_cast<const char*>(&show_), sizeof(show_));
+    os.write(reinterpret_cast<const char*>(&no_show_days_), sizeof(no_show_days_));
 }
 
 void SparseAdaGradValue::DeSerializeBin_(std::istream& is, int dim) {
     is.read(reinterpret_cast<char*>(Weight()), dim * sizeof(float));
     is.read(reinterpret_cast<char*>(&g2sum_), sizeof(g2sum_));
     is.read(reinterpret_cast<char*>(&show_), sizeof(show_));
+    if(!old_compat_) {
+        is.read(reinterpret_cast<char*>(&no_show_days_), sizeof(no_show_days_));
+    }
 }
 
 void SparseAdaGradValue::ShowDecay(const AdaGrad* opt, int delta_days) {

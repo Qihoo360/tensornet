@@ -40,6 +40,10 @@ public:
 
     void DeSerialize(std::istream& is, int dim);
 
+    void SetOldCompat(bool old_compat) {
+	old_compat_ = old_compat;
+    }
+
     float Show() const {
         return show_;
     }
@@ -53,7 +57,7 @@ protected:
 protected:
     float show_ = 0.0;
     int delta_show_ = 0;
-
+    bool old_compat_ = false;
 };
 
 } // namespace tensornet {

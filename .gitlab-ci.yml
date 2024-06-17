@@ -19,7 +19,8 @@ tn_build:
   script:
     - sed -i "s|https://github.com|${NEXUS3_HEADER}/github.com|g" WORKSPACE
     - ./manager build
-    - ./manager deploy
+    - ./manager copy-libs
+    - ./manager test
   cache:
     - key: cache-$CI_COMMIT_REF_NAME
       paths:
@@ -27,6 +28,4 @@ tn_build:
         - /root/.cache/bazel/_bazel_root/install
         - /root/micromamba/pkgs
   when: manual
-  #only:
-  #- tags
 

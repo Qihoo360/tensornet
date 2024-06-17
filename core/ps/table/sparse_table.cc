@@ -116,7 +116,11 @@ void SparseTable::Load(const std::string& filepath, const std::string& mode) {
     if (name_.empty()) {
         file += std::to_string(GetHandle());
     } else {
-        file += name_;
+        if(FileUtils::CheckFileExists(file + name_)){
+            file += name_;
+        } else {
+            file += std::to_string(GetHandle());
+        }
     }
 
     file += "/rank_" + std::to_string(self_shard_id_);

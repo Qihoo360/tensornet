@@ -18,6 +18,8 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <iostream>
+#include <sstream>
 
 namespace tensornet {
 
@@ -35,6 +37,11 @@ public:
     virtual SparseOptKernelSharedPtr CreateSparseOptKernel(int dimension) const = 0;
 
     virtual std::string Name() const = 0;
+
+    virtual std::tuple<bool, std::string> NeedOldCompat(std::istream& is, int dim) const {
+        std::string emptyString = "";
+        return std::make_tuple(false, emptyString);
+    }
 
 public:
     float learning_rate = 0.01;
@@ -68,6 +75,28 @@ public:
 
     virtual std::string Name() const {
         return "AdaGrad";
+    }
+
+    std::tuple<bool, std::string> NeedOldCompat(std::istream& is, int dim) const {
+        bool need_old_compat = false;
+        std::string line;
+        std::string cell;
+        std::getline(is, line); // 抹去换行符
+        std::getline(is, line);
+        std::istringstream iss(line);
+        int column_count = 0;
+
+        while (std::getline(iss, cell, '\t')) {
+            ++column_count;
+        }
+
+        // columns should be sign, dim_, dims_ * weight, g2sum, show, no_show_days
+        // if columnCount is 12,  means no no_show_days column
+        if(column_count == dim + 4){
+            need_old_compat = true;
+        }
+
+        return std::make_tuple(need_old_compat, line);
     }
 
 public:
