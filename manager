@@ -111,7 +111,6 @@ start_create_dist(){
     [[ ${NEED_PREPARE_ENV} == true ]] && _prepare_mamba_env
     [[ ${NEED_ACTIVATE_ENV} == true ]] && _activate_env
     rm -rf dist/* || true
-    [[ $# > 0 ]] && export TN_VERSION=$1
     PY_VERSION=$(python -c "import sys; print('cp' + ''.join(map(str, sys.version_info[:2])))")
     python setup.py bdist_wheel --plat-name manylinux2010_x86_64 --python-tag ${PY_VERSION}
     twine check dist/*
@@ -121,6 +120,52 @@ start_upload(){
     start_copy_libs
     start_create_dist
     start_only_upload
+}
+
+bump_dev_version() {
+  hash bumpversion >/dev/null || die "cannot find bumpversion command"
+  local mode=${1:-patch}
+  case "$mode" in
+  (major|minor|patch) bumpversion --commit "$mode" ;;
+  (build)
+    local release_part=''
+    release_part=$(bumpversion --allow-dirty build --dry-run --list | grep '^current_version=' | cut -s -d - -f 2-)
+    case "${release_part-}" in
+    (dev*) bumpversion --commit "$mode" ;;
+    (*) die "use '$0 release ...' to bump the build number of a release version." ;;
+    esac
+    ;;
+  (*) die "Unknown mode ($mode) for bump_dev_version" ;;
+  esac
+}
+
+bump_release_version() {
+  hash bumpversion >/dev/null || die "cannot find bumpversion command"
+  local mode=${1:-prod} release_part=''
+  release_part=$(bumpversion --allow-dirty build --dry-run --list | grep '^current_version=' | cut -s -d - -f 2-)
+
+  case "$mode" in
+  (rc)
+    case "${release_part-}" in
+    (dev*) bumpversion --commit --tag release ;;
+    (rc*) bumpversion --commit --tag build ;;
+    (''|post*) die "An production version cannot do a pre-release" ;;
+    (*) die "Unknown release part ($release_part) for bump_release_version" ;;
+    esac
+    ;;
+  (prod)
+    case "${release_part-}" in
+    (dev*)
+      local release_version=$(bumpversion --allow-dirty build --dry-run --list | grep '^current_version=' | cut -s -d - -f 1 | cut -s -d = -f 2)
+      bumpversion --commit --tag --new-version "$release_version" release # prod release, skip rc
+      ;;
+    (rc*) bumpversion --commit --tag release ;;
+    (''|post*) bumpversion --commit --tag build ;;
+    (*) die "Unknown release part ($release_part) for bump_release_version" ;;
+    esac
+    ;;
+  (*) die "Unknown mode ($mode) for bump_release_version" ;;
+  esac
 }
 
 case "$1" in
@@ -137,18 +182,26 @@ case "$1" in
   ;;
 (deploy)
   shift 1
-  start_upload "$@"
+  start_upload
   ;;
 (copy-libs)
   start_copy_libs 
   ;;
 (create_dist)
   shift 1
-  start_create_dist "$@"
+  start_create_dist
   ;;
 (test)
   shift 1
   start_test "$@"
+  ;;
+(bump-version)
+  shift 1
+  bump_dev_version "$@"
+  ;;
+(release)
+  shift 1
+  bump_release_version "$@"
   ;;
 (help)
   cmd=$(basename -- "$0")
@@ -162,9 +215,13 @@ case "$1" in
 
      $cmd only-build [args..] - Build tn so file without config mpi
 
-     $cmd deploy [version] - deploy tn to pypi
+     $cmd deploy - deploy tn to pypi
 
-     $cmd create_dist [version] - create setup dist without upload
+     $cmd create_dist - create setup dist without upload
+
+     $cmd bump-version <major|minor|[patch]|build> - bump major/minor/patch/build version, always generates a *-dev version.
+
+     $cmd release <rc|[prod]> - generate a new (rc) release, and tag the new commit.
 END
   ;;
 (*) die Unknown command "$1" ;;
