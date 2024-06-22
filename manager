@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
 
+set -eufo pipefail
+
 [[ ${DEBUG-} != true ]] || set -x
 
-readonly WORKSPACE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly TN_BUILD_ENV_NAME=tn_build
+WORKSPACE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TN_BUILD_ENV_NAME=tn_build
+readonly WORKSPACE_DIR TN_BUILD_ENV_NAME
 
 export MAMBA_EXE=${HOME}/.local/bin/micromamba
 export MAMBA_ROOT_PREFIX=${HOME}/micromamba
 
-: ${NEED_PREPARE_ENV:=false}
-: ${NEED_ACTIVATE_ENV:=true}
+: "${NEED_PREPARE_ENV:=false}"
+: "${NEED_ACTIVATE_ENV:=true}"
 
 die() {
   local err=$? err_fmt=
@@ -24,19 +27,19 @@ _prepare_mamba_env(){
    fi
    _mamba_source
    [[ -z ${NEXUS3_HEADER} ]] || {
-       ${MAMBA_EXE} config set --file "${MAMBA_ROOT_PREFIX}/.mambarc" channel_alias ${NEXUS3_HEADER}/conda
+       ${MAMBA_EXE} config set --file "${MAMBA_ROOT_PREFIX}/.mambarc" channel_alias "${NEXUS3_HEADER}/conda"
    }
-   micromamba create -y -f ${WORKSPACE_DIR}/config/${TN_BUILD_ENV_NAME}.yaml
-   micromamba activate ${TN_BUILD_ENV_NAME}
+   micromamba create -y -f "${WORKSPACE_DIR}/config/${TN_BUILD_ENV_NAME}.yaml"
+   micromamba activate "${TN_BUILD_ENV_NAME}"
 }
 
 _mamba_source() {
     [[ -e ${MAMBA_EXE} ]] || { echo "no micromamba exe found, run ./manager prepare_build_env to create env"; exit 1;}
-    __mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
-    if [ $? -eq 0 ]; then
+    local __mamba_setup=''
+    if __mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"; then
         eval "$__mamba_setup"
     else
-        alias micromamba="$MAMBA_EXE"  # Fallback on help from mamba activate
+        alias micromamba='$MAMBA_EXE'  # Fallback on help from mamba activate
     fi
     unset __mamba_setup
 }
@@ -54,7 +57,7 @@ _prepare_compile_env() {
 
 _build_config(){
     CUR_ENV_PATH=$(ompi_info --parsable --path prefix 2>/dev/null | awk -F":" '{print $NF}')
-    cd ${WORKSPACE_DIR}; bash configure.sh --openmpi_path ${CUR_ENV_PATH}
+    cd -- "${WORKSPACE_DIR}"; bash configure.sh --openmpi_path "${CUR_ENV_PATH}"
     _prepare_compile_env
 }
 
@@ -89,7 +92,7 @@ start_test(){
     cd examples
     rm -rf data model || true
     python gen_example_data.py
-    python main.py 
+    python main.py
 }
 
 
@@ -104,7 +107,7 @@ start_only_upload(){
         exit 0
     fi
     [[ -z ${NEXUS3_PYPI_HOST} ]] && { echo "need pypi host address, export NEXUS3_PYPI_HOST=xxx"; exit 0; }
-    twine upload --verbose --repository-url ${NEXUS3_PYPI_HOST} dist/*
+    twine upload --verbose --repository-url "${NEXUS3_PYPI_HOST}" dist/*
 }
 
 start_create_dist(){
@@ -112,7 +115,7 @@ start_create_dist(){
     [[ ${NEED_ACTIVATE_ENV} == true ]] && _activate_env
     rm -rf dist/* || true
     PY_VERSION=$(python -c "import sys; print('cp' + ''.join(map(str, sys.version_info[:2])))")
-    python setup.py bdist_wheel --plat-name manylinux2010_x86_64 --python-tag ${PY_VERSION}
+    python setup.py bdist_wheel --plat-name manylinux2010_x86_64 --python-tag "${PY_VERSION}"
     twine check dist/*
 }
 
@@ -156,7 +159,8 @@ bump_release_version() {
   (prod)
     case "${release_part-}" in
     (dev*)
-      local release_version=$(bumpversion --allow-dirty build --dry-run --list | grep '^current_version=' | cut -s -d - -f 1 | cut -s -d = -f 2)
+      local release_version=''
+      release_version=$(bumpversion --allow-dirty build --dry-run --list | grep '^current_version=' | cut -s -d - -f 1 | cut -s -d = -f 2)
       bumpversion --commit --tag --new-version "$release_version" release # prod release, skip rc
       ;;
     (rc*) bumpversion --commit --tag release ;;
@@ -185,7 +189,7 @@ case "$1" in
   start_upload
   ;;
 (copy-libs)
-  start_copy_libs 
+  start_copy_libs
   ;;
 (create_dist)
   shift 1
@@ -203,26 +207,26 @@ case "$1" in
   shift 1
   bump_release_version "$@"
   ;;
-(help)
+(''|help)
   cmd=$(basename -- "$0")
   cat <<-END
-   Usage:
-     $cmd help - Print this help.
+	Usage:
+	  $cmd [help] - Print this help.
 
-     $cmd prepare_build_env - install micromamba environment.
+	  $cmd prepare_build_env - install micromamba environment.
 
-     $cmd build [args..] - Build tn so file.
+	  $cmd build [args..] - Build tn so file.
 
-     $cmd only-build [args..] - Build tn so file without config mpi
+	  $cmd only-build [args..] - Build tn so file without config mpi
 
-     $cmd deploy - deploy tn to pypi
+	  $cmd deploy - deploy tn to pypi
 
-     $cmd create_dist - create setup dist without upload
+	  $cmd create_dist - create setup dist without upload
 
-     $cmd bump-version <major|minor|[patch]|build> - bump major/minor/patch/build version, always generates a *-dev version.
+	  $cmd bump-version <major|minor|[patch]|build> - bump major/minor/patch/build version, always generates a *-dev version.
 
-     $cmd release <rc|[prod]> - generate a new (rc) release, and tag the new commit.
-END
+	  $cmd release <rc|[prod]> - generate a new (rc) release, and tag the new commit.
+	END
   ;;
 (*) die Unknown command "$1" ;;
 esac
