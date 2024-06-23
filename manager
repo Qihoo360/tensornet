@@ -172,7 +172,7 @@ bump_release_version() {
   esac
 }
 
-case "$1" in
+case "${1-}" in
 (prepare_build_env)
   _prepare_mamba_env
   ;;
