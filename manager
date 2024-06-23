@@ -132,7 +132,7 @@ bump_dev_version() {
   (major|minor|patch) bumpversion --commit "$mode" ;;
   (build)
     local release_part=''
-    release_part=$(bumpversion --allow-dirty build --dry-run --list | grep '^current_version=' | cut -s -d - -f 2-)
+    release_part=$(bumpversion --allow-dirty build --dry-run --list | awk -vFS=. '/^current_version=/ && $NF ~ "^[a-z]" { print $NF }')
     case "${release_part-}" in
     (dev*) bumpversion --commit "$mode" ;;
     (*) die "use '$0 release ...' to bump the build number of a release version." ;;
@@ -145,7 +145,7 @@ bump_dev_version() {
 bump_release_version() {
   hash bumpversion >/dev/null || die "cannot find bumpversion command"
   local mode=${1:-prod} release_part=''
-  release_part=$(bumpversion --allow-dirty build --dry-run --list | grep '^current_version=' | cut -s -d - -f 2-)
+  release_part=$(bumpversion --allow-dirty build --dry-run --list | awk -vFS=. '/^current_version=/ && $NF ~ "^[a-z]" { print $NF }')
 
   case "$mode" in
   (rc)
