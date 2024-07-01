@@ -16,6 +16,7 @@
 #define TENSORNET_CORE_UTILITY_FILE_IO_H_
 
 #include <string>
+#include <vector>
 #include <memory>
 #include <iosfwd>                          // streamsize
 #include <boost/iostreams/categories.hpp>  // sink_tag, source_tag
@@ -73,7 +74,7 @@ private:
 class FileUtils {
 public:
     static bool CheckFileExists(const std::string& filepath);
-
+    static bool GetChildren(const std::string& dir, std::vector<std::string>* result);
 };
 
 }  // namespace tensornet

@@ -28,6 +28,7 @@
 #include <Eigen/Dense>
 #include <cstring>
 #include <cstdio>
+#include <regex>
 
 #include <boost/iostreams/stream.hpp>
 
@@ -505,16 +506,39 @@ public:
 
     void DeSerialized(const std::string& filepath, const std::string& mode) {
         std::vector<std::thread> threads;
+        std::string actual_mode = mode;
+        std::string file_prefix = "sparse_block_";
+        std::string file_suffix = "";
+
+        /*
+            file pattern could be sparse_block_0.gz | block_0.gz | sparse_block_0_[bin|txt].gz
+            without _[bin|txt] pattern, by default is txt mode
+        */
+        std::vector<std::string> child_files;
+        if(FileUtils::GetChildren(filepath, &child_files)){
+           std::string first_file_str = child_files.front();
+           size_t index = first_file_str.find_last_of("/");
+           std::string first_file_name = first_file_str.substr(index + 1);;
+
+           std::regex regex_pattern(R"((.*?)(\d+)(.*)\.gz)");
+           std::smatch match;
+           if (std::regex_match(first_file_name, match, regex_pattern)) {
+               file_prefix = match[1];
+               if(match[3].matched && match[3].length() > 0){
+                   file_suffix = match[3];
+                   actual_mode = file_suffix.substr(1);
+               } else {
+                   actual_mode = "txt";
+               }
+           }
+           std::cerr << file_prefix << std::endl;
+           std::cerr << file_suffix << std::endl;
+        }
 
         for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
-            threads.push_back(std::thread([this, i, &mode, &filepath]() {
+	    threads.push_back(std::thread([this, i, &actual_mode, &filepath, &file_prefix, &file_suffix]() {
                 std::string file = filepath;
-                if(FileUtils::CheckFileExists(filepath + "/block_" + std::to_string(i) + ".gz")){
-                    file.append("/block_").append(std::to_string(i)).append(".gz");
-                } else {
-                    file.append("/sparse_block_").append(std::to_string(i)).append(".gz");
-                }
-
+                file.append("/" + file_prefix).append(std::to_string(i)).append(file_suffix).append(".gz");
                 FileReaderSource reader_source(file, FCT_ZLIB);
                 boost::iostreams::stream<FileReaderSource> in_stream(reader_source);
 
