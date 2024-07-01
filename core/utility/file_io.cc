@@ -15,6 +15,7 @@
 #include "core/utility/file_io.h"
 
 #include <string>
+#include <vector>
 
 #include "tensorflow/core/platform/env.h"
 #include "tensorflow/core/lib/io/buffered_inputstream.h"
@@ -163,6 +164,10 @@ std::streamsize FileReaderSource::read(char_type* str, std::streamsize n) {
 
 bool FileUtils::CheckFileExists(const std::string& filepath) {
    return tensorflow::Env::Default()-> FileExists(filepath).ok();
+}
+
+bool FileUtils::GetChildren(const std::string& dir, std::vector<std::string>* result) {
+   return tensorflow::Env::Default()-> GetChildren(dir, result).ok();
 }
 
 } // namespace tensornet

@@ -36,6 +36,7 @@ class PsWeightCheckpoint(Callback):
         self.need_save_model = need_save_model
         self.need_load_model = kwargs.get('need_load_model', True)
         self.save_mode = save_mode
+        self.load_mode = kwargs.get('load_mode', self.save_mode)
         self.model_path_incl_dt = model_path_incl_dt
         self.dt = dt
         self.delta_days = delta_days
@@ -45,7 +46,7 @@ class PsWeightCheckpoint(Callback):
     def load_model(self):
         tn.core.barrier()
         if self.need_load_model:
-            self.model.load_weights(self.checkpoint_dir, include_dt=self.model_path_incl_dt, mode=self.save_mode)
+            self.model.load_weights(self.checkpoint_dir, include_dt=self.model_path_incl_dt, mode=self.load_mode)
         tn.core.barrier()
 
     def reset_balance_dataset(self):
