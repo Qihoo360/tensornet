@@ -542,7 +542,7 @@ public:
                 FileReaderSource reader_source(file, FCT_ZLIB);
                 boost::iostreams::stream<FileReaderSource> in_stream(reader_source);
 
-                if (mode == "bin") {
+                if (actual_mode == "bin") {
                     in_stream.iword(SERIALIZE_FMT_ID) = SF_BIN;
                 } else {
                     in_stream.iword(SERIALIZE_FMT_ID) = SF_TXT;

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -eufo pipefail
+set -efo pipefail
 
 [[ ${DEBUG-} != true ]] || set -x
 
