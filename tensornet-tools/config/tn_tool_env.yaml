@@ -1,0 +1,9 @@
+name: tn_tool
+channels:
+  - conda-forge
+dependencies:
+  - python=3.8
+  - nomkl
+  - openssl>=3
+  - hdfs3
+  - conda-pack
