@@ -7,7 +7,7 @@ from io import BytesIO
 import hdfs3
 from hdfs3 import HDFileSystem
 from pyspark.sql import *
-from pyspark.sql.functions import *
+from pyspark.sql.functions import lit, col, udf
 from pyspark.sql import functions as F
 from pyspark.sql.types import *
 import re
@@ -27,6 +27,28 @@ def get_hdfs_head(path):
     return hdfs_head
 
 
+def get_hdfs_path_without_hdfs_head(path):
+    if path.startswith('hdfs'):
+        start_index = path.find("/", path.find("//") + 2)  
+        return path[start_index:]
+    else:
+        return path
+
+
+def extract_single_number(s):  
+    match = re.search(r'\d+', s)  
+    if match:  
+        # 将匹配到的数字字符串转换为整数  
+        return int(match.group(0))  
+    else:  
+        # 如果没有找到数字，返回None  
+        return None
+
+
+def get_splited_str(input_str, delimiter, index):
+    return input_str.split(delimiter)[index]
+
+
 def get_handle_name(path):
     """
     get handle name from file path
@@ -37,12 +59,16 @@ def get_handle_name(path):
 
 
 def get_sign_partition_key(sign, mod):
-    block_id = sparse_key_hasher(int(sign))
-    sign_mod = int(sign) % int(mod)
+    block_id = get_sign_block_num(int(sign))
+    sign_mod = get_sign_rank_num(sign, mod)
     return block_id * int(mod) + sign_mod
 
 
-def sparse_key_hasher(sign):  
+def get_sign_rank_num(sign, mod):
+    return int(sign) % int(mod)
+
+
+def get_sign_block_num(sign):  
     flipped_sign = (int(sign) >> 32) | (int(sign) << 32)  
     return flipped_sign % BLOCK_NUM
 
@@ -70,11 +96,21 @@ def process_txt_line(line):
 def fetch_hanlds(input_path):
     hdfs_head = get_hdfs_head(input_path)
     hdfs = HDFileSystem(host=hdfs_head)
-    res_file = hdfs.glob(input_path)[0]
+    res_file = hdfs.glob(get_hdfs_path_without_hdfs_head(input_path))[0]
     while hdfs.info(res_file)['kind'] != 'file':
         res_file = hdfs.ls(res_file)[0]
     sparse_parent = "/".join(res_file.split("/")[:-3])
     return [ path.split('/')[-1] for path in hdfs.ls(sparse_parent)]
+
+
+def fetch_input_rank_num(input_path):
+    hdfs_head = get_hdfs_head(input_path)
+    hdfs = HDFileSystem(host=hdfs_head)
+    res_file = hdfs.glob(get_hdfs_path_without_hdfs_head(input_path))[0]
+    while hdfs.info(res_file)['kind'] != 'file':
+        res_file = hdfs.ls(res_file)[0]
+    sparse_parent = "/".join(res_file.split("/")[:-2])
+    return max([ int(path.split('/')[-1].split('_')[1]) for path in hdfs.ls(sparse_parent)]) + 1
 
 
 def appendIndex(index, iterator):
@@ -203,6 +239,8 @@ def load_sparse_table_to_df(sc, input_path, file_format):
     """
     if file_format == 'txt':
         get_handle_name_udf = udf(get_handle_name, StringType())
+        extract_single_number_udf = udf(extract_single_number, IntegerType())
+        get_splited_str_udf = udf(get_splited_str, StringType())
         dims_df = sc.textFile(input_path)\
                      .map(lambda x: process_txt_line(x))\
                      .toDF(sparse_ada_grad_schema)\
