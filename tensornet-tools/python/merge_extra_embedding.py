@@ -41,9 +41,9 @@ def main(args):
 
     dims_df = load_sparse_table_to_df(sc, args.input, args.format).withColumn('par_key', get_sign_partition_key_udf(col('sign'), lit(source_rank_num)))
 
-    extra_data_df = sc.textFile(args.input).map(lambda x: (x.split(',')[0], x.split(',')[1].split(':')[0], get_sign_partition_key(x.split(',')[1].split(':')[0], source_rank_num), x.split(',')[1].split(':')[1], get_sign_partition_key(x.split(',')[1].split(':')[1], source_rank_num))).toDF(['handle_name', 'old_sign', 'old_sign_par_key', 'new_sign', 'new_sign_par_key'])
+    extra_data_df = sc.textFile(args.extra).map(lambda x: (x.split(',')[0], x.split(',')[1].split(':')[0], get_sign_partition_key(x.split(',')[1].split(':')[0], source_rank_num), x.split(',')[1].split(':')[1], get_sign_partition_key(x.split(',')[1].split(':')[1], source_rank_num))).toDF(['handle_name', 'old_sign', 'old_sign_par_key', 'new_sign', 'new_sign_par_key'])
 
-    extra_data_all_df = extra_data_df.join(dims_df, (extra_data_df.handle_name == dims_df.handle) & (extra_data_df.old_sign == dims_df.sign) & (extra_data_df.old_sign_par_key == dims_df.par_key), 'left').selectExpr("new_sign as sign", "dim", "weights", "g2sum", "show", "no_show_days", "handle", "new_sign_par_key as par_key")
+    extra_data_all_df = extra_data_df.join(dims_df, (extra_data_df.handle_name == dims_df.handle) & (extra_data_df.old_sign == dims_df.sign) & (extra_data_df.old_sign_par_key == dims_df.par_key)).selectExpr("new_sign as sign", "dim", "weights", "g2sum", "show", "no_show_days", "handle", "new_sign_par_key as par_key")
    
     dims_df.unionAll(extra_data_all_df).rdd.map(lambda row: (row[7], row)).partitionBy(source_rank_num * BLOCK_NUM)\
       .foreachPartition(lambda p: resize_partition(p, output_bc_value, format_bc_value, number_bc_value, handle_names_bc_value))

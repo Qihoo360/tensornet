@@ -162,12 +162,12 @@ def resize_partition(iterator, bc_output_path, bc_format, bc_number, bc_handle_n
         if handle not in handle_io_map:
             handle_io_map[handle] = init_sparse_file(8, file_format)
 
-        hdfs.makedirs('{}/{}/rank_{}'.format(output_path, handle, rank_num), 0o755)
+        hdfs.makedirs('{}/{}/rank_{}'.format(get_hdfs_path_without_hdfs_head(output_path), handle, rank_num), 0o777)
         handle_io_map[handle][1].close()
-        file_path = '{}/{}/rank_{}/sparse_block_{}_{}.gz'.format(output_path, handle, rank_num, block_id, file_format)
+        file_path = '{}/{}/rank_{}/sparse_block_{}.gz'.format(get_hdfs_path_without_hdfs_head(output_path), handle, rank_num, block_id)
         if hdfs.exists(file_path):
             hdfs.rm(file_path)
-        with hdfs.open(file_path,'wb') as f:
+        with hdfs.open(file_path,mode='wb') as f:
             f.write(handle_io_map[handle][0].getvalue())
 
 
@@ -239,8 +239,6 @@ def load_sparse_table_to_df(sc, input_path, file_format):
     """
     if file_format == 'txt':
         get_handle_name_udf = udf(get_handle_name, StringType())
-        extract_single_number_udf = udf(extract_single_number, IntegerType())
-        get_splited_str_udf = udf(get_splited_str, StringType())
         dims_df = sc.textFile(input_path)\
                      .map(lambda x: process_txt_line(x))\
                      .toDF(sparse_ada_grad_schema)\
@@ -321,6 +319,6 @@ def write_dense_partition(iterator, bc_output_path):
         data = row[1][1]
         compressed_data = io.BytesIO()
         compressed_data.write(data.encode('utf-8'))
-        hdfs.makedirs('{}/{}'.format(output_path, handle_name), 0o755)
+        hdfs.makedirs('{}/{}'.format(output_path, handle_name), 0o777)
         with hdfs.open('{}/{}/{}'.format(output_path, handle_name, file_index),'wb') as f:
             f.write(compressed_data.getvalue())
