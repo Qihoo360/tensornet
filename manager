@@ -161,7 +161,7 @@ bump_release_version() {
     case "${release_part-}" in
     (dev*)
       local release_version=''
-      release_version=$(bumpversion --allow-dirty release --dry-run --list | grep '^new_version=' | cut -s -d = -f 2 | sed -E 's/\.[^0-9]+([0-9]*)$//')
+      release_version=$(bumpversion --allow-dirty release --dry-run --list | grep '^current_version_version=' | cut -s -d = -f 2 | sed -E 's/\.[^0-9]+([0-9]*)$//')
       [[ $tool_deploy == true ]] && tag_name_option="--tag-name ${release_version}-tool"
       bumpversion --commit --tag ${tag_name_option} --new-version "$release_version" release # prod release, skip rc
       ;;
