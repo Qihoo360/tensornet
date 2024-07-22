@@ -5,8 +5,6 @@ import io
 import os
 from struct import unpack,pack
 from io import BytesIO
-#import hdfs3
-#from hdfs3 import HDFileSystem
 import pyarrow as pa
 from pyspark.sql import *
 from pyspark.sql.functions import lit, col, udf
@@ -216,12 +214,6 @@ def resize_partition(iterator, bc_output_path, bc_format, bc_number, bc_handle_n
 
 def get_weight_for_extra_embedding(itr, total_rank_num, input_dir):
     handle_data_map = {}
-    print(os.environ)
-    print("--------------------------------------------")
-    print("--------------------------------------------")
-    print("--------------------------------------------")
-    print("--------------------------------------------")
-    print("--------------------------------------------")
     fs = pa.hdfs.connect(get_hdfs_head(input_dir))
     
     for row in itr:
@@ -238,13 +230,6 @@ def get_weight_for_extra_embedding(itr, total_rank_num, input_dir):
                     with gzip.GzipFile(fileobj=io.BytesIO(f.read())) as gzip_f:
                         decompressed_data = gzip_f.read()
                         file_content = decompressed_data.decode('utf-8')
-#                hdfs_command = ['hdfs', 'dfs', '-text', data_file]
-#                import subprocess
-#                with subprocess.Popen(hdfs_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:  
-#                    stdout, stderr = proc.communicate()
-#                    if proc.returncode != 0:  
-#                        print(f"Error: {stderr.decode()}")  
-#                    else:  
                         data_map = {}
                         for line in file_content.split('\n'):
                             data = process_txt_line(line)
@@ -396,13 +381,13 @@ def process_whole_text(whole_data, number):
 def write_dense_partition(iterator, bc_output_path):
     output_path = bc_output_path.value
     hdfs_head = get_hdfs_head(output_path)
-    hdfs = HDFileSystem(host=hdfs_head)
+    hdfs = pa.hdfs.connect(host=hdfs_head)
     for row in iterator:
         file_index = int(row[0])
         handle_name = row[1][0]
         data = row[1][1]
         compressed_data = io.BytesIO()
         compressed_data.write(data.encode('utf-8'))
-        hdfs.makedirs('{}/{}'.format(output_path, handle_name), 0o777)
+        hdfs.mkdir('{}/{}'.format(output_path, handle_name))
         with hdfs.open('{}/{}/{}'.format(output_path, handle_name, file_index),'wb') as f:
             f.write(compressed_data.getvalue())
