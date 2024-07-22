@@ -144,7 +144,8 @@ bump_dev_version() {
 
 bump_release_version() {
   hash bumpversion >/dev/null || die "cannot find bumpversion command"
-  local mode=${1:-prod} release_part=''
+  local mode=${1:-prod} release_part='' tag_name_option='' tool_deploy=false
+  [[ $# -gt 1 && $2 == 'tool' ]] && tool_deploy=true
   release_part=$(bumpversion --allow-dirty build --dry-run --list | awk -vFS=. '/^current_version=/ && $NF ~ "^[a-z]" { print $NF }')
 
   case "$mode" in
@@ -160,11 +161,18 @@ bump_release_version() {
     case "${release_part-}" in
     (dev*)
       local release_version=''
-      release_version=$(bumpversion --allow-dirty build --dry-run --list | grep '^current_version=' | cut -s -d - -f 1 | cut -s -d = -f 2)
-      bumpversion --commit --tag --new-version "$release_version" release # prod release, skip rc
+      release_version=$(bumpversion --allow-dirty release --dry-run --list | grep '^current_version=' | cut -s -d = -f 2 | sed -E 's/\.[^0-9]+([0-9]*)$//')
+      [[ $tool_deploy == true ]] && tag_name_option="--tag-name ${release_version}-tool"
+      bumpversion --commit --tag ${tag_name_option} --new-version "$release_version" release # prod release, skip rc
       ;;
-    (rc*) bumpversion --commit --tag release ;;
-    (''|post*) bumpversion --commit --tag build ;;
+    (rc*)
+      [[ $tool_deploy == true ]] && tag_name_option="--tag-name $(bumpversion --allow-dirty release --dry-run --list | grep '^new_version=' | cut -s -d = -f 2)-tool"
+      bumpversion --commit --tag ${tag_name_option} release 
+      ;;
+    (''|post*) 
+      [[ $tool_deploy == true ]] && tag_name_option="--tag-name $(bumpversion --allow-dirty build --dry-run --list | grep '^new_version=' | cut -s -d = -f 2)-tool"
+      bumpversion --commit --tag ${tag_name_option} build 
+      ;;
     (*) die "Unknown release part ($release_part) for bump_release_version" ;;
     esac
     ;;

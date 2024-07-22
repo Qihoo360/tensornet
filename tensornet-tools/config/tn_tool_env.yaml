@@ -1,8 +1,7 @@
-name: tn_build
+name: tn_tool
 channels:
   - conda-forge
 dependencies:
   - python=3.8
   - nomkl
-  - openssl>=3
-  - hdfs3
+  - pyarrow==12.0.1

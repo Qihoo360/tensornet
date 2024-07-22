@@ -1,0 +1,61 @@
+name: Build Tensornet Tools
+
+on:
+  push:
+    tags:
+    - '*tool'
+  pull_request:
+
+jobs:
+  tn_tools_build:
+    runs-on: ubuntu-latest 
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+
+      - uses: mamba-org/setup-micromamba@v1
+        with:
+          micromamba-version: '1.5.8-0'
+          environment-file: config/tn_build.yaml
+          init-shell: bash
+          cache-downloads: true
+          post-cleanup: 'none'
+      - name: Run custom command in micromamba environment
+        run: |
+          python setup-tn-tools.py bdist_wheel
+          twine check dist/*
+        shell: micromamba-shell {0}
+
+      - name: Store wheels
+        uses: actions/upload-artifact@v4
+        with:
+          path: dist/
+          retention-days: 7
+
+  publish-to-pypi:
+    name: Upload to pypi
+    if: github.repository == 'Qihoo360/tensornet' && startsWith(github.ref, 'refs/tags/') # only publish to PyPI on tag pushes
+    needs:
+    - tn_tools_build
+    runs-on: ubuntu-latest 
+    permissions:
+      id-token: write  # mandatory for pypi trusted publishing
+      contents: write  # mandatory for create a github release
+    steps:
+    - name: Download wheels
+      uses: actions/download-artifact@v4
+      with:
+        merge-multiple: true
+        path: dist/
+    - name: Publish wheels to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        # push v*.rc* tags to test.pypi.org
+        repository-url: ${{ contains(github.ref, '.rc') && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+        print-hash: true
+    - name: Create a draft release
+      uses: softprops/action-gh-release@v2
+      with:
+        draft: true
+        prerelease: ${{ contains(github.ref, '.rc') }}
+        generate_release_notes: true

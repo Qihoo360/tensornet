@@ -2,12 +2,12 @@
 import gzip
 import struct
 import io
+import os
 from struct import unpack,pack
 from io import BytesIO
-import hdfs3
-from hdfs3 import HDFileSystem
+import pyarrow as pa
 from pyspark.sql import *
-from pyspark.sql.functions import *
+from pyspark.sql.functions import lit, col, udf
 from pyspark.sql import functions as F
 from pyspark.sql.types import *
 import re
@@ -16,7 +16,22 @@ import math
 
 hdfs_head_pattern = r"hdfs://[^/]+"
 sparse_ada_grad_schema = ['sign', 'dim', 'weights', 'g2sum', 'show', 'no_show_days']
+sparse_df_schema = ['sign', 'dim', 'weights', 'g2sum', 'show', 'no_show_days', 'handle', 'par_key']
 BLOCK_NUM = 8
+
+
+class SparseTablePathInfo:
+    def __init__(self, input_dir, user=None):
+        self.input_dir = input_dir
+        self.hdfs_head = get_hdfs_head(input_dir)
+        if user:
+            self.user = user
+        self.fs = pa.hdfs.connect(self.hdfs_head, user=user)
+        self.leaf_file_path = fetch_sparse_leaf_file_path(input_dir, self.fs)
+        self.sparse_parent = "/".join(self.leaf_file_path.split("/")[:-3]) 
+        self.handles = [ path.split('/')[-1] for path in self.fs.ls(self.sparse_parent)]
+        self.total_rank_num = max([ int(path.split('/')[-1].split('_')[1]) for path in self.fs.ls(self.fs.ls(self.sparse_parent)[0])]) + 1
+        self.fs.close()
 
 
 def get_hdfs_head(path):
@@ -25,6 +40,28 @@ def get_hdfs_head(path):
     if match_res:
         return match_res.group(0)
     return hdfs_head
+
+
+def get_hdfs_path_without_hdfs_head(path):
+    if path.startswith('hdfs'):
+        start_index = path.find("/", path.find("//") + 2)  
+        return path[start_index:]
+    else:
+        return path
+
+
+def extract_single_number(s):  
+    match = re.search(r'\d+', s)  
+    if match:  
+        # 将匹配到的数字字符串转换为整数  
+        return int(match.group(0))  
+    else:  
+        # 如果没有找到数字，返回None  
+        return None
+
+
+def get_splited_str(input_str, delimiter, index):
+    return input_str.split(delimiter)[index]
 
 
 def get_handle_name(path):
@@ -37,12 +74,16 @@ def get_handle_name(path):
 
 
 def get_sign_partition_key(sign, mod):
-    block_id = sparse_key_hasher(int(sign))
-    sign_mod = int(sign) % int(mod)
+    block_id = get_sign_block_num(int(sign))
+    sign_mod = get_sign_rank_num(sign, mod)
     return block_id * int(mod) + sign_mod
 
 
-def sparse_key_hasher(sign):  
+def get_sign_rank_num(sign, mod):
+    return int(sign) % int(mod)
+
+
+def get_sign_block_num(sign):  
     flipped_sign = (int(sign) >> 32) | (int(sign) << 32)  
     return flipped_sign % BLOCK_NUM
 
@@ -69,12 +110,48 @@ def process_txt_line(line):
 
 def fetch_hanlds(input_path):
     hdfs_head = get_hdfs_head(input_path)
-    hdfs = HDFileSystem(host=hdfs_head)
-    res_file = hdfs.glob(input_path)[0]
-    while hdfs.info(res_file)['kind'] != 'file':
-        res_file = hdfs.ls(res_file)[0]
-    sparse_parent = "/".join(res_file.split("/")[:-3])
+    hdfs = pa.hdfs.connect(host=hdfs_head)
+    file_path = input_path
+    while not hdfs.isdir(file_path):
+        file_path = os.path.dirname(file_path)
+    while hdfs.info(file_path)['kind'] != 'file':
+        file_path = hdfs.ls(file_path)[0]
+    sparse_parent = "/".join(file_path.split("/")[:-3])
     return [ path.split('/')[-1] for path in hdfs.ls(sparse_parent)]
+
+
+def fetch_sparse_leaf_file_path(input_path, hdfs):
+    hdfs_head = get_hdfs_head(input_path)
+    file_path = input_path
+    while not hdfs.isdir(file_path):
+        file_path = os.path.dirname(file_path)
+    while hdfs.info(file_path)['kind'] != 'file':
+        file_path = hdfs.ls(file_path)[0]
+    return hdfs_head + file_path
+
+
+def fetch_sparse_table_root(input_path):
+    hdfs_head = get_hdfs_head(input_path)
+    hdfs = pa.hdfs.connect(host=hdfs_head)
+    file_path = input_path
+    while not hdfs.isdir(file_path):
+        file_path = os.path.dirname(path)
+
+    while hdfs.info(file_path)['kind'] != 'file':
+        file_path = hdfs.ls(file_path)[0]
+
+    return hdfs_head + "/".join(file_path.split("/")[:-3])
+
+
+def fetch_input_rank_num(input_path):
+    hdfs_head = get_hdfs_head(input_path)
+    hdfs = pa.hdfs.connect(host=hdfs_head)
+    while not hdfs.isdir(file_path):
+        file_path = os.path.dirname(file_path)
+    while hdfs.info(file_path)['kind'] != 'file':
+        file_path = hdfs.ls(file_path)[0]
+    sparse_parent = "/".join(file_path.split("/")[:-3])
+    return max([ int(path.split('/')[-1].split('_')[1]) for path in hdfs.ls(sparse_parent)]) + 1
 
 
 def appendIndex(index, iterator):
@@ -100,7 +177,7 @@ def resize_partition(iterator, bc_output_path, bc_format, bc_number, bc_handle_n
     total_rank_number = bc_number.value
     handle_names = bc_handle_names.value
     hdfs_head = get_hdfs_head(output_path)
-    hdfs = HDFileSystem(host=hdfs_head)
+    hdfs = pa.hdfs.connect(host=hdfs_head)
     handle_io_map = {}
     par_index = None
     rank_num = None
@@ -126,13 +203,41 @@ def resize_partition(iterator, bc_output_path, bc_format, bc_number, bc_handle_n
         if handle not in handle_io_map:
             handle_io_map[handle] = init_sparse_file(8, file_format)
 
-        hdfs.makedirs('{}/{}/rank_{}'.format(output_path, handle, rank_num), 0o755)
+        hdfs.mkdir('{}/{}/rank_{}'.format(get_hdfs_path_without_hdfs_head(output_path), handle, rank_num))
         handle_io_map[handle][1].close()
-        file_path = '{}/{}/rank_{}/sparse_block_{}_{}.gz'.format(output_path, handle, rank_num, block_id, file_format)
+        file_path = '{}/{}/rank_{}/sparse_block_{}.gz'.format(output_path, handle, rank_num, block_id)
         if hdfs.exists(file_path):
             hdfs.rm(file_path)
-        with hdfs.open(file_path,'wb') as f:
+        with hdfs.open(file_path,mode='wb') as f:
             f.write(handle_io_map[handle][0].getvalue())
+
+
+def get_weight_for_extra_embedding(itr, total_rank_num, input_dir):
+    handle_data_map = {}
+    fs = pa.hdfs.connect(get_hdfs_head(input_dir))
+    
+    for row in itr:
+            print(row)
+            raw_data = row[1]
+            handle = raw_data[0]
+            old_sign = raw_data[1]
+            rank_num = get_sign_rank_num(old_sign, total_rank_num)
+            block_id = get_sign_block_num(old_sign)
+            if handle not in handle_data_map:
+                data_file = "{}/{}/rank_{}/sparse_block_{}.gz".format(input_dir, handle, rank_num, block_id)
+                print("opening file {}".format(data_file))
+                with fs.open(data_file, 'rb') as f:
+                    with gzip.GzipFile(fileobj=io.BytesIO(f.read())) as gzip_f:
+                        decompressed_data = gzip_f.read()
+                        file_content = decompressed_data.decode('utf-8')
+                        data_map = {}
+                        for line in file_content.split('\n'):
+                            data = process_txt_line(line)
+                            if data[0] != '':
+                                data_map[data[0]] = (data[1], data[2], data[3], data[4], data[5])
+                        handle_data_map[handle] = data_map
+            if old_sign in handle_data_map[handle]:
+                yield (raw_data[3], *handle_data_map[handle][old_sign], handle, int(raw_data[4]))
 
 
 def init_sparse_file(dim, file_format):
@@ -276,13 +381,13 @@ def process_whole_text(whole_data, number):
 def write_dense_partition(iterator, bc_output_path):
     output_path = bc_output_path.value
     hdfs_head = get_hdfs_head(output_path)
-    hdfs = HDFileSystem(host=hdfs_head)
+    hdfs = pa.hdfs.connect(host=hdfs_head)
     for row in iterator:
         file_index = int(row[0])
         handle_name = row[1][0]
         data = row[1][1]
         compressed_data = io.BytesIO()
         compressed_data.write(data.encode('utf-8'))
-        hdfs.makedirs('{}/{}'.format(output_path, handle_name), 0o755)
+        hdfs.mkdir('{}/{}'.format(output_path, handle_name))
         with hdfs.open('{}/{}/{}'.format(output_path, handle_name, file_index),'wb') as f:
             f.write(compressed_data.getvalue())
