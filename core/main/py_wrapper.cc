@@ -133,6 +133,13 @@ PYBIND11_MODULE(_pywrap_tn, m) {
 
         return table->GetHandle();
     })
+    .def("create_bn_table", [](std::string name, uint32_t bn_size) {
+        PsCluster* cluster = PsCluster::Instance();
+
+        BnTable* table = CreateBnTable(name, cluster->RankNum(), cluster->Rank(), bn_size);
+
+        return table->GetHandle();
+    })
     .def("save_sparse_table", [](uint32_t table_handle, std::string filepath,
                 const std::string& mode="txt") {
         SparseTable* table = SparseTableRegistry::Instance()->Get(table_handle);

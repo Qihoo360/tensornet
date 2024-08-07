@@ -44,6 +44,11 @@ public:
                                   const DatasetPullRequest *request,
                                   DatasetPullResponse *response,
                                   Callback done) const override;
+
+    virtual void BnVarsPullAsync(brpc::Controller *cntl,
+                                 const BnVarsPullRequest *request,
+                                 BnVarsPullResponse *response,
+                                 Callback done) const override;
 };
 
 }  // namespace tensornet

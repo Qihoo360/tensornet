@@ -43,6 +43,11 @@ public:
                              const DatasetPullRequest* request,
                              DatasetPullResponse* response,
                              google::protobuf::Closure* done);
+
+    virtual void BnVarsPull(google::protobuf::RpcController* cntl_base,
+                            const BnVarsPullRequest* request,
+                            BnVarsPullResponse* response,
+                            google::protobuf::Closure* done);
 };
 
 }  // end of namespace tensornet

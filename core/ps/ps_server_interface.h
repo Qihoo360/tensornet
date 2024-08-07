@@ -53,6 +53,11 @@ public:
                                   DatasetPullResponse *response,
                                   Callback done) const = 0;
 
+    virtual void BnVarsPullAsync(brpc::Controller *cntl,
+                                 const BnVarsPullRequest *request,
+                                 BnVarsPullResponse *response,
+                                 Callback done) const = 0;
+
 private:
     typedef PsServerInterface ME;
 };

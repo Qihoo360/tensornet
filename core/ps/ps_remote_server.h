@@ -51,6 +51,11 @@ public:
                                   DatasetPullResponse *response,
                                   Callback done) const override;
 
+    virtual void BnVarsPullAsync(brpc::Controller *cntl,
+                                 const BnVarsPullRequest *request,
+                                 BnVarsPullResponse *response,
+                                 Callback done) const override;
+
 private:
     std::shared_ptr<brpc::Channel> channel_;
 
@@ -58,6 +63,7 @@ private:
     const google::protobuf::MethodDescriptor* sparse_push_dp_ = nullptr;
     const google::protobuf::MethodDescriptor* dense_push_pull_dp_ = nullptr;
     const google::protobuf::MethodDescriptor* dataset_pull_dp_ = nullptr;
+    const google::protobuf::MethodDescriptor* bn_vars_pull_dp_ = nullptr;
 };
 
 }  // namespace tensornet

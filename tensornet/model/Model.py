@@ -177,6 +177,8 @@ class Model(tf.keras.Model):
                 layer.save_sparse_table(cp_dir, mode)
             elif isinstance(layer, tn.layers.SequenceEmbeddingFeatures):
                 layer.save_sparse_table(cp_dir, mode)
+            elif isinstance(layer, tn.layers.BatchNormalization):
+                layer.save_bn_config(cp_dir)
 
         if self.optimizer:
             self.optimizer.save_dense_table(cp_dir)
@@ -219,6 +221,8 @@ class Model(tf.keras.Model):
                     layer.load_sparse_table(cp_dir, mode)
                 elif isinstance(layer, tn.layers.SequenceEmbeddingFeatures):
                     layer.load_sparse_table(cp_dir, mode)
+                elif isinstance(layer, tn.layers.BatchNormalization):
+                    layer.load_bn_config(cp_dir)
 
             # dense weight
             if self.optimizer:

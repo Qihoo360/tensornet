@@ -43,9 +43,20 @@ message DatasetPullResponse {
     bytes dataset_info = 3;
 };
 
+message BnVarsPullRequest {
+	uint32 req_shard_id = 1;
+	uint32 table_handle = 2;
+};
+
+message BnVarsPullResponse {
+	uint32 resp_shard_id = 1;
+    uint32 table_handle = 2;
+};
+
 service PsService {
     rpc SparsePull(SparsePullRequest) returns (SparsePullResponse);
     rpc SparsePush(SparsePushRequest) returns (SparsePushResponse);
     rpc DensePushPull(DensePushPullRequest) returns (DensePushPullResponse);
     rpc DatasetPull(DatasetPullRequest) returns (DatasetPullResponse);
+    rpc BnVarsPull(BnVarsPullRequest) returns (BnVarsPullResponse);
 };
