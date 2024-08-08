@@ -24,6 +24,8 @@
 
 #include <brpc/controller.h>
 #include <sstream>
+#include <Eigen/Dense>
+#include <iostream>
 
 #include "core/ps/ps_server_interface.h"
 #include "core/ps/ps_cluster.h"
@@ -62,6 +64,38 @@ private:
     int shard_id_ = -1;
 };
 
+
+class BnVarsInfos {
+public:
+	BnVarsInfos(int bn_size)
+		: bn_size_(bn_size) {
+	}
+
+	void BnVarsInfos::Add(butil::IOBuf& w_buf){
+        CHECK_EQ( (bn_size * 2 + 1) * sizeof(float), w_buf.size());
+
+		Eigen::ArrayXf moving_mean_ = Eigen::ArrayXf::Constant(bn_size, 1.0f);
+		w_buf.cutn(moving_mean_.data(), moving_mean_.size() * sizeof(float));
+		moving_means_.emplace_back(moving_mean_);
+
+		Eigen::ArrayXf moving_var_ = Eigen::ArrayXf::Constant(bn_size, 1.0f);;
+		w_buf.cutn(moving_var_.data(), moving_var_.size() * sizeof(float));
+		moving_vars_.emplace_back(moving_var_);
+
+		Eigen::ArrayXf batch_count_ = Eigen::ArrayXf::Zero(1, 1.0f);
+		w_buf.cutn(batch_count_.data(), batch_count_.size() * sizeof(float));
+		batch_counts_.emplace_back(batch_count_);
+	}
+
+	~BnVarsInfos() {}
+
+public:
+	std::vector<Eigen::ArrayXf*> moving_means_;
+	std::vector<Eigen::ArrayXf*> moving_vars_;
+	std::vector<Eigen::ArrayXf*> batch_counts_;
+};
+
+
 class BnVarsPullKernel : public AsyncOpKernel {
 public:
     explicit BnVarsPullKernel(OpKernelConstruction* c)
@@ -71,12 +105,7 @@ public:
     }
 
     void ComputeAsync(OpKernelContext* c, DoneCallback done) override {
-        OP_REQUIRES_ASYNC(c, c->num_inputs() == N_ * 2,
-                          errors::InvalidArgument("SparseTable pull num_inputs:",
-                                                  c->num_inputs(),
-                                                  " not equal:", N_ * 2),
-                          done);
-        std::vector<SparsePullVarInfo> var_infos;
+        std::vector<Var*> bn_vars;
 
         for (int i = 0; i < N_; i++) {
             const ResourceHandle& handle = HandleFromInput(c, i);
@@ -87,29 +116,14 @@ public:
             OP_REQUIRES_OK_ASYNC(c, status, done);
             CHECK(variable);
 
-            const Tensor* var_tensor = variable->tensor();
-            Tensor* out_tensor = nullptr;
-            const Tensor* sign_value = &c->input(N_ + i);
-
-            OP_REQUIRES_OK_ASYNC(c, c->allocate_output(i, sign_value->shape(), &out_tensor), done);
-
-            OP_REQUIRES_ASYNC(
-                c, TensorShapeUtils::IsMatrix(var_tensor->shape()),
-                errors::InvalidArgument(
-                    "sparse pull variable must Matrix(sign_id_cnt, dim), saw: ",
-                    var_tensor->shape().DebugString()),
-                done);
-
-            var_infos.emplace_back(variable, sign_value, out_tensor);
+            bn_vars.emplace_back(variable);
         }
 
-        CHECK_GT(var_infos.size(), 0);
+        CHECK_EQ(var_infos.size(), 3);
 
-        int dim = var_infos[0].VarDim();
+		uint32_t bn_size = bn_vars.front()->NumElements();
 
-        for (size_t i = 0; i < var_infos.size(); i++) {
-            CHECK_EQ(dim, var_infos[i].VarDim());
-        }
+		std::cout << "BN size is: " << bn_size;
 
         PsCluster* cluster = PsCluster::Instance();
         OP_REQUIRES_ASYNC(
@@ -123,162 +137,94 @@ public:
                 new BnVarsPullCall(table_handle_, shard_id));
         }
 
-        for (size_t var_index = 0; var_index < var_infos.size(); var_index++) {
-            for (size_t sign_index = 0; sign_index < var_infos[var_index].signs.size(); sign_index++) {
-                const uint64 sign = var_infos[var_index].signs[sign_index];
-
-                int shard_id = sign % cluster->RankNum();
-                calls[shard_id]->AddRequestSign(var_index, sign_index, sign);
-            }
-        }
+		BnVarsInfos bnVarsInfos = new BnVarsInfos(bn_size);
 
         Semaphore semaphore(calls.size());
 
         for (auto& call : calls) {
             call->Start([this, call, &var_infos, &semaphore]() {
-                PopulatePulledVariable_(var_infos, call->call_sign_infos,
-                    call->resp, call->cntl.response_attachment());
-                semaphore.Notify();
+				bnVarsInfos->Add(call->cntl.response_attachment());
                 delete call;
             });
         }
 
         semaphore.WaitForSemaphore();
 
+		Eigen::ArrayXf weights_array = Eigen::ArrayXf::Constant(bnVarsInfos.batch_counts_.size(), 1.0f);;
+		for (int i = 0; i < n; ++i) {
+            weights_array(i) = (*bnVarsInfos.batch_counts_[i])(0);
+        }
+
+		float total_count = weights_array.sum();
+		weights_array /= total_count;
+
+		Eigen::ArrayXf weighted_mean = Eigen::ArrayXf::Zero(bn_size);
+		for (size_t i = 0; i < bnVarsInfos.moving_means_.size(); ++i) {  
+            weighted_mean += (*bnVarsInfos.moving_means_[i]) * weights_array[i];  
+        }
+
+		Eigen::ArrayXf weighted_var = Eigen::ArrayXf::Zero(bn_size);
+        for (size_t i = 0; i < bnVarsInfos.moving_vars_.size(); ++i) {
+            weighted_var += (*bnVarsInfos.moving_vars_[i]) * weights_array[i];
+        }
+
+		auto& moving_mean_var = bn_vars[0];
+		float* moving_mean_flat = moving_mean_var->tensor()->flat<float>().data();
+		std::copy(weighted_mean.data(), weighted_mean.data() + weighted_mean.size(), moving_mean_flat);
+
+        auto& moving_var_var = bn_vars[1];
+        float* moving_var_flat = moving_var_var->tensor()->flat<float>().data();
+        std::copy(weighted_var.data(), weighted_var.data() + weighted_var.size(), moving_var_flat);
+BnVarsPull
         done();
 
         return;
     }
 
 private:
-    void PopulatePulledVariable_(std::vector<SparsePullVarInfo>& var_infos,
-                                   const std::vector<std::pair<size_t, size_t>>& call_sign_infos,
-                                   const SparsePullResponse& resp, butil::IOBuf& emb_buf) {
-        int dim = resp.dim();
-
-        for (size_t i = 0; i < call_sign_infos.size(); i++) {
-            size_t var_index = call_sign_infos[i].first;
-            size_t sign_index = call_sign_infos[i].second;
-
-            CHECK_LT(var_index, var_infos.size());
-
-            auto& var_info = var_infos[var_index];
-            Tensor* var_tensor = var_info.var->tensor();
-            CHECK_EQ(dim, var_info.VarDim());
-
-            float* w_matrix = var_tensor->matrix<float>().data();
-
-            size_t emb_size = sizeof(float) * dim;
-            CHECK_EQ(emb_size, emb_buf.cutn(w_matrix + sign_index * dim, emb_size));
-        }
-    }
-
-private:
     int table_handle_;
     int N_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("SparseTablePull").Device(DEVICE_CPU),
-                        SparseTablePullKernel);
+REGISTER_KERNEL_BUILDER(Name("BnVarsPull").Device(DEVICE_CPU),
+                        BnVarsPullKernel);
 
-struct SparsePushVarInfo {
+class BnVarsSetKernel : public OpKernel {
 public:
-    SparsePushVarInfo(const Tensor* t_value, const Tensor* t_grad)
-        : value(t_value)
-        , grad(t_grad) {
-
-        const int64* feasign_vec = value->flat<int64>().data();
-
-        std::map<uint64, int> sign_id_mapping;
-        for (int i = 0; i < value->NumElements(); ++i) {
-            uint64 sign = (uint64)feasign_vec[i];
-            auto ret = sign_id_mapping.insert({sign, sign_id_mapping.size()});
-
-            if (ret.second) {
-                virtual_sign_infos.emplace_back(sign, 1);
-            } else {
-                auto iter = ret.first;
-                virtual_sign_infos[iter->second].batch_show += 1;
-            }
-        }
-    }
-
-    int GradDim() const {
-        return grad->shape().dim_size(1);
-    }
-
-public:
-    const Tensor* value;
-    const Tensor* grad;
-
-    std::vector<SparsePushSignInfo> virtual_sign_infos;
-};
-
-class SparseTablePushKernel : public AsyncOpKernel {
-public:
-    explicit SparseTablePushKernel(OpKernelConstruction* c)
-        : AsyncOpKernel(c) {
+    explicit BnVarsSetKernel(OpKernelConstruction* c)
+        : OpKernel(c) {
         OP_REQUIRES_OK(c, c->GetAttr("table_handle", &table_handle_));
         OP_REQUIRES_OK(c, c->GetAttr("N", &N_));
     }
 
-    void ComputeAsync(OpKernelContext* c, DoneCallback done) override {
-        OP_REQUIRES_ASYNC(c, c->num_inputs() == N_ * 2,
-                          errors::InvalidArgument("SparseTable push num_inputs:",
-                                                  c->num_inputs(),
-                                                  " not equal:", N_ * 2),
-                          done);
-        std::vector<SparsePushVarInfo> var_infos;
+    void Compute(OpKernelContext* c) override {
+        butil::IOBuf bn_vars_buf;
 
         for (int i = 0; i < N_; i++) {
-            const Tensor* value = &c->input(i);
-            const Tensor* grad = &c->input(N_ + i);
+            const ResourceHandle &handle = HandleFromInput(c, i);
 
-            OP_REQUIRES_ASYNC(
-                c, TensorShapeUtils::IsMatrix(grad->shape()),
-                errors::InvalidArgument(
-                    "sparse push grad must Matrix(sign_id_cnt, dim), saw: ",
-                    grad->shape().DebugString()),
-                done);
+            Var *variable = nullptr;
+            const auto status = LookupResource<Var, false>(c, handle, &variable);
 
-            var_infos.emplace_back(value, grad);
+            OP_REQUIRES_OK(c, status);
+            CHECK(variable);
+            Tensor *var_tensor = variable->tensor();
+
+            bn_vars_buf.append_user_data(var_tensor->flat<float>().data(),
+                                 var_tensor->NumElements() * sizeof(float),
+                                  NoOpDeleter);
         }
 
-        CHECK_GT(var_infos.size(), 0);
+        BnTable* table = BnTableRegistry::Instance()->Get(table_handle_);
 
-        int dim = var_infos[0].GradDim();
-        for (size_t i = 0; i < var_infos.size(); i++) {
-            CHECK_EQ(dim, var_infos[i].GradDim());
-        }
+        OP_REQUIRES(c, nullptr != table,
+                errors::InvalidArgument("BnTable have not created yet, handle:",
+                    table_handle_));
 
-        std::vector<SparsePushCall*> calls;
-        PsCluster* cluster = PsCluster::Instance();
+        OP_REQUIRES(c, 0 == table->Update(bn_vars_buf),
+                errors::InvalidArgument("BnTable update vars failed"));
 
-        for (size_t shard_id = 0; shard_id < cluster->RankNum(); shard_id++) {
-            calls.emplace_back(
-                new SparsePushCall(table_handle_, shard_id, dim));
-        }
-
-        for (size_t i = 0; i < var_infos.size(); i++) {
-            // NOTE, tensorfow use RowMajor layout
-            const float* grad_matrix = var_infos[i].grad->matrix<float>().data();
-
-            for (size_t sign_index = 0; sign_index < var_infos[i].virtual_sign_infos.size(); sign_index++) {
-                const auto& sign_info = var_infos[i].virtual_sign_infos[sign_index];
-
-                int shard_id = sign_info.sign % cluster->RankNum();
-                const float* grad = grad_matrix + dim * sign_index;
-                calls[shard_id]->AddRequestGrad(sign_info, grad, dim);
-            }
-        }
-
-        for (auto& call : calls) {
-            call->Start([this, call]() {
-                delete call;
-            });
-        }
-
-        done();
+        return;
     }
 
 private:
@@ -286,7 +232,6 @@ private:
     int N_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("SparseTablePush").Device(DEVICE_CPU),
-                        SparseTablePushKernel);
 
-}  // namespace tensorflow
+REGISTER_KERNEL_BUILDER(Name("BnVarsSet").Device(DEVICE_CPU),
+                        BnVarsSetKernel);

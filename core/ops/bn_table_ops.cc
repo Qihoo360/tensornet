@@ -18,27 +18,17 @@
 
 using namespace tensorflow;
 
-REGISTER_OP("BnTablePull")
-    .Doc(R"doc(pull mean, var, count from parameter server
-    )doc")
+REGISTER_OP("BnVarsPull")
+    .Doc(R"doc(pull mean, var, count from parameter server)doc")
     .Input("resources: N * resource")
-    .Input("values: N * int64")
-    .Output("mapped_values: N * int64")
     .Attr("table_handle: int")
     .Attr("N: int")
-    .SetShapeFn([](shape_inference::InferenceContext* c) {
-        int N = 0;
+	.SetShapeFn(shape_inference::NoOutputs);
 
-        TF_CHECK_OK(c->GetAttr("N", &N));
 
-        for (int i = 0; i < N; i++) {
-            shape_inference::ShapeHandle shape;
-
-            TF_RETURN_IF_ERROR(c->WithRank(c->input(N + i), 1, &shape));
-
-            c->set_output(i, shape);
-        }
-
-        return Status::OK();
-    });
-
+REGISTER_OP("BnVarsSet")
+    .Doc(R"doc(save local bn vars to ps)doc")
+    .Input("resources: N * resource")
+    .Attr("table_handle: int")
+    .Attr("N: int")
+    .SetShapeFn(shape_inference::NoOutputs);

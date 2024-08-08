@@ -51,6 +51,15 @@ void BnTable::Pull(const BnVarsPullRequest* req, butil::IOBuf& out_vars_buf, BnV
 	out_vars_buf.append(batch_count_.data(), batch_count_.size() * sizeof(float));
 }
 
+void BnTable::Set(butil::IOBuf& bn_vars_buf){
+	CHECK_EQ( (bn_size_ * 2 + 1) * sizeof(float), bn_vars_buf.size());
+
+    bn_vars_buf.cutn(moving_mean_.data(), moving_mean_.size() * sizeof(float));
+    bn_vars_buf.cutn(moving_var_.data(), moving_var_.size() * sizeof(float));
+    bn_vars_buf.cutn(batch_count_.data(), batch_count_.size() * sizeof(float));
+	return 0;
+}
+
 
 BnTableRegistry* BnTableRegistry::Instance() {
     static BnTableRegistry instance;
