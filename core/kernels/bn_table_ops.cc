@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "core/utility/semaphore.h"
+#include "core/ps/table/bn_table.h"
 
 #include "tensorflow/core/framework/attr_value.pb.h"
 #include "tensorflow/core/framework/op_kernel.h"
@@ -33,6 +34,8 @@
 using namespace tensornet;
 
 namespace tensorflow {
+
+static void NoOpDeleter(void *) {}
 
 template <typename T, bool use_dynamic_cast>
 Status LookupResource(OpKernelContext* ctx, const ResourceHandle& p, T** value);
@@ -71,20 +74,20 @@ public:
 		: bn_size_(bn_size) {
 	}
 
-	void BnVarsInfos::Add(butil::IOBuf& w_buf){
-        CHECK_EQ( (bn_size * 2 + 1) * sizeof(float), w_buf.size());
+	void Add(butil::IOBuf& w_buf){
+        CHECK_EQ( (bn_size_ * 2 + 1) * sizeof(float), w_buf.size());
 
-		Eigen::ArrayXf moving_mean_ = Eigen::ArrayXf::Constant(bn_size, 1.0f);
-		w_buf.cutn(moving_mean_.data(), moving_mean_.size() * sizeof(float));
-		moving_means_.emplace_back(moving_mean_);
+		Eigen::ArrayXf moving_mean_ = Eigen::ArrayXf::Constant(bn_size_, 1.0f);
+		w_buf.cutn(moving_mean_.data(), static_cast<int>(moving_mean_.size()) * sizeof(float));
+		moving_means_.emplace_back(&moving_mean_);
 
-		Eigen::ArrayXf moving_var_ = Eigen::ArrayXf::Constant(bn_size, 1.0f);;
-		w_buf.cutn(moving_var_.data(), moving_var_.size() * sizeof(float));
-		moving_vars_.emplace_back(moving_var_);
+		Eigen::ArrayXf moving_var_ = Eigen::ArrayXf::Constant(bn_size_, 1.0f);;
+		w_buf.cutn(moving_var_.data(), static_cast<int>(moving_var_.size()) * sizeof(float));
+		moving_vars_.emplace_back(&moving_var_);
 
 		Eigen::ArrayXf batch_count_ = Eigen::ArrayXf::Zero(1, 1.0f);
-		w_buf.cutn(batch_count_.data(), batch_count_.size() * sizeof(float));
-		batch_counts_.emplace_back(batch_count_);
+		w_buf.cutn(batch_count_.data(), static_cast<int>(batch_count_.size()) * sizeof(float));
+		batch_counts_.emplace_back(&batch_count_);
 	}
 
 	~BnVarsInfos() {}
@@ -93,6 +96,7 @@ public:
 	std::vector<Eigen::ArrayXf*> moving_means_;
 	std::vector<Eigen::ArrayXf*> moving_vars_;
 	std::vector<Eigen::ArrayXf*> batch_counts_;
+        int bn_size_;
 };
 
 
@@ -119,9 +123,9 @@ public:
             bn_vars.emplace_back(variable);
         }
 
-        CHECK_EQ(var_infos.size(), 3);
+        CHECK_EQ(bn_vars.size(), 3);
 
-		uint32_t bn_size = bn_vars.front()->NumElements();
+		uint32_t bn_size = bn_vars.front()->tensor()->NumElements();
 
 		std::cout << "BN size is: " << bn_size;
 
@@ -137,45 +141,48 @@ public:
                 new BnVarsPullCall(table_handle_, shard_id));
         }
 
-		BnVarsInfos bnVarsInfos = new BnVarsInfos(bn_size);
+	auto bnVarsInfos = new BnVarsInfos(bn_size);
 
         Semaphore semaphore(calls.size());
 
         for (auto& call : calls) {
-            call->Start([this, call, &var_infos, &semaphore]() {
+            call->Start([this, call, &bnVarsInfos, &semaphore]() {
 				bnVarsInfos->Add(call->cntl.response_attachment());
+                semaphore.Notify();
                 delete call;
             });
         }
 
         semaphore.WaitForSemaphore();
 
-		Eigen::ArrayXf weights_array = Eigen::ArrayXf::Constant(bnVarsInfos.batch_counts_.size(), 1.0f);;
-		for (int i = 0; i < n; ++i) {
-            weights_array(i) = (*bnVarsInfos.batch_counts_[i])(0);
+	Eigen::ArrayXf weights_array = Eigen::ArrayXf::Constant(cluster->RankNum(), 1.0f);;
+	for (int i = 0; i < cluster->RankNum(); ++i) {
+            Eigen::ArrayXf* batch_counts_i = bnVarsInfos->batch_counts_[i];
+            weights_array(i) = (*batch_counts_i)(0);
         }
 
-		float total_count = weights_array.sum();
-		weights_array /= total_count;
+	float total_count = weights_array.sum();
+	weights_array /= total_count;
 
-		Eigen::ArrayXf weighted_mean = Eigen::ArrayXf::Zero(bn_size);
-		for (size_t i = 0; i < bnVarsInfos.moving_means_.size(); ++i) {  
-            weighted_mean += (*bnVarsInfos.moving_means_[i]) * weights_array[i];  
+	Eigen::ArrayXf weighted_mean = Eigen::ArrayXf::Zero(bn_size);
+	for (size_t i = 0; i < cluster->RankNum(); i++) {
+            Eigen::ArrayXf* moving_means_i = bnVarsInfos->moving_means_[i];
+            weighted_mean += (*moving_means_i) * weights_array[i];  
         }
 
-		Eigen::ArrayXf weighted_var = Eigen::ArrayXf::Zero(bn_size);
-        for (size_t i = 0; i < bnVarsInfos.moving_vars_.size(); ++i) {
-            weighted_var += (*bnVarsInfos.moving_vars_[i]) * weights_array[i];
+	Eigen::ArrayXf weighted_var = Eigen::ArrayXf::Zero(bn_size);
+        for (size_t i = 0; i < cluster->RankNum(); i++) {
+            Eigen::ArrayXf* moving_vars_i = bnVarsInfos->moving_vars_[i];
+            weighted_var += (*moving_vars_i) * weights_array[i];
         }
 
-		auto& moving_mean_var = bn_vars[0];
-		float* moving_mean_flat = moving_mean_var->tensor()->flat<float>().data();
-		std::copy(weighted_mean.data(), weighted_mean.data() + weighted_mean.size(), moving_mean_flat);
+	auto& moving_mean_var = bn_vars[0];
+	float* moving_mean_flat = moving_mean_var->tensor()->flat<float>().data();
+	std::copy(weighted_mean.data(), weighted_mean.data() + weighted_mean.size(), moving_mean_flat);
 
         auto& moving_var_var = bn_vars[1];
         float* moving_var_flat = moving_var_var->tensor()->flat<float>().data();
         std::copy(weighted_var.data(), weighted_var.data() + weighted_var.size(), moving_var_flat);
-BnVarsPull
         done();
 
         return;
@@ -221,7 +228,7 @@ public:
                 errors::InvalidArgument("BnTable have not created yet, handle:",
                     table_handle_));
 
-        OP_REQUIRES(c, 0 == table->Update(bn_vars_buf),
+        OP_REQUIRES(c, 0 == table->Set(bn_vars_buf),
                 errors::InvalidArgument("BnTable update vars failed"));
 
         return;
@@ -235,3 +242,5 @@ private:
 
 REGISTER_KERNEL_BUILDER(Name("BnVarsSet").Device(DEVICE_CPU),
                         BnVarsSetKernel);
+
+};

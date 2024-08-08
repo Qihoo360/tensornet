@@ -72,7 +72,7 @@ cc_library(
 tf_gen_op_wrapper_py(
     name = "bn_table_ops",
     deps = [":bn_table_ops_kernels"],
-    cc_linkopts = ['-lrt']
+    cc_linkopts = ['-lrt', '-lssl']
 )
 
 cc_library(

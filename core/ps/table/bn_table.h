@@ -32,11 +32,13 @@ namespace tensornet {
 
 class BnTable {
 public:
-    BnTable(const std::string& name,int shard_num, int self_shard_id);
+    BnTable(const std::string& name,int shard_num, int self_shard_id, int bn_size);
 
     ~BnTable() = default;
 
-    void Pull(const BnPullRequest* req, butil::IOBuf& out_buf, BnPullResponse* resp);
+    void Pull(const BnVarsPullRequest* req, butil::IOBuf& out_buf, BnVarsPullResponse* resp);
+
+    int Set(butil::IOBuf& out_buf);
 
     void SetHandle(uint32_t handle);
 
@@ -50,9 +52,9 @@ private:
     uint32_t handle_ = 0;
     std::string name_;
     uint32_t bn_size_ = 0;
-	Eigen::ArrayXf moving_mean_;
-	Eigen::ArrayXf moving_var_;
-	Eigen::ArrayXf batch_count_; 
+    Eigen::ArrayXf moving_mean_;
+    Eigen::ArrayXf moving_var_;
+    Eigen::ArrayXf batch_count_; 
 	
 };
 
@@ -78,7 +80,7 @@ private:
     std::vector<BnTable*> tables_;
 };
 
-BnTable* CreateBnTable(const std::string& name, int shard_num, int self_shard_id);
+BnTable* CreateBnTable(const std::string& name, int shard_num, int self_shard_id, int bn_size);
 
 }  // namespace tensornet
 

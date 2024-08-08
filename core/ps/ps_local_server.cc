@@ -17,6 +17,7 @@
 #include "core/ps_interface/ps_server.pb.h"
 #include "core/ps/table/dense_table.h"
 #include "core/ps/table/sparse_table.h"
+#include "core/ps/table/bn_table.h"
 #include "core/kernels/data/balance_dataset_ops.h"
 #include "core/ps/optimizer/optimizer_kernel.h"
 

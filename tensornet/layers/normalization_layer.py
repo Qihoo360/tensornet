@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 import tensorflow as tf
+import tensornet as tn
+
+from tensornet.core import gen_bn_table_ops
 from tensorflow.keras import initializers
 from tensorflow.keras import regularizers
 from tensorflow.keras import constraints
@@ -9,7 +12,7 @@ from tensorflow.python.ops import variable_scope, array_ops
 
 
 class BatchNormalization(Layer):
-    def __init__(self, center=True, scale=True, epsilon=1e-5, decay=0.999, **kwargs):
+    def __init__(self, center=True, scale=True, epsilon=1e-5, decay=0.999, name=None, **kwargs):
         super(BatchNormalization, self).__init__(**kwargs)
         self.center = center
         self.scale = scale
@@ -63,7 +66,7 @@ class BatchNormalization(Layer):
             trainable=False
             )
 
-        self.bn_table_handle = tn.core.create_bn_table(name if name else "", self.apply_axis[0])
+        self.bn_table_handle = tn.core.create_bn_table(self.name, self.apply_axis[0])
 
 
 
@@ -71,24 +74,24 @@ class BatchNormalization(Layer):
         
         if training:
             mean, var = tf.nn.moments(inputs, axes=self.moments_axes)
-            self.moving_mean.assign(moving_mean * self.decay + mean * (1.0 - self.decay))
-            self.moving_variance.assign(moving_variance * self.decay + var * (1.0 - self.decay))
-            self.moving_count(self.moving_count + 1)
+            self.moving_mean.assign(self.moving_mean * self.decay + mean * (1.0 - self.decay))
+            self.moving_variance.assign(self.moving_variance * self.decay + var * (1.0 - self.decay))
+            self.moving_count.assign(self.moving_count + 1)
         else:
-            mean = moving_mean
-            var = moving_variance
+            mean = self.moving_mean
+            var = self.moving_variance
 
-        outputs = tf.nn.batch_normalization(x=inputs, mean=mean, variance=var, offset=beta, scale=gamma, variance_epsilon=epsilon)
+        outputs = tf.nn.batch_normalization(x=inputs, mean=mean, variance=var, offset=self.beta, scale=self.gamma, variance_epsilon=self.epsilon)
 
         return outputs
 
+    def set_bn_vars(self):
+        gen_bn_table_ops.set_bn_vars([self.moving_mean, self.moving_variance, self.moving_count], table_handle=self.bn_table_handle)
+        tn.core.barrier()
 
-    def save_bn_config(self, filepath):
-        return self
-
-
-    def load_bn_config(self, filepath):
-        
+    def bn_vars_pull(self):
+        gen_bn_table_ops.bn_vars_pull([self.moving_mean, self.moving_variance, self.moving_count], table_handle=self.bn_table_handle)
+        tn.core.barrier()
 
     def get_config(self):
         config = {

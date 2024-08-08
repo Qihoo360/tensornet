@@ -17,6 +17,7 @@
 #include "core/ps/optimizer/optimizer.h"
 #include "core/ps/table/dense_table.h"
 #include "core/ps/table/sparse_table.h"
+#include "core/ps/table/bn_table.h"
 #include "core/kernels/data/balance_dataset_ops.h"
 
 #include <memory>

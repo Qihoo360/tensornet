@@ -49,7 +49,7 @@ message BnVarsPullRequest {
 };
 
 message BnVarsPullResponse {
-	uint32 resp_shard_id = 1;
+   uint32 resp_shard_id = 1;
     uint32 table_handle = 2;
 };
 
