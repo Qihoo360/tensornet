@@ -179,7 +179,8 @@ class Model(tf.keras.Model):
                 layer.save_sparse_table(cp_dir, mode)
             elif isinstance(layer, tn.layers.BatchNormalization):
                 layer.set_bn_vars()
-                layer.bn_vars_pull()
+                if tn.core.self_shard_id() == 0 and root:
+                    layer.bn_vars_pull()
 
         if self.optimizer:
             self.optimizer.save_dense_table(cp_dir)

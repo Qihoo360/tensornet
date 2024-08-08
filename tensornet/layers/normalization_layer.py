@@ -82,6 +82,7 @@ class BatchNormalization(Layer):
             var = self.moving_variance
 
         outputs = tf.nn.batch_normalization(x=inputs, mean=mean, variance=var, offset=self.beta, scale=self.gamma, variance_epsilon=self.epsilon)
+        set_bn_vars()
 
         return outputs
 
@@ -91,7 +92,6 @@ class BatchNormalization(Layer):
 
     def bn_vars_pull(self):
         gen_bn_table_ops.bn_vars_pull([self.moving_mean, self.moving_variance, self.moving_count], table_handle=self.bn_table_handle)
-        tn.core.barrier()
 
     def get_config(self):
         config = {
