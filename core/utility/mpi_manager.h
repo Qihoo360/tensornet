@@ -17,6 +17,7 @@
 
 #include <vector>
 #include <string>
+#include <cstdint>
 #include <mpi.h>
 
 namespace tensornet {

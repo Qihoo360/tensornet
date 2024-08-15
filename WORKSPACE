@@ -28,6 +28,8 @@ http_archive(
     "https://github.com/apache/brpc/archive/0.9.7.tar.gz"
     ],
     strip_prefix = "brpc-0.9.7",
+    patches = ["//thirdparty/patches:01-fix_dl_sym.patch"],
+    patch_args = ["-p", "1"],
 )
 
 # depend by brpc
