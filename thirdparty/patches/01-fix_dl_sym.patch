@@ -1,0 +1,39 @@
+From ded02c195096a256752124241d3e72cf9e7cc339 Mon Sep 17 00:00:00 2001
+From: wangweibing <wangweibing@baidu.com>
+Date: Tue, 7 Jun 2022 14:57:45 +0800
+Subject: [PATCH] Fix _dl_sym undefined reference
+
+---
+ src/bthread/mutex.cpp | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/src/bthread/mutex.cpp b/src/bthread/mutex.cpp
+index 441bc6c872..e044eae243 100644
+--- a/src/bthread/mutex.cpp
++++ b/src/bthread/mutex.cpp
+@@ -44,7 +44,7 @@
+ #include "bthread/log.h"
+ 
+ extern "C" {
+-extern void* _dl_sym(void* handle, const char* symbol, void* caller);
++extern void* __attribute__((weak)) _dl_sym(void* handle, const char* symbol, void* caller);
+ }
+ 
+ namespace bthread {
+@@ -408,8 +408,14 @@ static void init_sys_mutex_lock() {
+ #if defined(OS_LINUX)
+     // TODO: may need dlvsym when GLIBC has multiple versions of a same symbol.
+     // http://blog.fesnel.com/blog/2009/08/25/preloading-with-multiple-symbol-versions
+-    sys_pthread_mutex_lock = (MutexOp)_dl_sym(RTLD_NEXT, "pthread_mutex_lock", (void*)init_sys_mutex_lock);
+-    sys_pthread_mutex_unlock = (MutexOp)_dl_sym(RTLD_NEXT, "pthread_mutex_unlock", (void*)init_sys_mutex_lock);
++    if (_dl_sym) {
++        sys_pthread_mutex_lock = (MutexOp)_dl_sym(RTLD_NEXT, "pthread_mutex_lock", (void*)init_sys_mutex_lock);
++        sys_pthread_mutex_unlock = (MutexOp)_dl_sym(RTLD_NEXT, "pthread_mutex_unlock", (void*)init_sys_mutex_lock);
++    } else {
++        // _dl_sym may be undefined reference in some system, fallback to dlsym
++        sys_pthread_mutex_lock = (MutexOp)dlsym(RTLD_NEXT, "pthread_mutex_lock");
++        sys_pthread_mutex_unlock = (MutexOp)dlsym(RTLD_NEXT, "pthread_mutex_unlock");
++    }
+ #elif defined(OS_MACOSX)
+     // TODO: look workaround for dlsym on mac
+     sys_pthread_mutex_lock = (MutexOp)dlsym(RTLD_NEXT, "pthread_mutex_lock");
