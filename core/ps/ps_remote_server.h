@@ -51,9 +51,14 @@ public:
                                   DatasetPullResponse *response,
                                   Callback done) const override;
 
-    virtual void BnVarsPullAsync(brpc::Controller *cntl,
-                                 const BnVarsPullRequest *request,
-                                 BnVarsPullResponse *response,
+    virtual void BnStatisticsPushAsync(brpc::Controller *cntl,
+                                 const BnStatisticsPushRequest *request,
+                                 BnStatisticsPushResponse *response,
+                                 Callback done) const override;
+
+    virtual void BnStatisticsPullAsync(brpc::Controller *cntl,
+                                 const BnStatisticsPullRequest *request,
+                                 BnStatisticsPullResponse *response,
                                  Callback done) const override;
 
 private:
@@ -63,7 +68,8 @@ private:
     const google::protobuf::MethodDescriptor* sparse_push_dp_ = nullptr;
     const google::protobuf::MethodDescriptor* dense_push_pull_dp_ = nullptr;
     const google::protobuf::MethodDescriptor* dataset_pull_dp_ = nullptr;
-    const google::protobuf::MethodDescriptor* bn_vars_pull_dp_ = nullptr;
+    const google::protobuf::MethodDescriptor* bn_statistics_push_dp_ = nullptr;
+    const google::protobuf::MethodDescriptor* bn_statistics_pull_dp_ = nullptr;
 };
 
 }  // namespace tensornet

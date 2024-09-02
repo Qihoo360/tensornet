@@ -12,7 +12,7 @@ from tensorflow.python.ops import variable_scope, array_ops
 
 
 class BatchNormalization(Layer):
-    def __init__(self, center=True, scale=True, epsilon=1e-5, decay=0.999, name=None, **kwargs):
+    def __init__(self, center=True, scale=True, epsilon=1e-5, decay=0.99, name=None, synchronized=False, **kwargs):
         super(BatchNormalization, self).__init__(**kwargs)
         self.center = center
         self.scale = scale
@@ -25,11 +25,14 @@ class BatchNormalization(Layer):
         self.gamma_initializer = initializers.get('ones')
         self.moving_mean_initializer = initializers.get('zeros')
         self.moving_variance_initializer = initializers.get('ones')
-        self.moving_count_initializer = initializers.get('zeros')
+        self.local_count_initializer = initializers.get('zeros')
+        self.local_sum_initializer = initializers.get('zeros')
+        self.local_squared_num_initializer = initializers.get('zeros')
         self.beta_regularizer = regularizers.get(None)
         self.gamma_regularizer = regularizers.get(None)
         self.beta_constraint = constraints.get(None)
         self.gamma_constraint = constraints.get(None)
+        self.synchronized = synchronized
 
 
     def build(self, input_shape):
@@ -59,12 +62,24 @@ class BatchNormalization(Layer):
             initializer=self.moving_variance_initializer,
             trainable=False)
         
-        self.moving_count = self.add_weight(
-            shape=[],
-            name="moving_count",
-            initializer=self.moving_count_initializer,
+        self.local_count = self.add_weight(
+            shape=self.apply_axis,
+            name="local_count",
+            initializer=self.local_count_initializer,
             trainable=False
             )
+
+        self.local_sum = self.add_weight(
+            shape=self.apply_axis,
+            name="local_sum",
+            initializer=self.local_sum_initializer,
+            trainable=False)
+ 
+        self.local_squared_sum = self.add_weight(
+            shape=self.apply_axis,
+            name="local_squared_sum",
+            initializer=self.local_squared_num_initializer,
+            trainable=False)
 
         self.bn_table_handle = tn.core.create_bn_table(self.name, self.apply_axis[0])
 
@@ -73,57 +88,26 @@ class BatchNormalization(Layer):
     def call(self, inputs, training=None):
         
         if training:
-            mean, var = tf.nn.moments(inputs, axes=self.moments_axes)
-            self.moving_mean.assign(self.moving_mean * self.decay + mean * (1.0 - self.decay))
-            self.moving_variance.assign(self.moving_variance * self.decay + var * (1.0 - self.decay))
-            self.moving_count.assign(self.moving_count + 1)
-        else:
-            mean = self.moving_mean
-            var = self.moving_variance
+            local_count_sample = tf.ones_like(inputs, name="count")
+            self.local_sum.assign(tf.reduce_sum(inputs, axis=self.moments_axes))
+            self.local_squared_sum.assign(tf.reduce_sum(tf.square(inputs), axis=self.moments_axes))
+            self.local_count.assign(tf.reduce_sum(local_count_sample, axis=self.moments_axes))
+            self.bn_statistics_push()
+            self.update_moments()
+        
+        mean = self.moving_mean
+        var = self.moving_variance
 
         outputs = tf.nn.batch_normalization(x=inputs, mean=mean, variance=var, offset=self.beta, scale=self.gamma, variance_epsilon=self.epsilon)
-        set_bn_vars()
 
         return outputs
 
-    def set_bn_vars(self):
-        gen_bn_table_ops.set_bn_vars([self.moving_mean, self.moving_variance, self.moving_count], table_handle=self.bn_table_handle)
-        tn.core.barrier()
+    def update_moments(self):
+        gen_bn_table_ops.update_moments([self.moving_mean.handle, self.moving_variance.handle], table_handle=self.bn_table_handle)
 
-    def bn_vars_pull(self):
-        gen_bn_table_ops.bn_vars_pull([self.moving_mean, self.moving_variance, self.moving_count], table_handle=self.bn_table_handle)
+    def bn_statistics_push(self):
+        gen_bn_table_ops.bn_statistics_push([self.local_sum.handle, self.local_squared_sum.handle, self.local_count.handle], table_handle=self.bn_table_handle, synchronized=self.synchronized)
 
-    def get_config(self):
-        config = {
-            'axis': self.axis,
-            'momentum': self.momentum,
-            'epsilon': self.epsilon,
-            'center': self.center,
-            'scale': self.scale,
-            'beta_initializer': initializers.serialize(self.beta_initializer),
-            'gamma_initializer': initializers.serialize(self.gamma_initializer),
-            'moving_mean_initializer':
-                initializers.serialize(self.moving_mean_initializer),
-            'moving_variance_initializer':
-                initializers.serialize(self.moving_variance_initializer),
-            'beta_regularizer': regularizers.serialize(self.beta_regularizer),
-            'gamma_regularizer': regularizers.serialize(self.gamma_regularizer),
-            'beta_constraint': constraints.serialize(self.beta_constraint),
-            'gamma_constraint': constraints.serialize(self.gamma_constraint)
-        }
-        # Only add TensorFlow-specific parameters if they are set, so as to preserve
-        # model compatibility with external Keras.
-        if self.renorm:
-            config['renorm'] = True
-            config['renorm_clipping'] = self.renorm_clipping
-            config['renorm_momentum'] = self.renorm_momentum
-        if self.virtual_batch_size is not None:
-            config['virtual_batch_size'] = self.virtual_batch_size
-        # Note: adjustment is not serializable.
-        if self.adjustment is not None:
-            logging.warning('The `adjustment` function of this `BatchNormalization` '
-                      'layer cannot be serialized and has been omitted from '
-                      'the layer config. It will not be included when '
-                      're-creating the layer from the saved config.')
-        base_config = super(BatchNormalizationBase, self).get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+    def bn_statistics_pull(self):
+        if not self.synchronized:
+            gen_bn_table_ops.bn_statistics_pull([self.moving_mean.handle, self.moving_variance.handle], table_handle=self.bn_table_handle)

@@ -86,16 +86,27 @@ void PsLocalServer::DatasetPullAsync(brpc::Controller *cntl,
     done();
 }
 
-void PsLocalServer::BnVarsPullAsync(brpc::Controller *cntl,
-                                     const BnVarsPullRequest *request,
-                                     BnVarsPullResponse *response,
+void PsLocalServer::BnStatisticsPushAsync(brpc::Controller *cntl,
+                                     const BnStatisticsPushRequest *request,
+                                     BnStatisticsPushResponse *response,
                                      Callback done) const {
     BnTable *table = BnTableRegistry::Instance()->Get(request->table_handle());
 	CHECK(nullptr != table);
-	butil::IOBuf& output = cntl->response_attachment();
-	table->Pull(request, output, response);
+	butil::IOBuf& acc_data = cntl->request_attachment();
+	table->Append(acc_data);
 
     done();
 }
 
+void PsLocalServer::BnStatisticsPullAsync(brpc::Controller *cntl,
+                                     const BnStatisticsPullRequest *request,
+                                     BnStatisticsPullResponse *response,
+                                     Callback done) const {
+    BnTable *table = BnTableRegistry::Instance()->Get(request->table_handle());
+        CHECK(nullptr != table);
+        butil::IOBuf& bn_statistics_buf = cntl->response_attachment();
+        table->GetStatistics(request, bn_statistics_buf, response);
+
+    done();
+}
 }  // namespace tensornet

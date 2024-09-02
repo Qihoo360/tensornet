@@ -20,8 +20,8 @@
 #include <butil/containers/flat_map.h>
 #include <butil/logging.h>
 #include <butil/object_pool.h>
+#include <cstdio>
 
-#include "core/ps/optimizer/optimizer_kernel.h"
 #include "core/ps_interface/ps_raw_interface.h"
 
 namespace tensornet {
@@ -31,9 +31,10 @@ BnTable::BnTable(const std::string& name, int shard_num, int self_shard_id, int 
     , self_shard_id_(self_shard_id)
     , name_(name)
 	, bn_size_(bn_size) {
-	moving_mean_.setZero(bn_size);
-	moving_var_.setZero(bn_size);
-	batch_count_.setZero(1);
+	total_sum_.setZero(bn_size);
+	total_squared_sum_.setZero(bn_size);
+	total_count_.setZero(bn_size);
+        mu_ = std::make_unique<std::mutex>();
 }
 
 void BnTable::SetHandle(uint32_t handle) {
@@ -42,22 +43,55 @@ void BnTable::SetHandle(uint32_t handle) {
     handle_ = handle;
 }
 
-void BnTable::Pull(const BnVarsPullRequest* req, butil::IOBuf& out_vars_buf, BnVarsPullResponse* resp) {
-    resp->set_table_handle(req->table_handle());
-    resp->set_resp_shard_id(req->req_shard_id());
-    
-    out_vars_buf.append(moving_mean_.data(), moving_mean_.size() * sizeof(float));
-    out_vars_buf.append(moving_var_.data(), moving_var_.size() * sizeof(float));
-    out_vars_buf.append(batch_count_.data(), batch_count_.size() * sizeof(float));
+void BnTable::Append(butil::IOBuf& bn_statistics_buf) {
+    const std::lock_guard<std::mutex> lock(*mu_);
+    Eigen::ArrayXf acc_sum = Eigen::ArrayXf::Zero(bn_size_); 
+    Eigen::ArrayXf acc_squared_sum = Eigen::ArrayXf::Zero(bn_size_); 
+    Eigen::ArrayXf acc_count = Eigen::ArrayXf::Zero(bn_size_); 
+ 
+    bn_statistics_buf.cutn(acc_sum.data(), acc_sum.size() * sizeof(float));
+    bn_statistics_buf.cutn(acc_squared_sum.data(), acc_squared_sum.size() * sizeof(float));
+    bn_statistics_buf.cutn(acc_count.data(), acc_count.size() * sizeof(float));
+
+    total_sum_ += acc_sum;
+    total_squared_sum_ += acc_squared_sum;
+    total_count_ += acc_count;
 }
 
-int BnTable::Set(butil::IOBuf& bn_vars_buf){
-	CHECK_EQ( (bn_size_ * 2 + 1) * sizeof(float), bn_vars_buf.size());
+std::tuple<Eigen::ArrayXf,Eigen::ArrayXf> BnTable::GetMoments() {
+    Eigen::ArrayXf global_mean = DivideNoNan(total_sum_, total_count_);
+    Eigen::ArrayXf global_squared_mean = DivideNoNan(total_squared_sum_, total_count_);
+    Eigen::ArrayXf global_var = (global_squared_mean - global_mean.square()).max(0.0);
 
-    bn_vars_buf.cutn(moving_mean_.data(), moving_mean_.size() * sizeof(float));
-    bn_vars_buf.cutn(moving_var_.data(), moving_var_.size() * sizeof(float));
-    bn_vars_buf.cutn(batch_count_.data(), batch_count_.size() * sizeof(float));
-    return 0;
+    return std::make_tuple(global_mean, global_var);
+}
+
+void BnTable::GetStatistics(const BnStatisticsPullRequest* req, butil::IOBuf& bn_statistics_buf, BnStatisticsPullResponse* resp) {
+    resp->set_table_handle(req->table_handle());
+    bn_statistics_buf.append(total_sum_.data(), total_sum_.size() * sizeof(float));
+    bn_statistics_buf.append(total_squared_sum_.data(), total_squared_sum_.size() * sizeof(float));
+    bn_statistics_buf.append(total_count_.data(), total_count_.size() * sizeof(float));
+}
+
+
+Eigen::ArrayXf BnTable::DivideNoNan(const Eigen::ArrayXf& numerator, const Eigen::ArrayXf& denominator) {  
+   Eigen::ArrayXf result = numerator;
+   for (int i = 0; i < numerator.size(); ++i) {  
+        if (!std::isnan(denominator(i)) && denominator(i) != 0.0) {  
+            result(i) = numerator(i) / denominator(i);  
+        } else {  
+            result(i) = 0.0;  
+        }  
+    }  
+    return result;  
+}
+
+void BnTable::PrintDetail(){
+   std::cout << "Array elements for handle: " << handle_ << " Elements: ";
+   for (int i = 0; i < total_sum_.size(); ++i) {
+        std::cout << total_sum_(i) << " ";
+   }
+   std::cout << std::endl;
 }
 
 

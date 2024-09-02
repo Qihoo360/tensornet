@@ -44,9 +44,14 @@ public:
                              DatasetPullResponse* response,
                              google::protobuf::Closure* done);
 
-    virtual void BnVarsPull(google::protobuf::RpcController* cntl_base,
-                            const BnVarsPullRequest* request,
-                            BnVarsPullResponse* response,
+    virtual void BnStatisticsPush(google::protobuf::RpcController* cntl_base,
+                            const BnStatisticsPushRequest* request,
+                            BnStatisticsPushResponse* response,
+                            google::protobuf::Closure* done);
+
+   virtual void BnStatisticsPull(google::protobuf::RpcController* cntl_base,
+                            const BnStatisticsPullRequest* request,
+                            BnStatisticsPullResponse* response,
                             google::protobuf::Closure* done);
 };
 

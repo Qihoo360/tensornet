@@ -25,7 +25,6 @@
 #include <butil/iobuf.h>
 #include <Eigen/Dense>
 
-#include "core/ps/optimizer/optimizer.h"
 #include "core/ps_interface/ps_server.pb.h"
 
 namespace tensornet {
@@ -36,9 +35,15 @@ public:
 
     ~BnTable() = default;
 
-    void Pull(const BnVarsPullRequest* req, butil::IOBuf& out_buf, BnVarsPullResponse* resp);
+    void Append(butil::IOBuf& out_buf);
 
-    int Set(butil::IOBuf& out_buf);
+    void GetStatistics(const BnStatisticsPullRequest* req, butil::IOBuf& out_buf, BnStatisticsPullResponse* resp);
+
+    std::tuple<Eigen::ArrayXf,Eigen::ArrayXf> GetMoments();
+
+    Eigen::ArrayXf DivideNoNan(const Eigen::ArrayXf& numerator, const Eigen::ArrayXf& denominator);
+
+    void PrintDetail();
 
     void SetHandle(uint32_t handle);
 
@@ -52,9 +57,10 @@ private:
     uint32_t handle_ = 0;
     std::string name_;
     uint32_t bn_size_ = 0;
-    Eigen::ArrayXf moving_mean_;
-    Eigen::ArrayXf moving_var_;
-    Eigen::ArrayXf batch_count_; 
+    Eigen::ArrayXf total_sum_;
+    Eigen::ArrayXf total_squared_sum_;
+    Eigen::ArrayXf total_count_; 
+    std::unique_ptr<std::mutex> mu_;
 	
 };
 

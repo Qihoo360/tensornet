@@ -45,9 +45,14 @@ public:
                                   DatasetPullResponse *response,
                                   Callback done) const override;
 
-    virtual void BnVarsPullAsync(brpc::Controller *cntl,
-                                 const BnVarsPullRequest *request,
-                                 BnVarsPullResponse *response,
+    virtual void BnStatisticsPushAsync(brpc::Controller *cntl,
+                                 const BnStatisticsPushRequest *request,
+                                 BnStatisticsPushResponse *response,
+                                 Callback done) const override;
+
+    virtual void BnStatisticsPullAsync(brpc::Controller *cntl,
+                                 const BnStatisticsPullRequest *request,
+                                 BnStatisticsPullResponse *response,
                                  Callback done) const override;
 };
 

@@ -103,7 +103,7 @@ void SparseTable::Save(const std::string& filepath, const std::string& mode) {
               << " handle:" << GetHandle()
               << " latency:" << timer.s_elapsed() << "s"
               << " key_count:" << new_key_count
-              << " increased key_count:" << new_key_count - saved_key_count_;
+              << " increased key_count:" << new_key_count - saved_key_count_ << "  ----------------------1234";
 
     saved_key_count_ = new_key_count;
 }
@@ -135,7 +135,7 @@ void SparseTable::Load(const std::string& filepath, const std::string& mode) {
               << " name:" << name_
               << " handle:" << GetHandle()
               << " latency:" << timer.s_elapsed() << "s"
-              << " key_count:" << saved_key_count_;
+              << " key_count:" << saved_key_count_ << "  ----------------------1234";
 }
 
 void SparseTable::ShowDecay(int delta_days) const {

@@ -18,17 +18,26 @@
 
 using namespace tensorflow;
 
-REGISTER_OP("BnVarsPull")
+REGISTER_OP("UpdateMoments")
     .Doc(R"doc(pull mean, var, count from parameter server)doc")
-    .Input("resources: N * resource")
+    .Input("vars: N * resource")
     .Attr("table_handle: int")
     .Attr("N: int")
 	.SetShapeFn(shape_inference::NoOutputs);
 
 
-REGISTER_OP("BnVarsSet")
+REGISTER_OP("BnStatisticsPush")
     .Doc(R"doc(save local bn vars to ps)doc")
-    .Input("resources: N * resource")
+    .Input("vars: N * resource")
+    .Attr("table_handle: int")
+    .Attr("N: int")
+    .Attr("synchronized: bool")
+    .SetShapeFn(shape_inference::NoOutputs);
+
+
+REGISTER_OP("BnStatisticsPull")
+    .Doc(R"doc(save local bn vars to ps)doc")
+    .Input("vars: N * resource")
     .Attr("table_handle: int")
     .Attr("N: int")
     .SetShapeFn(shape_inference::NoOutputs);
