@@ -16,9 +16,9 @@
 
 namespace tensorflow {
 
-class BnVarsSetKernel : public OpKernel {
+class UpdateMomentsKernel : public OpKernel {
 public:
-    explicit BnVarsSetKernel(OpKernelConstruction* c)
+    explicit UpdateMomentsKernel(OpKernelConstruction* c)
         : OpKernel(c) {
         OP_REQUIRES_OK(c, c->GetAttr("table_handle", &table_handle_));
     }
@@ -31,12 +31,12 @@ private:
     int table_handle_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("BnVarsSet").Device(DEVICE_CPU),
-                        BnVarsSetKernel);
+REGISTER_KERNEL_BUILDER(Name("UpdateMoments").Device(DEVICE_CPU),
+                        UpdateMomentsKernel);
 
-class BnVarsPullKernel : public AsyncOpKernel {
+class BnStatisticsPushKernel : public AsyncOpKernel {
 public:
-    explicit BnVarsPullKernel(OpKernelConstruction* c)
+    explicit BnStatisticsPushKernel(OpKernelConstruction* c)
         : AsyncOpKernel(c) {
         OP_REQUIRES_OK(c, c->GetAttr("table_handle", &table_handle_));
     }
@@ -50,7 +50,7 @@ private:
     int table_handle_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("BnVarsPull").Device(DEVICE_CPU),
-                        BnVarsPullKernel);
+REGISTER_KERNEL_BUILDER(Name("BnStatisticsPush").Device(DEVICE_CPU),
+                        BnStatisticsPushKernel);
 
 }  // namespace tensorflow
