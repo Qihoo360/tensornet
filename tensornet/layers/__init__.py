@@ -14,4 +14,4 @@
 
 from .embedding_features import EmbeddingFeatures
 from .sequence_embedding_features import SequenceEmbeddingFeatures
-from .normalization_layer import BatchNormalization
+from .normalization_layer import TNBatchNormalization

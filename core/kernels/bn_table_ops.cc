@@ -100,40 +100,39 @@ public:
             acc_buf.append_user_data(var_tensor->flat<float>().data(), var_tensor->NumElements() * sizeof(float), NoOpDeleter);
         }
 
-        if(synchronized_){
+	BnTable* table = BnTableRegistry::Instance()->Get(table_handle_);
+        table->Append(acc_buf, true);
 
-        PsCluster* cluster = PsCluster::Instance();
-        OP_REQUIRES_ASYNC(
-            c, true == cluster->IsInitialized(),
+        if(synchronized_){
+			PsCluster* cluster = PsCluster::Instance();
+			OP_REQUIRES_ASYNC( c, true == cluster->IsInitialized(),
             errors::InvalidArgument("cluster instance not initialized:"), done);
 
-        std::vector<BnStatisticsPushCall*> calls;
+			butil::IOBuf inc_buf;
+			table->GetIncStatistics(inc_buf);
 
-        for (size_t shard_id = 0; shard_id < cluster->RankNum(); shard_id++) {
-            auto* call = new BnStatisticsPushCall(table_handle_, shard_id);
-            call->AddRequestData(acc_buf);
-            calls.emplace_back(call);
+			std::vector<BnStatisticsPushCall*> calls;
+
+			for (size_t shard_id = 0; shard_id < cluster->RankNum(); shard_id++) {
+				if(shard_id != cluster->Rank()){
+				    auto* call = new BnStatisticsPushCall(table_handle_, shard_id);
+				    call->AddRequestData(inc_buf);
+				    calls.emplace_back(call);
+				}
+			}
+
+			Semaphore semaphore(calls.size());
+
+			for (auto& call : calls) {
+				call->Start([this, call, &semaphore]() {
+                    semaphore.Notify();
+					delete call;
+					});
+			}
+
+			semaphore.WaitForSemaphore();
         }
 
-        Semaphore semaphore(calls.size());
-
-        for (auto& call : calls) {
-            call->Start([this, call, &semaphore]() {
-            // call->Start([this, call]() {
-                    
-                semaphore.Notify();
-                delete call;
-            });
-        }
-
-
-        semaphore.WaitForSemaphore();
-        } else {
-
-            BnTable* table = BnTableRegistry::Instance()->Get(table_handle_);
-            table->Append(acc_buf);
-
-        }
         done();
         
         return;
@@ -252,7 +251,6 @@ public:
             errors::InvalidArgument("cluster instance not initialized:"), done);
 
         BnTable *table = BnTableRegistry::Instance()->Get(table_handle_);
-
         std::vector<BnStatisticsPullCall*> calls;
 
         for (size_t shard_id = 0; shard_id < cluster->RankNum(); shard_id++) {
@@ -266,14 +264,13 @@ public:
 
         for (auto& call : calls) {
             call->Start([this, call, &table, &semaphore]() {
-				table->Append(call->cntl.response_attachment());
+				table->Append(call->cntl.response_attachment(), false);
                 semaphore.Notify();
                 delete call;
             });
         }
 
         semaphore.WaitForSemaphore();
-
         std::tuple<Eigen::ArrayXf, Eigen::ArrayXf> moments_tuple = table->GetMoments();
 
         auto& global_mean_var = bn_vars[0];

@@ -31,17 +31,23 @@ namespace tensornet {
 
 class BnTable {
 public:
-    BnTable(const std::string& name,int shard_num, int self_shard_id, int bn_size);
+    BnTable(const std::string& name,int shard_num, int self_shard_id, int bn_size, bool sync, float moment, int max_count);
 
     ~BnTable() = default;
 
-    void Append(butil::IOBuf& out_buf);
+    void Append(butil::IOBuf& out_buf, bool isLocal);
 
     void GetStatistics(const BnStatisticsPullRequest* req, butil::IOBuf& out_buf, BnStatisticsPullResponse* resp);
 
+    void GetIncStatistics(butil::IOBuf& out_buf);
+
     std::tuple<Eigen::ArrayXf,Eigen::ArrayXf> GetMoments();
+    std::tuple<Eigen::ArrayXf,Eigen::ArrayXf> GetIncMoments();
 
     Eigen::ArrayXf DivideNoNan(const Eigen::ArrayXf& numerator, const Eigen::ArrayXf& denominator);
+    
+    void Save(const std::string& filepath);
+    void Load(const std::string& filepath);
 
     void PrintDetail();
 
@@ -51,15 +57,23 @@ public:
         return handle_;
     }
 
+    void Refresh();
+
 private:
     int shard_num_ = 0;
     int self_shard_id_ = 0;
     uint32_t handle_ = 0;
     std::string name_;
     uint32_t bn_size_ = 0;
+	bool synchronized_ = false;
+    float moment_ = 0.0;
+    int max_count_ = 0;
     Eigen::ArrayXf total_sum_;
     Eigen::ArrayXf total_squared_sum_;
     Eigen::ArrayXf total_count_; 
+	Eigen::ArrayXf inc_sum_;
+	Eigen::ArrayXf inc_squared_sum_;
+	Eigen::ArrayXf inc_count_;
     std::unique_ptr<std::mutex> mu_;
 	
 };
@@ -86,7 +100,7 @@ private:
     std::vector<BnTable*> tables_;
 };
 
-BnTable* CreateBnTable(const std::string& name, int shard_num, int self_shard_id, int bn_size);
+BnTable* CreateBnTable(const std::string& name, int shard_num, int self_shard_id, int bn_size, bool sync, float moment, int max_count);
 
 }  // namespace tensornet
 

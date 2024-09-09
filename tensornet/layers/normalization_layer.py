@@ -6,18 +6,19 @@ from tensornet.core import gen_bn_table_ops
 from tensorflow.keras import initializers
 from tensorflow.keras import regularizers
 from tensorflow.keras import constraints
+from tensorflow.python.keras.utils import tf_utils
 from tensorflow.keras.layers import Layer
 from tensorflow.python.training import moving_averages
 from tensorflow.python.ops import variable_scope, array_ops
 
 
-class BatchNormalization(Layer):
-    def __init__(self, center=True, scale=True, epsilon=1e-5, decay=0.99, name=None, synchronized=False, **kwargs):
-        super(BatchNormalization, self).__init__(**kwargs)
+class TNBatchNormalization(Layer):
+    def __init__(self, center=True, scale=True, epsilon=1e-5, momentum=0.99, name=None, synchronized=False, sync_freq=1,max_count=100000,**kwargs):
+        super(TNBatchNormalization, self).__init__(**kwargs)
         self.center = center
         self.scale = scale
         self.epsilon = epsilon
-        self.decay = decay
+        self.momentum = momentum
         self.moments_axes = []
         self.apply_axis = []
         self.gamma, self.beta = None, None
@@ -33,6 +34,9 @@ class BatchNormalization(Layer):
         self.beta_constraint = constraints.get(None)
         self.gamma_constraint = constraints.get(None)
         self.synchronized = synchronized
+        self.sync_freq = sync_freq
+        self.batch_counter = tf.Variable(0, name="batch_counter")
+        self.max_count = max_count
 
 
     def build(self, input_shape):
@@ -81,22 +85,32 @@ class BatchNormalization(Layer):
             initializer=self.local_squared_num_initializer,
             trainable=False)
 
-        self.bn_table_handle = tn.core.create_bn_table(self.name, self.apply_axis[0])
-
+        self.bn_table_handle = tn.core.create_bn_table(self.name, self.apply_axis[0], self.synchronized, self.momentum, self.max_count)
 
 
     def call(self, inputs, training=None):
-        
+
+        @tf.function
+        def _increment_and_check_count():
+            self.batch_counter.assign_add(1)
+            if tf.equal(self.batch_counter, self.sync_freq):
+                self.bn_statistics_push(True)
+                self.batch_counter.assign(0)
+            else:
+                self.bn_statistics_push(False)
+
         if training:
             local_count_sample = tf.ones_like(inputs, name="count")
             self.local_sum.assign(tf.reduce_sum(inputs, axis=self.moments_axes))
             self.local_squared_sum.assign(tf.reduce_sum(tf.square(inputs), axis=self.moments_axes))
             self.local_count.assign(tf.reduce_sum(local_count_sample, axis=self.moments_axes))
-            self.bn_statistics_push()
-            self.update_moments()
-        
-        mean = self.moving_mean
-        var = self.moving_variance
+            if self.synchronized:
+                _increment_and_check_count()
+            else:
+                self.bn_statistics_push(False)
+        else:
+            mean = self.moving_mean
+            var = self.moving_variance
 
         outputs = tf.nn.batch_normalization(x=inputs, mean=mean, variance=var, offset=self.beta, scale=self.gamma, variance_epsilon=self.epsilon)
 
@@ -105,9 +119,17 @@ class BatchNormalization(Layer):
     def update_moments(self):
         gen_bn_table_ops.update_moments([self.moving_mean.handle, self.moving_variance.handle], table_handle=self.bn_table_handle)
 
-    def bn_statistics_push(self):
-        gen_bn_table_ops.bn_statistics_push([self.local_sum.handle, self.local_squared_sum.handle, self.local_count.handle], table_handle=self.bn_table_handle, synchronized=self.synchronized)
+    def bn_statistics_push(self, synchronized):
+        gen_bn_table_ops.bn_statistics_push([self.local_sum.handle, self.local_squared_sum.handle, self.local_count.handle], table_handle=self.bn_table_handle, synchronized=synchronized)
 
     def bn_statistics_pull(self):
-        if not self.synchronized:
+        if not self.synchronized or self.sync_freq > 1:
+            self.batch_counter.assign(0)
             gen_bn_table_ops.bn_statistics_pull([self.moving_mean.handle, self.moving_variance.handle], table_handle=self.bn_table_handle)
+
+    def save_bn_table(self, filepath):
+        return tn.core.save_bn_table(self.bn_table_handle, filepath)
+
+    def load_bn_table(self, filepath):
+        return tn.core.load_bn_table(self.bn_table_handle, filepath)
+

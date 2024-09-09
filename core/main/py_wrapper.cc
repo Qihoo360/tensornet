@@ -134,12 +134,20 @@ PYBIND11_MODULE(_pywrap_tn, m) {
 
         return table->GetHandle();
     })
-    .def("create_bn_table", [](std::string name, uint32_t bn_size) {
+    .def("create_bn_table", [](std::string name, uint32_t bn_size, bool sync, float moment, int max_count) {
         PsCluster* cluster = PsCluster::Instance();
 
-        BnTable* table = CreateBnTable(name, cluster->RankNum(), cluster->Rank(), bn_size);
+        BnTable* table = CreateBnTable(name, cluster->RankNum(), cluster->Rank(), bn_size, sync, moment, max_count);
 
         return table->GetHandle();
+    })
+    .def("save_bn_table", [](uint32_t table_handle, std::string filepath) {
+        BnTable* table = BnTableRegistry::Instance()->Get(table_handle);
+        return table->Save(filepath);
+    })
+    .def("load_bn_table", [](uint32_t table_handle, std::string filepath) {
+        BnTable* table = BnTableRegistry::Instance()->Get(table_handle);
+        return table->Load(filepath);
     })
     .def("save_sparse_table", [](uint32_t table_handle, std::string filepath,
                 const std::string& mode="txt") {
