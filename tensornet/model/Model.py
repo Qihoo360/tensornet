@@ -180,7 +180,7 @@ class Model(tf.keras.Model):
             elif isinstance(layer, tn.layers.TNBatchNormalization):
                 if tn.core.self_shard_id() == 0:
                     layer.bn_statistics_pull()
-                layer.save_bn_table(cp_dir)
+                    layer.save_bn_table(cp_dir)
 
         if self.optimizer:
             self.optimizer.save_dense_table(cp_dir)
