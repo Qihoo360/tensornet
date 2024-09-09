@@ -13,6 +13,18 @@ from tensorflow.python.ops import variable_scope, array_ops
 
 
 class TNBatchNormalization(Layer):
+    """ 
+    Reference: https://github.com/keras-team/keras/blob/v3.5.0/keras/src/layers/normalization/batch_normalization.py
+
+    Args:
+        center, scale, epsilon are the same as original batch normalization layer.
+        momentum: same defination of original batch normalization, but it's for bn statistics, not original moving_mean, moving_var
+        synchronized: Whether bn statistics(sum, squared sum, count) should be passed to other tensornet rank during training. 
+            If set to False, on train end, rank 0 will pull all statistics from other rank and calculate moving_mean and moving var, only once.
+            If set to True, with 'sync_freq' argument, every 'sync_freq' batches, incremental bn statistics will be broadcast to all other ranks.
+        sync_freq: frequency that bn statistics will be sent to other ranks(based on batches). Only should be used when 'synchronized' is True
+        max_count: Threshold that to avoid bn statistics overflow. Note that: it's record number, not batch number. This is an empirical parameter that needs to be adjusted based on the size of the training data. 
+    """
     def __init__(self, center=True, scale=True, epsilon=1e-5, momentum=0.99, name=None, synchronized=False, sync_freq=1,max_count=100000,**kwargs):
         super(TNBatchNormalization, self).__init__(**kwargs)
         self.center = center
@@ -123,6 +135,7 @@ class TNBatchNormalization(Layer):
         gen_bn_table_ops.bn_statistics_push([self.local_sum.handle, self.local_squared_sum.handle, self.local_count.handle], table_handle=self.bn_table_handle, synchronized=synchronized)
 
     def bn_statistics_pull(self):
+        # if sync_freq is greater than 1, force sync statistics once at the end of training
         if not self.synchronized or self.sync_freq > 1:
             self.batch_counter.assign(0)
             gen_bn_table_ops.bn_statistics_pull([self.moving_mean.handle, self.moving_variance.handle], table_handle=self.bn_table_handle)

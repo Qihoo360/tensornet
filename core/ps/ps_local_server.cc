@@ -93,7 +93,7 @@ void PsLocalServer::BnStatisticsPushAsync(brpc::Controller *cntl,
     BnTable *table = BnTableRegistry::Instance()->Get(request->table_handle());
 	CHECK(nullptr != table);
 	butil::IOBuf& acc_data = cntl->request_attachment();
-	table->Append(acc_data);
+	table->Append(acc_data, false);
 
     done();
 }

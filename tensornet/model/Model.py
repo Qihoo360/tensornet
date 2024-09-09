@@ -224,8 +224,6 @@ class Model(tf.keras.Model):
                 elif isinstance(layer, tn.layers.SequenceEmbeddingFeatures):
                     layer.load_sparse_table(cp_dir, mode)
                 elif isinstance(layer, tn.layers.TNBatchNormalization):
-                    if tn.core.self_shard_id() == 0:
-                        layer.bn_statistics_pull()
                     layer.load_bn_table(cp_dir)
 
             # dense weight
