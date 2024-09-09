@@ -53,7 +53,7 @@ void BnTable::SetHandle(uint32_t handle) {
 }
 
 void BnTable::Append(butil::IOBuf& bn_statistics_buf, bool isLocal) {
-    // const std::lock_guard<std::mutex> lock(*mu_);
+    const std::lock_guard<std::mutex> lock(*mu_);
     Eigen::ArrayXf acc_sum = Eigen::ArrayXf::Zero(bn_size_); 
     Eigen::ArrayXf acc_squared_sum = Eigen::ArrayXf::Zero(bn_size_); 
     Eigen::ArrayXf acc_count = Eigen::ArrayXf::Zero(bn_size_); 
@@ -88,19 +88,6 @@ std::tuple<Eigen::ArrayXf,Eigen::ArrayXf> BnTable::GetMoments() {
     Eigen::ArrayXf global_mean = DivideNoNan(total_sum_, total_count_);
     Eigen::ArrayXf global_squared_mean = DivideNoNan(total_squared_sum_, total_count_);
     Eigen::ArrayXf global_var = (global_squared_mean - global_mean.square()).max(0.0);
-/*
-    if(handle_ == 0) {
-    std::cout << "current mean and var \n";
-       for (int i = 0; i < global_mean.size(); ++i) {
-        std::cout << global_mean(i) << " ";
-   }
-   std::cout << std::endl;
-       for (int i = 0; i < global_var.size(); ++i) {
-        std::cout << global_var(i) << " ";
-   }
-   std::cout << std::endl;
-    }
-*/
     return std::make_tuple(global_mean, global_var);
 }
 
@@ -154,7 +141,6 @@ void BnTable::PrintDetail(){
 
 void BnTable::Load(const std::string& filepath) {
 
-    std::cout << "start to load from bn ***********************";
     std::string file = filepath + "/bn_table/";
     file += std::to_string(GetHandle());
 
@@ -170,9 +156,6 @@ void BnTable::Load(const std::string& filepath) {
         in_stream.read(reinterpret_cast<char*>(&total_squared_sum_[i]), sizeof(total_squared_sum_[i]));
         in_stream.read(reinterpret_cast<char*>(&total_count_[i]), sizeof(total_count_[i]));
     }
-
-    PrintDetail();
-
 }
 
 void BnTable::Save(const std::string& filepath) {
@@ -182,18 +165,6 @@ void BnTable::Save(const std::string& filepath) {
     file += std::to_string(GetHandle());
 
     FileWriterSink writer_sink(file, FCT_ZLIB);
-
-    if(handle_ == 0) {
-    std::cout << "current mean and var \n";
-       for (int i = 0; i < total_sum_.size(); ++i) {
-        std::cout << total_sum_(i) << " ";
-   }
-   std::cout << std::endl;
-       for (int i = 0; i < total_squared_sum_.size(); ++i) {
-        std::cout << total_squared_sum_(i) << " ";
-   }
-   std::cout << std::endl;
-    }
 
     boost::iostreams::stream<FileWriterSink> out_stream(writer_sink);
     out_stream.iword(SERIALIZE_FMT_ID) = SF_BIN;

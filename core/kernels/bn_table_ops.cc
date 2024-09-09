@@ -181,9 +181,6 @@ public:
         float* global_var_flat = global_var_var->tensor()->flat<float>().data();
         std::copy(std::get<1>(moments_tuple).data(), std::get<1>(moments_tuple).data() + std::get<1>(moments_tuple).size(), global_var_flat);
         
-
-        //table->PrintDetail();
-
         return;
     }
 
