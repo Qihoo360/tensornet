@@ -120,9 +120,10 @@ class TNBatchNormalization(Layer):
                 _increment_and_check_count()
             else:
                 self.bn_statistics_push(False)
-        else:
-            mean = self.moving_mean
-            var = self.moving_variance
+            self.update_moments()
+
+        mean = self.moving_mean
+        var = self.moving_variance
 
         outputs = tf.nn.batch_normalization(x=inputs, mean=mean, variance=var, offset=self.beta, scale=self.gamma, variance_epsilon=self.epsilon)
 
