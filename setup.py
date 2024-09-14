@@ -20,9 +20,6 @@ setup(
     package_data = {
         "tensornet.core": ["_pywrap_tn.so"],
     },
-    install_requires=[
-        'tensorflow>=2.2,<2.3'
-    ],
     python_requires='>=3.7, <3.8',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -30,4 +27,5 @@ setup(
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python :: 3.7'
     ],
+    platforms = ["manylinux2010_x86_64"],
 )
