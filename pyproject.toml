@@ -1,0 +1,27 @@
+[project]
+name = "qihoo-tensornet"
+version = "0.1.3.post2"
+description = "build tensornet"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.7,<3.8"
+authors = [
+  {name="jiangxinglei",email="jiangxinglei@360.cn"},
+  {name="gaozhiming",email="gaozhiming@360.cn"}
+]
+classifiers=[
+  'Development Status :: 5 - Production/Stable',
+  'Intended Audience :: Developers',
+  'License :: OSI Approved :: Apache Software License',
+  'Programming Language :: Python :: 3.7'
+]
+dependencies = [
+  "tensorflow-cpu >=2.2,<2.3"
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.distutils.bdist_wheel]
+plat_name = "manylinux2010_x86_64"
