@@ -15,9 +15,10 @@ classifiers=[
   'License :: OSI Approved :: Apache Software License',
   'Programming Language :: Python :: 3.7'
 ]
-dependencies = [
-  "tensorflow-cpu >=2.2,<2.3"
-]
+
+[project.optional-dependencies]
+all = [ "tensorflow >=2.2,<2.3" ]
+cpu = [ "tensorflow-cpu >=2.2,<2.3" ]
 
 [build-system]
 requires = ["setuptools"]
