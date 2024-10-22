@@ -75,11 +75,10 @@ private:
     Eigen::ArrayXd total_squared_sum_;
     Eigen::ArrayXd total_squared_sum_err_;
     Eigen::ArrayXd total_count_;
-	Eigen::ArrayXd inc_sum_;
-	Eigen::ArrayXd inc_squared_sum_;
-	Eigen::ArrayXd inc_count_;
+    Eigen::ArrayXd inc_sum_;
+    Eigen::ArrayXd inc_squared_sum_;
+    Eigen::ArrayXd inc_count_;
     std::unique_ptr<std::mutex> mu_;
-	
 };
 
 class BnTableRegistry {

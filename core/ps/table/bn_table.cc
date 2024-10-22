@@ -73,9 +73,6 @@ void BnTable::Append(butil::IOBuf& bn_statistics_buf, bool isLocal) {
 
     uint64_t cur_count = static_cast<uint64_t>(total_count_.maxCoeff());
     
-    // std::cout << "cur_count is : " << cur_count << std::endl;
-    // PrintDetail();
-    // std::cout << "acc_count is : " << acc_count(0) << std::endl;
     if(max_count_ > 0 && cur_count > max_count_) {
         uint64_t acc_count_num = static_cast<uint64_t>(acc_count.maxCoeff());
         double ratio = (double) acc_count_num / cur_count;
