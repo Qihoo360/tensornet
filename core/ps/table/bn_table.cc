@@ -29,7 +29,7 @@
 
 namespace tensornet {
 
-BnTable::BnTable(const std::string& name, int shard_num, int self_shard_id, int bn_size, bool synchronized, float moment, int max_count)
+BnTable::BnTable(const std::string& name, int shard_num, int self_shard_id, int bn_size, bool synchronized, float moment, uint64_t max_count)
     : shard_num_(shard_num)
     , self_shard_id_(self_shard_id)
     , name_(name)
@@ -38,7 +38,9 @@ BnTable::BnTable(const std::string& name, int shard_num, int self_shard_id, int 
     , max_count_(max_count)
 	, bn_size_(bn_size) {
     total_sum_.setZero(bn_size);
+    total_sum_err_.setZero(bn_size);
     total_squared_sum_.setZero(bn_size);
+    total_squared_sum_err_.setZero(bn_size);
     total_count_.setZero(bn_size);
     inc_sum_.setZero(bn_size);
     inc_squared_sum_.setZero(bn_size);
@@ -54,33 +56,52 @@ void BnTable::SetHandle(uint32_t handle) {
 
 void BnTable::Append(butil::IOBuf& bn_statistics_buf, bool isLocal) {
     const std::lock_guard<std::mutex> lock(*mu_);
-    Eigen::ArrayXf acc_sum = Eigen::ArrayXf::Zero(bn_size_); 
-    Eigen::ArrayXf acc_squared_sum = Eigen::ArrayXf::Zero(bn_size_); 
-    Eigen::ArrayXf acc_count = Eigen::ArrayXf::Zero(bn_size_); 
+    Eigen::ArrayXd acc_sum = Eigen::ArrayXd::Zero(bn_size_); 
+    Eigen::ArrayXd acc_squared_sum = Eigen::ArrayXd::Zero(bn_size_); 
+    Eigen::ArrayXd acc_count = Eigen::ArrayXd::Zero(bn_size_); 
  
-    bn_statistics_buf.cutn(acc_sum.data(), acc_sum.size() * sizeof(float));
-    bn_statistics_buf.cutn(acc_squared_sum.data(), acc_squared_sum.size() * sizeof(float));
-    bn_statistics_buf.cutn(acc_count.data(), acc_count.size() * sizeof(float));
+    bn_statistics_buf.cutn(acc_sum.data(), acc_sum.size() * sizeof(double));
+    bn_statistics_buf.cutn(acc_squared_sum.data(), acc_squared_sum.size() * sizeof(double));
+    bn_statistics_buf.cutn(acc_count.data(), acc_count.size() * sizeof(double));
+    CHECK_EQ(bn_statistics_buf.size(), 0);
 
-    if(synchronized_ && isLocal){
+    if(isLocal){
         inc_sum_ += acc_sum;
         inc_squared_sum_ += acc_squared_sum;
         inc_count_ += acc_count;
     }
 
-    int cur_count = static_cast<int>(total_count_.maxCoeff());
-    if(cur_count > max_count_) {
-        int acc_count_num = static_cast<int>(acc_count.maxCoeff());
-        float ratio = (float) acc_count_num / cur_count;
-        total_sum_ = total_sum_ * (1 - (1 - moment_) * ratio) +  (1 - moment_) * ratio * acc_sum;
-        total_squared_sum_ = total_squared_sum_ * (1 - (1 - moment_) * ratio) + (1 - moment_) * ratio * acc_squared_sum;
-
+    uint64_t cur_count = static_cast<uint64_t>(total_count_.maxCoeff());
+    
+    // std::cout << "cur_count is : " << cur_count << std::endl;
+    // PrintDetail();
+    // std::cout << "acc_count is : " << acc_count(0) << std::endl;
+    if(max_count_ > 0 && cur_count > max_count_) {
+        uint64_t acc_count_num = static_cast<uint64_t>(acc_count.maxCoeff());
+        double ratio = (double) acc_count_num / cur_count;
+        total_sum_ *= (1 - (1 - moment_) * ratio);
+        TotalSumAcc((1 - moment_) * ratio * acc_sum);
+        total_squared_sum_ *= (1 - (1 - moment_) * ratio);
+        TotalSquareSumAcc((1 - moment_) * ratio * acc_squared_sum);
     } else { 
-
-    total_sum_ += acc_sum;
-    total_squared_sum_ += acc_squared_sum;
-    total_count_ += acc_count;
+        TotalSumAcc(acc_sum);
+        TotalSquareSumAcc(acc_squared_sum);
+        total_count_ += acc_count;
     }
+}
+
+void BnTable::TotalSquareSumAcc(Eigen::ArrayXd acc){
+    Eigen::ArrayXd y = acc - total_squared_sum_err_;
+    Eigen::ArrayXd t = total_squared_sum_ + y;
+    total_squared_sum_err_ = (t - total_squared_sum_) - y;
+    total_squared_sum_ = t;
+}
+
+void BnTable::TotalSumAcc(Eigen::ArrayXd acc){
+    Eigen::ArrayXd y = acc - total_sum_err_;
+    Eigen::ArrayXd t = total_sum_ + y;
+    total_sum_err_ = (t - total_sum_) - y;
+    total_sum_ = t;
 }
 
 
@@ -93,15 +114,15 @@ std::tuple<Eigen::ArrayXf,Eigen::ArrayXf> BnTable::GetMoments() {
 
 void BnTable::GetStatistics(const BnStatisticsPullRequest* req, butil::IOBuf& bn_statistics_buf, BnStatisticsPullResponse* resp) {
     resp->set_table_handle(req->table_handle());
-    bn_statistics_buf.append(total_sum_.data(), total_sum_.size() * sizeof(float));
-    bn_statistics_buf.append(total_squared_sum_.data(), total_squared_sum_.size() * sizeof(float));
-    bn_statistics_buf.append(total_count_.data(), total_count_.size() * sizeof(float));
+    bn_statistics_buf.append(total_sum_.data(), total_sum_.size() * sizeof(double));
+    bn_statistics_buf.append(total_squared_sum_.data(), total_squared_sum_.size() * sizeof(double));
+    bn_statistics_buf.append(total_count_.data(), total_count_.size() * sizeof(double));
 }
 
 void BnTable::GetIncStatistics(butil::IOBuf& bn_statistics_buf) {
-    bn_statistics_buf.append(inc_sum_.data(), inc_sum_.size() * sizeof(float));
-    bn_statistics_buf.append(inc_squared_sum_.data(), inc_squared_sum_.size() * sizeof(float));
-    bn_statistics_buf.append(inc_count_.data(), inc_count_.size() * sizeof(float));
+    bn_statistics_buf.append(inc_sum_.data(), inc_sum_.size() * sizeof(double));
+    bn_statistics_buf.append(inc_squared_sum_.data(), inc_squared_sum_.size() * sizeof(double));
+    bn_statistics_buf.append(inc_count_.data(), inc_count_.size() * sizeof(double));
 	inc_sum_.setZero();
 	inc_squared_sum_.setZero();
 	inc_count_.setZero();
@@ -119,8 +140,8 @@ void BnTable::Refresh() {
 }
 
 
-Eigen::ArrayXf BnTable::DivideNoNan(const Eigen::ArrayXf& numerator, const Eigen::ArrayXf& denominator) {  
-   Eigen::ArrayXf result = numerator;
+Eigen::ArrayXf BnTable::DivideNoNan(const Eigen::ArrayXd& numerator, const Eigen::ArrayXd& denominator) {  
+   Eigen::ArrayXd result = numerator;
    for (int i = 0; i < numerator.size(); ++i) {  
         if (!std::isnan(denominator(i)) && denominator(i) != 0.0) {  
             result(i) = numerator(i) / denominator(i);  
@@ -128,7 +149,7 @@ Eigen::ArrayXf BnTable::DivideNoNan(const Eigen::ArrayXf& numerator, const Eigen
             result(i) = 0.0;  
         }  
     }  
-    return result;  
+    return result.cast<float>();  
 }
 
 void BnTable::PrintDetail(){
@@ -199,7 +220,7 @@ uint32_t BnTableRegistry::Register(BnTable* table) {
     return table_handle;
 }
 
-BnTable* CreateBnTable(const std::string& name, int shard_num, int self_shard_id, int bn_size, bool sync, float moment, int max_count) {
+BnTable* CreateBnTable(const std::string& name, int shard_num, int self_shard_id, int bn_size, bool sync, float moment, uint64_t max_count) {
     BnTable* table = new BnTable(name, shard_num, self_shard_id, bn_size, sync, moment, max_count);
 
     table->SetHandle(BnTableRegistry::Instance()->Register(table));

@@ -104,8 +104,9 @@ void PsLocalServer::BnStatisticsPullAsync(brpc::Controller *cntl,
                                      Callback done) const {
     BnTable *table = BnTableRegistry::Instance()->Get(request->table_handle());
         CHECK(nullptr != table);
+        response->set_table_handle(request->table_handle());
         butil::IOBuf& bn_statistics_buf = cntl->response_attachment();
-        table->GetStatistics(request, bn_statistics_buf, response);
+        table->GetIncStatistics(bn_statistics_buf);
 
     done();
 }

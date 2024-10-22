@@ -114,9 +114,13 @@ PYBIND11_MODULE(_pywrap_tn, m) {
 
         return py::reinterpret_steal<py::object>(obj);
     })
-    .def("create_sparse_table", [](py::object obj, std::string name, int dimension) {
+    .def("create_sparse_table", [](py::object obj, std::string name, int dimension, bool use_cvm) {
         OptimizerBase* opt =
                static_cast<OptimizerBase*>(PyCapsule_GetPointer(obj.ptr(), nullptr));
+
+        opt->SetUseCvm(use_cvm);
+
+        std::cout << "Cvm plugin is: " << opt->ShouldUseCvm() << std::endl;
 
         PsCluster* cluster = PsCluster::Instance();
 
@@ -134,7 +138,7 @@ PYBIND11_MODULE(_pywrap_tn, m) {
 
         return table->GetHandle();
     })
-    .def("create_bn_table", [](std::string name, uint32_t bn_size, bool sync, float moment, int max_count) {
+    .def("create_bn_table", [](std::string name, uint32_t bn_size, bool sync, float moment, uint64_t max_count) {
         PsCluster* cluster = PsCluster::Instance();
 
         BnTable* table = CreateBnTable(name, cluster->RankNum(), cluster->Rank(), bn_size, sync, moment, max_count);

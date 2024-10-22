@@ -87,6 +87,8 @@ public:
     void ComputeAsync(OpKernelContext* c, DoneCallback done) override {
         butil::IOBuf acc_buf; 
 
+        std::vector<double*> allocated_pointers;
+
         for (int i = 0; i < N_; i++) {
             const ResourceHandle& handle = HandleFromInput(c, i);
 
@@ -97,11 +99,27 @@ public:
             CHECK(variable);
 
             Tensor *var_tensor = variable->tensor();
-            acc_buf.append_user_data(var_tensor->flat<float>().data(), var_tensor->NumElements() * sizeof(float), NoOpDeleter);
+
+            int num_elements = var_tensor->NumElements();
+            double* dynamic_double_data = new double[num_elements];
+            const float* float_data = var_tensor->flat<float>().data();
+            for (int i = 0; i < num_elements; ++i) {
+                // std::cout << "float data is: " << float_data[i] << std::endl;
+                dynamic_double_data[i] = static_cast<double>(float_data[i]);    
+                // std::cout << "double data is: " << dynamic_double_data[i] << std::endl;
+            }
+            acc_buf.append_user_data(dynamic_double_data, num_elements * sizeof(double), NoOpDeleter);
+            // acc_buf.append_user_data(var_tensor->flat<float>().data(), var_tensor->NumElements() * sizeof(float), NoOpDeleter);
+            allocated_pointers.push_back(dynamic_double_data);
         }
 
 	BnTable* table = BnTableRegistry::Instance()->Get(table_handle_);
         table->Append(acc_buf, true);
+
+        for (auto ptr : allocated_pointers) {  
+            delete[] ptr;  
+        }  
+        allocated_pointers.clear();
 
         if(synchronized_){
 			PsCluster* cluster = PsCluster::Instance();
