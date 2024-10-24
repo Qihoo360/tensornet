@@ -108,6 +108,8 @@ PsRemoteServer::PsRemoteServer(std::shared_ptr<brpc::Channel> &channel)
     sparse_push_dp_ = PsService::descriptor()->FindMethodByName("SparsePush");
     dense_push_pull_dp_ = PsService::descriptor()->FindMethodByName("DensePushPull");
     dataset_pull_dp_ = PsService::descriptor()->FindMethodByName("DatasetPull");
+    bn_statistics_push_dp_ = PsService::descriptor()->FindMethodByName("BnStatisticsPush");
+    bn_statistics_pull_dp_ = PsService::descriptor()->FindMethodByName("BnStatisticsPull");
 }
 
 PsRemoteServer::~PsRemoteServer() {}
@@ -141,6 +143,22 @@ void PsRemoteServer::DatasetPullAsync(brpc::Controller *cntl,
                                       DatasetPullResponse *response,
                                       Callback done) const {
     new Call<DatasetPullRequest, DatasetPullResponse>(dataset_pull_dp_,
+            channel_, cntl, request, response, std::move(done));
+}
+
+void PsRemoteServer::BnStatisticsPushAsync(brpc::Controller *cntl,
+                                     const BnStatisticsPushRequest *request,
+                                     BnStatisticsPushResponse *response,
+                                     Callback done) const {
+    new Call<BnStatisticsPushRequest, BnStatisticsPushResponse>(bn_statistics_push_dp_,
+            channel_, cntl, request, response, std::move(done));
+}
+
+void PsRemoteServer::BnStatisticsPullAsync(brpc::Controller *cntl,
+                                     const BnStatisticsPullRequest *request,
+                                     BnStatisticsPullResponse *response,
+                                     Callback done) const {
+    new Call<BnStatisticsPullRequest, BnStatisticsPullResponse>(bn_statistics_pull_dp_,
             channel_, cntl, request, response, std::move(done));
 }
 
