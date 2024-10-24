@@ -52,6 +52,30 @@ tf_gen_op_wrapper_py(
 )
 
 cc_library(
+    name = "bn_table_ops_kernels",
+    srcs = [
+        "kernels/bn_table_ops_dummy.cc",
+        "ops/bn_table_ops.cc",
+    ],
+    hdrs = [
+        "//core/utility:semaphore",
+    ],
+    linkstatic = 1,
+    deps = [
+        "@org_tensorflow//tensorflow/core:framework",
+        "@org_tensorflow//tensorflow/core:lib",
+        "@org_tensorflow//tensorflow/core:protos_all_cc",
+    ],
+    alwayslink = 0,
+)
+
+tf_gen_op_wrapper_py(
+    name = "bn_table_ops",
+    deps = [":bn_table_ops_kernels"],
+    cc_linkopts = ['-lrt', '-lssl']
+)
+
+cc_library(
     name = "balance_dataset_ops_kernels",
     srcs = [
         "kernels/data/balance_dataset_ops_dummy.cc",
@@ -127,6 +151,7 @@ cc_binary(
         "kernels/dense_table_ops.cc",
         "kernels/data/balance_dataset_ops.cc",
         "kernels/data/balance_dataset_ops.h",
+		"kernels/bn_table_ops.cc",
         "public/version.h",
         "kernels/resource_var_wrapper.h",
         "//core/utility:semaphore",

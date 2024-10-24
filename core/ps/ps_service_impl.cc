@@ -76,4 +76,30 @@ void PsServiceImpl::DatasetPull(google::protobuf::RpcController* cntl_base,
                          [done]() { done->Run(); });
 }
 
+void PsServiceImpl::BnStatisticsPush(google::protobuf::RpcController* cntl_base,
+                               const BnStatisticsPushRequest* request,
+                               BnStatisticsPushResponse* response,
+                               google::protobuf::Closure* done) {
+    brpc::Controller* cntl = static_cast<brpc::Controller*>(cntl_base);
+
+    auto* cluster = PsCluster::Instance();
+    const auto* si = cluster->GetServer(cluster->Rank());
+
+    si->BnStatisticsPushAsync(cntl, request, response,
+                        [done]() { done->Run(); });
+}
+
+void PsServiceImpl::BnStatisticsPull(google::protobuf::RpcController* cntl_base,
+                               const BnStatisticsPullRequest* request,
+                               BnStatisticsPullResponse* response,
+                               google::protobuf::Closure* done) {
+    brpc::Controller* cntl = static_cast<brpc::Controller*>(cntl_base);
+
+    auto* cluster = PsCluster::Instance();
+    const auto* si = cluster->GetServer(cluster->Rank());
+
+    si->BnStatisticsPullAsync(cntl, request, response,
+                        [done]() { done->Run(); });
+}
+
 }  // end of namespace tensornet

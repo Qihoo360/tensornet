@@ -17,6 +17,7 @@
 #include "core/ps_interface/ps_server.pb.h"
 #include "core/ps/table/dense_table.h"
 #include "core/ps/table/sparse_table.h"
+#include "core/ps/table/bn_table.h"
 #include "core/kernels/data/balance_dataset_ops.h"
 #include "core/ps/optimizer/optimizer_kernel.h"
 
@@ -85,4 +86,28 @@ void PsLocalServer::DatasetPullAsync(brpc::Controller *cntl,
     done();
 }
 
+void PsLocalServer::BnStatisticsPushAsync(brpc::Controller *cntl,
+                                     const BnStatisticsPushRequest *request,
+                                     BnStatisticsPushResponse *response,
+                                     Callback done) const {
+    BnTable *table = BnTableRegistry::Instance()->Get(request->table_handle());
+	CHECK(nullptr != table);
+	butil::IOBuf& acc_data = cntl->request_attachment();
+	table->Append(acc_data, false);
+
+    done();
+}
+
+void PsLocalServer::BnStatisticsPullAsync(brpc::Controller *cntl,
+                                     const BnStatisticsPullRequest *request,
+                                     BnStatisticsPullResponse *response,
+                                     Callback done) const {
+    BnTable *table = BnTableRegistry::Instance()->Get(request->table_handle());
+        CHECK(nullptr != table);
+        response->set_table_handle(request->table_handle());
+        butil::IOBuf& bn_statistics_buf = cntl->response_attachment();
+        table->GetIncStatistics(bn_statistics_buf);
+
+    done();
+}
 }  // namespace tensornet
