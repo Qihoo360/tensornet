@@ -114,13 +114,9 @@ PYBIND11_MODULE(_pywrap_tn, m) {
 
         return py::reinterpret_steal<py::object>(obj);
     })
-    .def("create_sparse_table", [](py::object obj, std::string name, int dimension, bool use_cvm) {
+    .def("create_sparse_table", [](py::object obj, std::string name, int dimension) {
         OptimizerBase* opt =
                static_cast<OptimizerBase*>(PyCapsule_GetPointer(obj.ptr(), nullptr));
-
-        opt->SetUseCvm(use_cvm);
-
-        std::cout << "Cvm plugin is: " << opt->ShouldUseCvm() << std::endl;
 
         PsCluster* cluster = PsCluster::Instance();
 
