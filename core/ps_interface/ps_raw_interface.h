@@ -22,16 +22,18 @@ namespace tensornet {
 struct SparsePushSignInfo {
 public:
     SparsePushSignInfo()
-        : SparsePushSignInfo(0, 0)
+        : SparsePushSignInfo(0, 0, 0)
     { }
 
-    SparsePushSignInfo(uint64_t s, int bs)
+    SparsePushSignInfo(uint64_t s, int bs, int cs)
         : sign(s)
         , batch_show(bs)
+        , batch_click(cs)
     { }
 
     uint64_t sign;
     int batch_show;
+    int batch_click;
 };
 
 } // namespace tensornet

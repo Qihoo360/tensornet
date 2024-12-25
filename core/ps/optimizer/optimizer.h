@@ -43,9 +43,18 @@ public:
         return std::make_tuple(false, emptyString);
     }
 
+    virtual void SetUseCvm(bool use_cvm) {
+        use_cvm_ = use_cvm;
+    }
+
+    virtual bool ShouldUseCvm() const {
+        return use_cvm_;
+    }
+
 public:
     float learning_rate = 0.01;
     float show_decay_rate = 0.98;
+    float use_cvm_ = false;
 };
 
 class Adam : public OptimizerBase {
@@ -90,8 +99,9 @@ public:
             ++column_count;
         }
 
-        // columns should be sign, dim_, dims_ * weight, g2sum, show, no_show_days
-        // if columnCount is 12,  means no no_show_days column
+        // if use cvm plugins, columns should be sign, dim_, dims_ * weight, g2sum, show, no_show_days, click,should be dim + 6
+		// if no use cvm, no click, should be dim + 5
+        // for old version, no no_show_days column, column_count should be dim + 4
         if(column_count == dim + 4){
             need_old_compat = true;
         }

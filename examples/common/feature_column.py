@@ -24,11 +24,14 @@ def create_emb_model(features, columns_group, suffix = "_input"):
     for slot in features:
         inputs[slot] = tf.keras.layers.Input(name=slot, shape=(None,), dtype="int64", sparse=True)
 
+    inputs["label"] = tf.keras.layers.Input(name="label", shape=(None,), dtype="int64", sparse=False)
+
     sparse_opt = tn.core.AdaGrad(learning_rate=0.01, initial_g2sum=0.1, initial_scale=0.1)
 
     for column_group_name in columns_group.keys():
         embs = tn.layers.EmbeddingFeatures(columns_group[column_group_name], sparse_opt, 
-                                           name=column_group_name + suffix)(inputs)
+                                           name=column_group_name + suffix, target_columns=["label"])(inputs)
+                                           #name=column_group_name + suffix)(inputs)
         model_output.append(embs)
 
     emb_model = tn.model.Model(inputs=inputs, outputs=model_output, name="emb_model")

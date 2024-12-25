@@ -276,7 +276,7 @@ public:
     SparseKernelBlock(const OptimizerBase* opt, int dimension)
         : values_(15485863, sparse_key_hasher)
         , dim_(dimension)
-        , alloc_(ValueType::DynSizeof(dim_), 1 << 16) {
+         , alloc_(ValueType::DynSizeof(dimension + opt->ShouldUseCvm() * 2), 1 << 16) {
         values_.max_load_factor(0.75);
         opt_ = dynamic_cast<const OptType*>(opt);
         mutex_ = std::make_unique<std::mutex>();

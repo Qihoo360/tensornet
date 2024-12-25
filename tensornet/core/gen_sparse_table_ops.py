@@ -128,7 +128,7 @@ def sparse_table_pull_eager_fallback(resources, values, table_handle, name, ctx)
 
 @_dispatch.add_dispatch_list
 @tf_export('sparse_table_push')
-def sparse_table_push(values, grads, table_handle, name=None):
+def sparse_table_push(values, grads, feature_labels, table_handle, name=None):
   r"""push variable from parameter server
 
   Args:
@@ -146,17 +146,17 @@ def sparse_table_push(values, grads, table_handle, name=None):
     try:
       _result = pywrap_tfe.TFE_Py_FastPathExecute(
         _ctx._context_handle, tld.device_name, "SparseTablePush", name,
-        tld.op_callbacks, values, grads, "table_handle", table_handle)
+        tld.op_callbacks, values, grads, feature_labels, "table_handle", table_handle)
       return _result
     except _core._FallbackException:
       try:
         return sparse_table_push_eager_fallback(
-            values, grads, table_handle=table_handle, name=name, ctx=_ctx)
+            values, grads, feature_labels, table_handle=table_handle, name=name, ctx=_ctx)
       except _core._SymbolicException:
         pass  # Add nodes to the TensorFlow graph.
       except (TypeError, ValueError):
         result = _dispatch.dispatch(
-              sparse_table_push, values=values, grads=grads,
+              sparse_table_push, values=values, grads=grads, feature_labels=feature_labels,
                                  table_handle=table_handle, name=name)
         if result is not _dispatch.OpDispatcher.NOT_SUPPORTED:
           return result
@@ -181,11 +181,11 @@ def sparse_table_push(values, grads, table_handle, name=None):
   table_handle = _execute.make_int(table_handle, "table_handle")
   try:
     _, _, _op, _outputs = _op_def_library._apply_op_helper(
-        "SparseTablePush", values=values, grads=grads,
+        "SparseTablePush", values=values, grads=grads, feature_labels=feature_labels,
                            table_handle=table_handle, name=name)
   except (TypeError, ValueError):
     result = _dispatch.dispatch(
-          sparse_table_push, values=values, grads=grads,
+          sparse_table_push, values=values, grads=grads, feature_labels=feature_labels,
                              table_handle=table_handle, name=name)
     if result is not _dispatch.OpDispatcher.NOT_SUPPORTED:
       return result
@@ -194,7 +194,7 @@ def sparse_table_push(values, grads, table_handle, name=None):
 SparseTablePush = tf_export("raw_ops.SparseTablePush")(_ops.to_raw_op(sparse_table_push))
 
 
-def sparse_table_push_eager_fallback(values, grads, table_handle, name, ctx):
+def sparse_table_push_eager_fallback(values, grads, feature_labels, table_handle, name, ctx):
   if not isinstance(values, (list, tuple)):
     raise TypeError(
         "Expected list for 'values' argument to "
@@ -212,7 +212,8 @@ def sparse_table_push_eager_fallback(values, grads, table_handle, name, ctx):
   table_handle = _execute.make_int(table_handle, "table_handle")
   values = _ops.convert_n_to_tensor(values, _dtypes.int64)
   grads = _ops.convert_n_to_tensor(grads, _dtypes.float32)
-  _inputs_flat = list(values) + list(grads)
+  feature_labels = _ops.convert_n_to_tensor(feature_labels, _dtypes.int64)
+  _inputs_flat = list(values) + list(grads) + list(feature_labels)
   _attrs = ("table_handle", table_handle, "N", _attr_N)
   _result = _execute.execute(b"SparseTablePush", 0, inputs=_inputs_flat,
                              attrs=_attrs, ctx=ctx, name=name)
