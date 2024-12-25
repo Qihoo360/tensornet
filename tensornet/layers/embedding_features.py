@@ -21,6 +21,7 @@
 import collections
 import json
 
+import tensorflow as tf
 import tensornet as tn
 from tensornet.core import gen_sparse_table_ops
 
@@ -35,15 +36,20 @@ from tensorflow.python.util import serialization
 class StateManagerImpl(fc.StateManager):
     """
     """
-    def __init__(self, layer, name, sparse_opt, dimension, trainable):
+    def __init__(self, layer, name, sparse_opt, dimension, trainable, target_columns=None, use_cvm=False):
         self._trainable = trainable
         self._layer = layer
+        self.use_cvm = use_cvm
+        if target_columns:
+            self.use_cvm = True
 
-        self.sparse_table_handle = tn.core.create_sparse_table(sparse_opt, name if name else "", dimension)
+        self.sparse_table_handle = tn.core.create_sparse_table(sparse_opt, name if name else "", dimension, self.use_cvm)
         self.pulled_mapping_values = {}
 
         if self._layer is not None and not hasattr(self._layer, '_resources'):
             self._layer._resources = []  # pylint: disable=protected-access
+
+        self._target_columns = target_columns
 
         # be different with tensorflow StateManager implementation, we only support
         # store one variable for one unique feature column, which is name 'embedding_weights'
@@ -66,10 +72,14 @@ class StateManagerImpl(fc.StateManager):
         assert isinstance(feature_column, fc.EmbeddingColumn)
 
         var_name = column_name + '/' + name
+        new_shape = shape
+
+        if self._target_columns:
+            new_shape = (shape[0], shape[-1] + 2)
 
         var = self._layer.add_weight(
             name=var_name,
-            shape=shape,
+            shape=new_shape,
             dtype=dtype,
             initializer=initializer,
             trainable=self._trainable and trainable,
@@ -90,7 +100,9 @@ class StateManagerImpl(fc.StateManager):
         feature_values = []
 
         for column_name, sparse_feature in features.items():
-            if column_name not in self._cols_to_var_map:
+            if self._target_columns and column_name in self._target_columns:
+                continue
+            if column_name not in self._cols_to_var_map and column_name != "label":
                 raise ValueError("slot embedding variable not created, ", column_name)
 
             if not isinstance(sparse_feature, sparse_tensor_lib.SparseTensor):
@@ -103,7 +115,6 @@ class StateManagerImpl(fc.StateManager):
                                                 [var.handle for var in vars],
                                                 [f.values for f in feature_values],
                                                 table_handle=self.sparse_table_handle)
-
         assert len(pulled_mapping_values) == len(vars)
 
         for var, mapping_value in zip(vars, pulled_mapping_values):
@@ -118,6 +129,7 @@ class StateManagerImpl(fc.StateManager):
     def push(self, grads_and_vars, features):
         grads = []
         feature_values = []
+        feature_labels = []
 
         for grad, var in grads_and_vars:
             if var.ref() not in self._var_to_cols_map:
@@ -136,11 +148,13 @@ class StateManagerImpl(fc.StateManager):
 
             grads.append(grad.values)
             feature_values.append(sparse_feature.values)
+            feature_label = self._layer.feature_clicks[column_name] 
+            feature_labels.append(tf.squeeze(feature_label.value()))
 
         # grads and feature_values must not empty
         assert grads and feature_values
 
-        return gen_sparse_table_ops.sparse_table_push(feature_values, grads,
+        return gen_sparse_table_ops.sparse_table_push(feature_values, grads, feature_labels,
                                                       table_handle=self.sparse_table_handle)
 
     def get_feature_mapping_values(self, column_name):
@@ -165,6 +179,7 @@ class EmbeddingFeatures(Layer):
                  trainable=True,
                  name=None,
                  is_concat=False,
+                 target_columns=None,
                  **kwargs):
         """create a embedding feature layer.
         when this layer is been called, all the embedding data of `feature_columns` will be
@@ -180,6 +195,9 @@ class EmbeddingFeatures(Layer):
             name: Name to give to the EmbeddingFeatures.
             is_concat: when this parameter is True, all the tensor of pulled will be concat
                 with axis=-1 and returned.
+            target_columns: labels used for cvm plugin. labels will be counted as a feature, 
+                calculate total_count, label_count (usually used for ctr, counting show/click number)
+                embedding output will include embedding size float + totol_count + label_count / total_count
 
         """
         super(EmbeddingFeatures, self).__init__(
@@ -192,9 +210,16 @@ class EmbeddingFeatures(Layer):
             assert feature_column.dimension == dim, "currently we only support feature_columns with same dimension in EmbeddingFeatures"
 
         self._feature_columns = feature_columns
-        self._state_manager = StateManagerImpl(self, name, sparse_opt, dim, self.trainable)  # pylint: disable=protected-access
         self.sparse_pulling_features = None
         self.is_concat = is_concat
+        self._target_columns = target_columns
+        if target_columns and len(target_columns) > 1:
+            raise ValueError(
+                    'For now cvm plugin only support one column, '
+                    'Given: {}'.format(target_columns))
+        self._state_manager = StateManagerImpl(self, name, sparse_opt, dim, self.trainable, target_columns)  # pylint: disable=protected-access
+        self.sparse_target_features = None
+        self.feature_clicks = {}
 
         for column in self._feature_columns:
             if not isinstance(column, fc.EmbeddingColumn):
@@ -204,6 +229,9 @@ class EmbeddingFeatures(Layer):
 
     def build(self, input_shapes):
         for column in self._feature_columns:
+            initial_value = tf.zeros([0, 1], dtype=tf.int64) 
+            var = tf.Variable(initial_value, shape=[None, 1], name="label_count" + column.categorical_column.name, trainable=False)
+            self.feature_clicks[column.categorical_column.name] = var
             with ops.name_scope(column.name):
                 column.create_state(self._state_manager)
 
@@ -217,7 +245,21 @@ class EmbeddingFeatures(Layer):
         using_features = self.filter_not_used_features(features)
         transformation_cache = fc.FeatureTransformationCache(using_features)
 
-        self.sparse_pulling_features = self.get_sparse_pulling_feature(using_features)
+        self.sparse_pulling_features, self.sparse_target_features = self.get_sparse_pulling_feature(using_features)
+        
+        if self._target_columns:
+            labels = features[self._target_columns[0]]
+        
+        for tensor_index, sparse_tensor_key in enumerate(self.sparse_pulling_features):
+            sparse_tensor = features[sparse_tensor_key]
+            indices_for_gather = tf.expand_dims(sparse_tensor.indices[:, 0], axis=-1)
+            if self._target_columns:
+                feature_values = tf.gather_nd(labels, indices_for_gather)
+                self.feature_clicks[str(sparse_tensor_key)].assign(feature_values)
+            else:
+                num_elements = tf.shape(indices_for_gather)[0]
+                zeros_tensor = tf.zeros((num_elements,1), dtype=tf.int64)
+                self.feature_clicks[str(sparse_tensor_key)].assign(zeros_tensor)
 
         pulled_mapping_values = self._state_manager.pull(self.sparse_pulling_features)
 
@@ -233,10 +275,19 @@ class EmbeddingFeatures(Layer):
 
             processed_tensors = self._process_dense_tensor(column, tensor)
 
-            if cols_to_output_tensors is not None:
-                cols_to_output_tensors[column] = processed_tensors
+            if self._target_columns:
+                tensor_shape = tf.shape(processed_tensors)
 
-            output_tensors.append(processed_tensors)
+                num_features = tensor_shape[1]
+                mask = tf.concat([tf.ones([1, num_features - 2], dtype=tensor.dtype), tf.zeros([1, 2], dtype=tensor.dtype)], axis=1)
+                new_tensor = processed_tensors * mask + tf.stop_gradient(processed_tensors * (1 - mask))
+            else:
+                new_tensor = processed_tensors
+
+            if cols_to_output_tensors is not None:
+                cols_to_output_tensors[column] = new_tensor
+
+            output_tensors.append(masked_tensor)
 
         if self.is_concat:
             return self._verify_and_concat_tensors(output_tensors)
@@ -257,13 +308,18 @@ class EmbeddingFeatures(Layer):
 
     def get_sparse_pulling_feature(self, features):
         new_features = {}
+        target_features = {}
         for column_name, feature in features.items():
             if not isinstance(feature, sparse_tensor_lib.SparseTensor):
                 continue
 
+            if self._target_columns and column_name in self._target_columns:
+                target_features[column_name] = feature
+                continue
+
             new_features[column_name] = feature
 
-        return new_features
+        return new_features, target_features
 
     def save_sparse_table(self, filepath, mode):
         return self._state_manager.save_sparse_table(filepath, mode)
@@ -281,12 +337,16 @@ class EmbeddingFeatures(Layer):
         total_elements = 0
         for column in self._feature_columns:
             total_elements += column.variable_shape.num_elements()
+            if self._target_columns:
+                total_elements += 2
         return self._target_shape(input_shape, total_elements)
 
     def _process_dense_tensor(self, column, tensor):
         """
         """
         num_elements = column.variable_shape.num_elements()
+        if self._target_columns:
+            num_elements += 2
         target_shape = self._target_shape(array_ops.shape(tensor), num_elements)
         return array_ops.reshape(tensor, shape=target_shape)
 

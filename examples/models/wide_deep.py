@@ -25,13 +25,14 @@ def create_sub_model(linear_embs, deep_embs, deep_hidden_units):
         for i, unit in enumerate(C.DEEP_HIDDEN_UNITS):
             deep = tf.keras.layers.Dense(unit, activation='relu', name='dnn_{}'.format(i))(deep)
 
-    if linear_inputs and not deep_inputs:
-        output = tf.keras.layers.Dense(1, activation='sigmoid', name='pred')(linear)
-    elif deep_inputs and not linear_inputs:
-        output = tf.keras.layers.Dense(1, activation='sigmoid', name='pred')(deep)
-    else:
-        both = tf.keras.layers.concatenate([deep, linear], name='both')
-        output = tf.keras.layers.Dense(1, activation='sigmoid', name='pred')(both)
+#    if linear_inputs and not deep_inputs:
+#        output = tf.keras.layers.Dense(1, activation='sigmoid', name='pred')(linear)
+#    elif deep_inputs and not linear_inputs:
+#        output = tf.keras.layers.Dense(1, activation='sigmoid', name='pred')(deep)
+#    else:
+    both = tf.keras.layers.concatenate([deep, linear], name='both')
+    both = tn.layers.TNBatchNormalization(synchronized=True, sync_freq=4, max_count=1000000)(both)
+    output = tf.keras.layers.Dense(1, activation='sigmoid', name='pred')(both)
 
     return tn.model.Model(inputs=[linear_inputs, deep_inputs], outputs=output, name="sub_model")
 
@@ -45,6 +46,7 @@ def WideDeep(linear_features, dnn_features, dnn_hidden_units=(128, 128)):
     inputs = {}
     for slot in features:
         inputs[slot] = tf.keras.layers.Input(name=slot, shape=(None,), dtype="int64", sparse=True)
+    inputs['label'] = tf.keras.layers.Input(name="label", shape=(None,), dtype="int64", sparse=False)
     emb_model = create_emb_model(features, columns_group)
     linear_embs, deep_embs = emb_model(inputs)
     sub_model = create_sub_model(linear_embs, deep_embs, dnn_hidden_units)

@@ -20,6 +20,7 @@ namespace tensornet {
 struct SparseGradInfo {
     float* grad;
     int batch_show;
+    int batch_click;
 };
 
 extern int const SERIALIZE_FMT_ID;
@@ -56,6 +57,7 @@ protected:
 
 protected:
     float show_ = 0.0;
+    float click_ = 0.0;
     int delta_show_ = 0;
     bool old_compat_ = false;
 };

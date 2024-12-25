@@ -48,6 +48,7 @@ REGISTER_OP("SparseTablePush")
     )doc")
     .Input("values: N * int64")
     .Input("grads: N * float")
+    .Input("feature_labels: N * int64")
     .Attr("table_handle: int")
     .Attr("N: int")
     .SetShapeFn(shape_inference::NoOutputs);

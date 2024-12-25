@@ -267,7 +267,7 @@ private:
             float* w_matrix = var_tensor->matrix<float>().data();
 
             size_t emb_size = sizeof(float) * dim;
-            CHECK_EQ(emb_size, emb_buf.cutn(w_matrix + sign_index * dim, emb_size));
+            CHECK_EQ(emb_size, emb_buf.cutn(w_matrix + sign_index * dim , emb_size));
         }
     }
 
@@ -281,22 +281,26 @@ REGISTER_KERNEL_BUILDER(Name("SparseTablePull").Device(DEVICE_CPU),
 
 struct SparsePushVarInfo {
 public:
-    SparsePushVarInfo(const Tensor* t_value, const Tensor* t_grad)
+    SparsePushVarInfo(const Tensor* t_value, const Tensor* t_grad, const Tensor* t_labels)
         : value(t_value)
-        , grad(t_grad) {
+        , grad(t_grad)
+        , labels(t_labels) {
 
         const int64* feasign_vec = value->flat<int64>().data();
+        const int64* fea_label_vec = t_labels->flat<int64>().data();
 
         std::map<uint64, int> sign_id_mapping;
         for (int i = 0; i < value->NumElements(); ++i) {
             uint64 sign = (uint64)feasign_vec[i];
+            int label = static_cast<int>(fea_label_vec[i]);
             auto ret = sign_id_mapping.insert({sign, sign_id_mapping.size()});
 
             if (ret.second) {
-                virtual_sign_infos.emplace_back(sign, 1);
+                virtual_sign_infos.emplace_back(sign, 1, label);
             } else {
                 auto iter = ret.first;
                 virtual_sign_infos[iter->second].batch_show += 1;
+                virtual_sign_infos[iter->second].batch_click += label;
             }
         }
     }
@@ -308,6 +312,7 @@ public:
 public:
     const Tensor* value;
     const Tensor* grad;
+    const Tensor* labels;
 
     std::vector<SparsePushSignInfo> virtual_sign_infos;
 };
@@ -321,16 +326,17 @@ public:
     }
 
     void ComputeAsync(OpKernelContext* c, DoneCallback done) override {
-        OP_REQUIRES_ASYNC(c, c->num_inputs() == N_ * 2,
+        OP_REQUIRES_ASYNC(c, c->num_inputs() == N_ * 3,
                           errors::InvalidArgument("SparseTable push num_inputs:",
                                                   c->num_inputs(),
-                                                  " not equal:", N_ * 2),
+                                                  " not equal:", N_ * 3),
                           done);
         std::vector<SparsePushVarInfo> var_infos;
 
         for (int i = 0; i < N_; i++) {
             const Tensor* value = &c->input(i);
             const Tensor* grad = &c->input(N_ + i);
+            const Tensor* labels = &c->input(2 * N_ + i);
 
             OP_REQUIRES_ASYNC(
                 c, TensorShapeUtils::IsMatrix(grad->shape()),
@@ -339,7 +345,7 @@ public:
                     grad->shape().DebugString()),
                 done);
 
-            var_infos.emplace_back(value, grad);
+            var_infos.emplace_back(value, grad, labels);
         }
 
         CHECK_GT(var_infos.size(), 0);

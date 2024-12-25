@@ -47,7 +47,6 @@ void SparseTable::SetHandle(uint32_t handle) {
 void SparseTable::Pull(const SparsePullRequest* req, butil::IOBuf& out_emb_buf, SparsePullResponse* resp) {
     resp->set_table_handle(req->table_handle());
 
-    CHECK_EQ(dim_, req->dim());
     resp->set_dim(req->dim());
 
     for (int i = 0; i < req->signs_size(); ++i) {
@@ -57,23 +56,23 @@ void SparseTable::Pull(const SparsePullRequest* req, butil::IOBuf& out_emb_buf, 
         float* w = op_kernel_->GetWeight(sign);
         CHECK(nullptr != w);
 
-        out_emb_buf.append(w, sizeof(float) * dim_);
+        out_emb_buf.append(w, sizeof(float) * (req->dim()));
     }
 }
 
 void SparseTable::Push(const SparsePushRequest* req, butil::IOBuf& grad_buf, SparsePushResponse* resp) {
-    CHECK_EQ(dim_, req->dim());
 
-    float grad[dim_];
+    float grad[req->dim()];
     SparsePushSignInfo sign_info;
 
     while (sizeof(sign_info) == grad_buf.cutn(&sign_info, sizeof(sign_info))) {
-        size_t grad_size = sizeof(float) * dim_;
+        size_t grad_size = sizeof(float) * req->dim();
         CHECK_EQ(grad_size, grad_buf.cutn(grad, grad_size));
 
         SparseGradInfo grad_info;
         grad_info.grad = grad;
         grad_info.batch_show = sign_info.batch_show;
+        grad_info.batch_click = sign_info.batch_click;
 
         op_kernel_->Apply(sign_info.sign, grad_info);
     }
