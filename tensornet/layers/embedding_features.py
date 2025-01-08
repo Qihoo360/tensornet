@@ -287,7 +287,7 @@ class EmbeddingFeatures(Layer):
             if cols_to_output_tensors is not None:
                 cols_to_output_tensors[column] = new_tensor
 
-            output_tensors.append(masked_tensor)
+            output_tensors.append(new_tensor)
 
         if self.is_concat:
             return self._verify_and_concat_tensors(output_tensors)
