@@ -29,14 +29,15 @@
 
 namespace tensornet {
 
-BnTable::BnTable(const std::string& name, int shard_num, int self_shard_id, int bn_size, bool synchronized, float moment, uint64_t max_count)
+BnTable::BnTable(const std::string& name, int shard_num, int self_shard_id, int bn_size, bool synchronized, float moment, uint64_t max_count, bool use_pctr_dnn_bn)
     : shard_num_(shard_num)
     , self_shard_id_(self_shard_id)
     , name_(name)
     , synchronized_(synchronized)
     , moment_(moment)
     , max_count_(max_count)
-	, bn_size_(bn_size) {
+    , bn_size_(bn_size)
+    , use_pctr_dnn_bn_(use_pctr_dnn_bn){
     total_sum_.setZero(bn_size);
     total_sum_err_.setZero(bn_size);
     total_squared_sum_.setZero(bn_size);
@@ -104,9 +105,13 @@ void BnTable::TotalSumAcc(Eigen::ArrayXd acc){
 
 std::tuple<Eigen::ArrayXf,Eigen::ArrayXf> BnTable::GetMoments() {
     Eigen::ArrayXf global_mean = DivideNoNan(total_sum_, total_count_);
-    Eigen::ArrayXf global_squared_mean = DivideNoNan(total_squared_sum_, total_count_);
-    Eigen::ArrayXf global_var = (global_squared_mean - global_mean.square()).max(0.0);
-    return std::make_tuple(global_mean, global_var);
+    if(use_pctr_dnn_bn_){
+        return std::make_tuple(global_mean, total_squared_sum_.cast<float>());
+    } else {
+        Eigen::ArrayXf global_squared_mean = DivideNoNan(total_squared_sum_, total_count_);
+        Eigen::ArrayXf global_var = (global_squared_mean - global_mean.square()).max(0.0);
+        return std::make_tuple(global_mean, global_var);
+    }
 }
 
 void BnTable::GetStatistics(const BnStatisticsPullRequest* req, butil::IOBuf& bn_statistics_buf, BnStatisticsPullResponse* resp) {
@@ -120,9 +125,9 @@ void BnTable::GetIncStatistics(butil::IOBuf& bn_statistics_buf) {
     bn_statistics_buf.append(inc_sum_.data(), inc_sum_.size() * sizeof(double));
     bn_statistics_buf.append(inc_squared_sum_.data(), inc_squared_sum_.size() * sizeof(double));
     bn_statistics_buf.append(inc_count_.data(), inc_count_.size() * sizeof(double));
-	inc_sum_.setZero();
-	inc_squared_sum_.setZero();
-	inc_count_.setZero();
+    inc_sum_.setZero();
+    inc_squared_sum_.setZero();
+    inc_count_.setZero();
 }
 
 
@@ -167,6 +172,11 @@ void BnTable::Load(const std::string& filepath) {
     in_stream.iword(SERIALIZE_FMT_ID) = SF_BIN;
 
     int bn_size = 0;
+	  bool use_pctr_dnn_bn = false;
+
+	  in_stream.read(reinterpret_cast<char*>(&use_pctr_dnn_bn), sizeof(use_pctr_dnn_bn));
+    CHECK_EQ(use_pctr_dnn_bn_, use_pctr_dnn_bn) << "bn calculate logic should be same, before use pctrdnn is " << use_pctr_dnn_bn;
+
     in_stream.read(reinterpret_cast<char*>(&bn_size), sizeof(bn_size));
     
     for( int i = 0; i < bn_size; i++) {
@@ -187,6 +197,7 @@ void BnTable::Save(const std::string& filepath) {
     boost::iostreams::stream<FileWriterSink> out_stream(writer_sink);
     out_stream.iword(SERIALIZE_FMT_ID) = SF_BIN;
 
+	  out_stream.write(reinterpret_cast<const char*>(&use_pctr_dnn_bn_), sizeof(use_pctr_dnn_bn_));
     out_stream.write(reinterpret_cast<const char*>(&bn_size_), sizeof(bn_size_));
 
     for( int i = 0; i < bn_size_; i++) {
@@ -217,8 +228,8 @@ uint32_t BnTableRegistry::Register(BnTable* table) {
     return table_handle;
 }
 
-BnTable* CreateBnTable(const std::string& name, int shard_num, int self_shard_id, int bn_size, bool sync, float moment, uint64_t max_count) {
-    BnTable* table = new BnTable(name, shard_num, self_shard_id, bn_size, sync, moment, max_count);
+BnTable* CreateBnTable(const std::string& name, int shard_num, int self_shard_id, int bn_size, bool sync, float moment, uint64_t max_count, bool use_pctr_dnn_bn) {
+    BnTable* table = new BnTable(name, shard_num, self_shard_id, bn_size, sync, moment, max_count, use_pctr_dnn_bn);
 
     table->SetHandle(BnTableRegistry::Instance()->Register(table));
 

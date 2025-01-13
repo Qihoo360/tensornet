@@ -31,7 +31,7 @@ namespace tensornet {
 
 class BnTable {
 public:
-    BnTable(const std::string& name,int shard_num, int self_shard_id, int bn_size, bool sync, float moment, uint64_t max_count);
+    BnTable(const std::string& name,int shard_num, int self_shard_id, int bn_size, bool sync, float moment, uint64_t max_count, bool use_pctr_dnn_bn);
 
     ~BnTable() = default;
 
@@ -67,7 +67,8 @@ private:
     uint32_t handle_ = 0;
     std::string name_;
     uint32_t bn_size_ = 0;
-	bool synchronized_ = false;
+    bool synchronized_ = false;
+    bool use_pctr_dnn_bn_ = false;
     float moment_ = 0.0;
     uint64_t max_count_ = 0;
     Eigen::ArrayXd total_sum_;
@@ -103,7 +104,7 @@ private:
     std::vector<BnTable*> tables_;
 };
 
-BnTable* CreateBnTable(const std::string& name, int shard_num, int self_shard_id, int bn_size, bool sync, float moment, uint64_t max_count);
+BnTable* CreateBnTable(const std::string& name, int shard_num, int self_shard_id, int bn_size, bool sync, float moment, uint64_t max_count, bool use_pctr_dnn_bn);
 
 }  // namespace tensornet
 

@@ -14,4 +14,6 @@
 
 from .embedding_features import EmbeddingFeatures
 from .sequence_embedding_features import SequenceEmbeddingFeatures
+from .normalization_layer import TNBatchNormalizationBase
 from .normalization_layer import TNBatchNormalization
+from .normalization_layer import PCTRDNNBatchNormalization

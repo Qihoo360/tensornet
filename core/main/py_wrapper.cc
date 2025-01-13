@@ -134,10 +134,10 @@ PYBIND11_MODULE(_pywrap_tn, m) {
 
         return table->GetHandle();
     })
-    .def("create_bn_table", [](std::string name, uint32_t bn_size, bool sync, float moment, uint64_t max_count) {
+    .def("create_bn_table", [](std::string name, uint32_t bn_size, bool sync, float moment, uint64_t max_count, bool use_pctr_dnn_bn) {
         PsCluster* cluster = PsCluster::Instance();
 
-        BnTable* table = CreateBnTable(name, cluster->RankNum(), cluster->Rank(), bn_size, sync, moment, max_count);
+        BnTable* table = CreateBnTable(name, cluster->RankNum(), cluster->Rank(), bn_size, sync, moment, max_count, use_pctr_dnn_bn);
 
         return table->GetHandle();
     })
