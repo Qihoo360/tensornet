@@ -46,8 +46,7 @@ SparseFtrlValue::SparseFtrlValue(int dim, const Ftrl* opt) {
     float* z = Z(dim);
     float* n = N(dim);
 
-    auto spare_env = std::getenv("SPARSE_INIT_ZERO");
-    if (spare_env != nullptr) {
+    if (opt->sparse_zero_init_) {
         for (int i = 0; i < dim; ++i) {
             w[i] = 0.0;
             z[i] = 0;
