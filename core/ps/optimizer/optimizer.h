@@ -43,6 +43,7 @@ public:
         return std::make_tuple(false, emptyString);
     }
 
+    void SetSparseZeroInit(bool sparse_zero_init) { sparse_zero_init_ = sparse_zero_init;}
     virtual void SetUseCvm(bool use_cvm) {
         use_cvm_ = use_cvm;
     }
@@ -54,6 +55,7 @@ public:
 public:
     float learning_rate = 0.01;
     float show_decay_rate = 0.98;
+    bool sparse_zero_init_ = false;
     float use_cvm_ = false;
 };
 

@@ -25,6 +25,7 @@ import tensorflow as tf
 import tensornet as tn
 from tensornet.core import gen_sparse_table_ops
 
+from tensorflow.python.keras.utils import tf_utils
 from tensorflow.python.keras.engine.base_layer import Layer
 from tensorflow.python.feature_column import feature_column_v2 as fc
 from tensorflow.python.framework import sparse_tensor as sparse_tensor_lib
@@ -209,6 +210,7 @@ class EmbeddingFeatures(Layer):
         for feature_column in feature_columns:
             assert feature_column.dimension == dim, "currently we only support feature_columns with same dimension in EmbeddingFeatures"
 
+        self._sparse_opt = sparse_opt
         self._feature_columns = feature_columns
         self.sparse_pulling_features = None
         self.is_concat = is_concat
@@ -237,11 +239,11 @@ class EmbeddingFeatures(Layer):
 
         super(EmbeddingFeatures, self).build(None)
 
-    def call(self, features, cols_to_output_tensors=None):
+    def call(self, features, cols_to_output_tensors=None, training=None):
         if not isinstance(features, dict):
             raise ValueError('We expected a dictionary here. Instead we got: ',
                              features)
-
+        tn.core.set_sparse_init_mode(self._sparse_opt, tf_utils.constant_value(training))
         using_features = self.filter_not_used_features(features)
         transformation_cache = fc.FeatureTransformationCache(using_features)
 

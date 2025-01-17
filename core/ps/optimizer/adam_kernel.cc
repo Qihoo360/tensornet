@@ -94,8 +94,7 @@ SparseAdamValue::SparseAdamValue(int dim, const Adam* opt) {
     float* m = M(dim);
     float* v = V(dim);
 
-    auto spare_env = std::getenv("SPARSE_INIT_ZERO");
-    if (spare_env != nullptr) {
+    if (opt->sparse_zero_init_) {
         for (int i = 0; i < dim; ++i) {
             w[i] = 0.0;
             m[i] = 0;

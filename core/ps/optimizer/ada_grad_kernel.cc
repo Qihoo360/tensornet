@@ -80,8 +80,7 @@ std::istream& operator>>(std::istream& is, DenseAdaGradValue& value) {
 
 SparseAdaGradValue::SparseAdaGradValue(int dim, const AdaGrad* opt) {
     float* w = Weight();
-    auto spare_env = std::getenv("SPARSE_INIT_ZERO");
-    if (spare_env != nullptr) {
+    if (opt->sparse_zero_init_) {
         for (int i = 0; i < dim; ++i) {
             w[i] = 0.0;
         }
