@@ -1,6 +1,6 @@
 [project]
 name = "qihoo-tensornet"
-version = "0.2.1.dev"
+version = "0.2.1.rc"
 description = "build tensornet"
 readme = "README.md"
 license = {file = "LICENSE"}
