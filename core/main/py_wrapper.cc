@@ -116,7 +116,7 @@ PYBIND11_MODULE(_pywrap_tn, m) {
     })
     .def("set_sparse_init_mode", [](py::object obj, bool is_training)-> void{
         OptimizerBase* opt =
-          static_cast<OptimizerBase*>(PyCapsule_GetPointer(capsule: obj.ptr(), name: nullptr));
+          static_cast<OptimizerBase*>(PyCapsule_GetPointer(obj.ptr(), nullptr));
           opt->SetSparseZeroInit(!is_training);
     })
     .def("create_sparse_table", [](py::object obj, std::string name, int dimension, bool use_cvm) {

@@ -22,7 +22,7 @@ def parse_line_batch(example_proto):
         fea_desc[slot]  = tf.io.VarLenFeature(tf.int64)
 
     feature_dict = tf.io.parse_example(example_proto, fea_desc)
-    label = feature_dict.pop['label']
+    label = feature_dict['label']
     return feature_dict, label
 
 def create_model():
