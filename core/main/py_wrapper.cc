@@ -114,7 +114,7 @@ PYBIND11_MODULE(_pywrap_tn, m) {
 
         return py::reinterpret_steal<py::object>(obj);
     })
-    .def(name_: "set_sparse_init_mode", f: [](py::object obj, bool is_training)-> void{
+    .def("set_sparse_init_mode", [](py::object obj, bool is_training)-> void{
         OptimizerBase* opt =
           static_cast<OptimizerBase*>(PyCapsule_GetPointer(capsule: obj.ptr(), name: nullptr));
           opt->SetSparseZeroInit(!is_training);
