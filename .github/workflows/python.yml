@@ -29,6 +29,7 @@ jobs:
           post-cleanup: 'none'
       - name: Run custom command in micromamba environment
         run: |
+          set -e
           ./manager build
           ./manager copy-libs
           rm -rf /home/runner/.cache/bazel # remove bazel cache to avoid job hang
