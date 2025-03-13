@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "core/utility/fix_redef.h"
+
 #include "core/ps/ps_local_server.h"
 #include "core/ps/ps_cluster.h"
 #include "core/ps_interface/ps_server.pb.h"
