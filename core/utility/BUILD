@@ -23,6 +23,14 @@ filegroup(
     visibility = ["//visibility:public"]
 )
 
+filegroup(
+    name = "fix_redef",
+    srcs = [
+        "fix_redef.h",
+    ],
+    visibility = ["//visibility:public"]
+)
+
 cc_library(
     name = "net_util",
     srcs = [

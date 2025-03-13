@@ -111,6 +111,7 @@ cc_library(
     ]) + [
         "//core/utility:random",
         "//core/utility:allocator",
+        "//core/utility:fix_redef",
     ],
     deps = [
         "//core/utility:file_io",
