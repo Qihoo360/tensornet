@@ -4,7 +4,7 @@ version = "0.2.1.post1"
 description = "build tensornet"
 readme = "README.md"
 license = {file = "LICENSE"}
-requires-python = ">=3.7,<3.8"
+requires-python = ">=3.5"
 authors = [
   {name="jiangxinglei",email="jiangxinglei@360.cn"},
   {name="gaozhiming",email="gaozhiming@360.cn"}
@@ -13,16 +13,98 @@ classifiers=[
   'Development Status :: 5 - Production/Stable',
   'Intended Audience :: Developers',
   'License :: OSI Approved :: Apache Software License',
-  'Programming Language :: Python :: 3.7'
+  'Programming Language :: Python :: 3 :: Only',
+  'Programming Language :: Python :: 3.5',
+  'Programming Language :: Python :: 3.6',
+  'Programming Language :: Python :: 3.7',
+  'Programming Language :: Python :: 3.8'
 ]
 
 [project.optional-dependencies]
-all = [ "tensorflow >=2.2,<2.3" ]
-cpu = [ "tensorflow-cpu >=2.2,<2.3" ]
+# use tensorflow from pypi, with cxx11 abi = 0
+build = [ "tensorflow-cpu >=2.2,<2.3" ]
 
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
-[tool.distutils.bdist_wheel]
-plat_name = "manylinux2010_x86_64"
+[tool.pixi.project]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[tool.pixi.activation]
+scripts = [ ".pixi/rc.sh" ]
+
+[tool.pixi.pypi-options]
+no-build = true # required no-build for selecting grpcio<1.47 and h5py<3.8 on CentOS 6
+
+[tool.pixi.system-requirements]
+linux = "2.6" # at least centos 6
+libc = { family="glibc", version="2.12" } # at least centos 6
+
+[tool.pixi.feature.centos7.system-requirements]
+linux = "3.10" # at least centos 7
+libc = { family="glibc", version="2.17" } # at least centos 7
+
+[tool.pixi.feature.build.dependencies]
+# build toolchains
+cmake = ">=3.29"
+gxx = "*"
+sysroot_linux-64 = "<2.13" # for running on CentOS 6
+patch = "*"
+protobuf = ">=3.8,<3.9" # tf 2.2 use pb 3.8
+
+# build dependencies
+gflags = { version = "*", build = "*_0" } # brpc static dep, build with cxx_abi=0
+leveldb = { version = "<1.20", build = "*_1" } # brpc static dep, build with cxx_abi=0
+boost = "*"
+
+# build and runtime dependencies
+nomkl = "*"
+openmpi = "==4.1.3"
+numpy = "<1.19.0" # required by tensorflow 2.2.3
+
+# test-only dependencies
+gtest = { version = "<1.10", build = "*_0" } # build with cxx_abi=0
+
+# python package tools
+twine = "*" # check and upload pypi package
+python-build = "*"
+make = ">=4.3,<5"
+
+[tool.pixi.feature.build.tasks]
+configure = "cmake --preset default -S ."
+build = "./cmake-build"
+ut = "./cmake-build --preset default -t test"
+ut-only = "cmake-build --test"
+workflow = "cmake --workflow --preset default"
+create-wheel = "python3 -m build -w -n"
+
+bazel-build = "NEED_ACTIVATE_ENV=false \"$PIXI_PROJECT_ROOT\"/manager build --subcommands --verbose_failures"
+copy-libs = "NEED_ACTIVATE_ENV=false \"$PIXI_PROJECT_ROOT\"/manager copy-libs"
+dist = "NEED_ACTIVATE_ENV=false \"$PIXI_PROJECT_ROOT\"/manager create_dist"
+
+[tool.pixi.feature.py37.dependencies]
+python = ">=3.7,<3.8" # to build wrapper for py37
+[tool.pixi.feature.py36.dependencies]
+python = ">=3.6,<3.7" # to build wrapper for py36
+[tool.pixi.feature.py35.dependencies]
+python = ">=3.5,<3.6a1" # to build wrapper for py35
+
+[tool.pixi.feature.tools.dependencies]
+cmakelang = '*'
+shellcheck = '*'
+
+[tool.pixi.feature.tools.tasks]
+_cmake-lint = "cmake-lint cmake/*.cmake CMakeLists.txt test/CMakeLists.txt"
+_shellcheck = "shellcheck pixiw cmake-build; shellcheck -s sh .pixi/rc.sh"
+lint = { depends-on = [ "_cmake-lint", "_shellcheck" ] }
+format = "cmake-format -i cmake/*.cmake CMakeLists.txt test/CMakeLists.txt"
+format-lint = { depends-on = [ "format", "lint" ] }
+
+[tool.pixi.environments]
+default = { features = ["build"], solve-group = "default" }
+py37 = { features = ["py37", "centos7"], solve-group = "py37" }
+py36 = { features = ["py36", "centos7"], solve-group = "py36" }
+py35 = { features = ["py35", "centos7"], solve-group = "py35" }
+tools = { features = ["tools", "centos7"], solve-group = "tools" }

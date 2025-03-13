@@ -1,0 +1,152 @@
+#!/bin/sh
+
+## CMake build mode with auto configuring.
+##
+## Search the source dir in order:
+##   - $ENV{CMAKE_SOURCE_DIR} if non empty
+##   - current working dir
+##
+## Presets:
+##   - when build with a preset 'X', the configurePreset field should also be 'X'
+##   - when no build dir and no preset is specified, use the 'default' preset
+##
+## Environments:
+##   CMAKE_SOURCE_DIR
+##   CMAKE_COMMAND
+## When leave this script, these environments will be unset.
+
+set -euf
+[ "${DEBUG-}" != true ] || set -x
+
+if ! hash -- "${CMAKE_COMMAND:=cmake}" 2>/dev/null; then
+  echo "[ERROR] no cmake command!" >&2
+  exit 1
+fi
+
+unset __b_mode __b_p_or_d
+__b_mode=fallback # fallback/dir/preset/no-build/list-presets
+
+exec_cbuild() {
+  case "$__b_mode" in
+  (no-build) set -- --build "$@" ;;
+  (dir) set -- --build "$__b_p_or_d" "$@" ;;
+  (fallback)
+    set -- --build --preset default "$@"
+    [ -z "${CMAKE_SOURCE_DIR:-}" ] || cd -- "${CMAKE_SOURCE_DIR}" || exit $?
+    ;;
+  (preset|list-presets)
+    set -- --build "$@"
+    [ -z "${CMAKE_SOURCE_DIR:-}" ] || cd -- "${CMAKE_SOURCE_DIR}" || exit $?
+    ;;
+  (*) echo "[ERROR] invalid build mode ${__b_mode-}" >&2; exit 1 ;;
+  esac
+
+  unset __bin
+  __bin="$CMAKE_COMMAND"
+  unset CMAKE_COMMAND CMAKE_SOURCE_DIR
+
+  if which -- "$__bin" >/dev/null 2>&1; then
+    exec "$__bin" "$@"
+  else
+    "$__bin" "$@"
+  fi
+  exit $?
+}
+
+# --test to enable ctest mode
+[ "${1-}" != --test ] || { shift; exec "${CMAKE_CTEST_COMMAND:-ctest}" "$@" --preset default; }
+
+# --build if present must be the first argument
+[ "${1-}" != --build ] || shift
+
+if [ $# != 0 ]; then
+  # parse dir mode
+  case "${1-}" in
+  (-*) # for some corner cases which the build dir is a realitive dir starting with a dash
+       # use `cmake --build ./-build-dir-with-dash` format
+       ;;
+  (*) __b_mode=dir
+      __b_p_or_d="${1-.}"
+      shift
+      ;;
+  esac
+fi
+
+parse_cli() {
+  __argc=$#
+  __i=0
+  while [ $__i -lt $__argc ]; do
+    __v="${1-}"
+    shift
+    case "${__v-}" in
+    (--) break ;;
+    (--list-presets) __b_mode=list-presets; break ;;
+
+    # last preset wins
+    (--preset)
+      __b_p_or_d="${1-}"
+      shift || :
+      __i=$(( __i + 1 ))
+      case "${__b_p_or_d-}" in
+      (''|-*) __b_mode=no-build; break ;; # invalid preset name
+      (*) __b_mode=preset ;;
+      esac
+      ;;
+    (--preset=*)
+      __b_p_or_d="${__v#--preset=}"
+      case "${__b_p_or_d-}" in
+      (''|-*) __b_mode=no-build; break ;; # invalid preset name
+      (*) __b_mode=preset ;;
+      esac
+      ;;
+
+    (-j[0-9]*|--parallel[0-9]*) ;;
+    (-j|--parallel)
+      case "${1-}" in
+      (''|[0-9]*) shift || :; __i=$(( __i + 1 )) ;;
+      (*) __b_mode=no-build; break ;; # invalid job number
+      esac
+      ;;
+    (-j*|--parallel*) __b_mode=no-build; break ;; # invalid job number
+
+    (-t|--target|--config) shift || :; __i=$(( __i + 1 )); ;;
+
+    (--clean-first|--resolve-package-references=*|--use-stderr|-v|--verbose) ;;
+
+    (*) __b_mode=no-build; break ;; # invalid build options
+    esac
+
+    __i=$(( __i + 1 ))
+  done
+}
+
+configure_if_needed() (
+  case "$__b_mode" in
+  (no-build|list-presets) return ;;
+  (dir) set -- "${__b_p_or_d}" ;;
+  (*) [ -z "${CMAKE_SOURCE_DIR:-}" ] || cd -- "${CMAKE_SOURCE_DIR}" || exit $?
+      set -- --preset "${__b_p_or_d:-default}"
+      ;;
+  esac
+
+  # try build the 'help' target to verify previous configure result.
+  __ok=true
+  __err_msg=$(LANG=C "${CMAKE_COMMAND}" --build "$@" --target help 2>&1 >/dev/null) || __ok=false
+
+  if ! $__ok; then
+    case "${__err_msg}" in
+    (*"No such build preset"*) return ;; # invalid preset
+    esac
+
+    # initial configure
+    if [ "$__b_mode" = dir ]; then
+      set -- -S "${CMAKE_SOURCE_DIR:-.}" -B "$@"
+    else
+      set -- -S . "$@"
+    fi
+    "${CMAKE_COMMAND}" "$@"
+  fi
+)
+
+parse_cli "$@"
+configure_if_needed && exec_cbuild "$@"

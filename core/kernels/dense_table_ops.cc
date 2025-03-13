@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "core/utility/fix_redef.h"
+
 #include "core/utility/semaphore.h"
 #include "core/ps/table/dense_table.h"
 #include "core/ps/ps_cluster.h"

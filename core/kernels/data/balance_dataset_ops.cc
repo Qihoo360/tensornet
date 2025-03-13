@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "core/utility/fix_redef.h"
+
 #include "core/kernels/data/balance_dataset_ops.h"
 
 #include "core/public/version.h"

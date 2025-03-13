@@ -3,6 +3,7 @@
 #include "core/utility/random.h"
 #include "core/ps/table/sparse_table.h"
 
+#include <brpc/controller.h>
 #include <butil/logging.h>
 
 using namespace tensornet;
@@ -15,7 +16,8 @@ public:
         float mom_decay_rate = 1.0;
         float show_decay_rate = 0.98;
 
-        opt = new AdaGrad(0.01, 0.1, 0.1, epsilon, grad_decay_rate, mom_decay_rate, show_decay_rate);
+        //opt = new AdaGrad(0.01, 0.1, 0.1, epsilon, grad_decay_rate, mom_decay_rate, show_decay_rate);
+        opt = new AdaGrad;
     }
 
     ~SparseTableTest() {
@@ -23,7 +25,7 @@ public:
     }
 
     virtual void SetUp() {
-        table = CreateSparseTable(opt, dim, shard_num, shard_id);
+        table = CreateSparseTable(opt, "table-name", dim, shard_num, shard_id);
     }
 
     virtual void TearDown() {
@@ -50,20 +52,15 @@ TEST_F(SparseTableTest, pull) {
     std::uniform_int_distribution<uint64_t> distr;
 
     for (int i = 0; i < 1000; i++) {
-        auto sign_info = req.add_sign_infos();
-        sign_info->set_var_index(i);
-        sign_info->set_index(i);
-
-        uint64_t sign = distr(reng);
-
-        sign_info->set_sign(sign);
+        req.add_signs(distr(reng));
     }
 
     butil::Timer timer(butil::Timer::STARTED);
 
     SparsePullResponse resp;
-
-    table->Pull(&req, &resp);
+    brpc::Controller cntl;
+    butil::IOBuf& output = cntl.response_attachment();
+    table->Pull(&req, output, &resp);
 
     timer.stop();
 

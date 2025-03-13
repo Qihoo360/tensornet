@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "core/utility/fix_redef.h"
+
 #include "core/ps/ps_cluster.h"
 
 #include "core/ps/optimizer/optimizer.h"
@@ -25,7 +27,6 @@
 #include <Python.h>
 
 #include <pybind11/pybind11.h>
-#include <butil/logging.h>
 
 namespace py = pybind11;
 
