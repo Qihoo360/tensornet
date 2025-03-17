@@ -14,14 +14,11 @@
 -option(WITH_DEBUG_SYMBOLS "With debug symbols" ON)
 +option(WITH_DEBUG_SYMBOLS "With debug symbols" $<$<CONFIG:RELEASE>:OFF>$<$<NOT:$<CONFIG:RELEASE>>:ON>)
  option(WITH_THRIFT "With thrift framed protocol supported" OFF)
- option(BUILD_UNIT_TESTS "Whether to build unit tests" OFF)
- option(DOWNLOAD_GTEST "Download and build a fresh copy of googletest. Requires Internet access." ON)
-@@ -107,10 +107,10 @@
- if(WITH_MESALINK)
-     set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} -DUSE_MESALINK")
+ option(WITH_SNAPPY "With snappy" OFF)
+ option(WITH_RDMA "With RDMA" OFF)
+@@ -118,8 +118,8 @@ if(WITH_MESALINK)
  endif()
--set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} -DBTHREAD_USE_FAST_PTHREAD_MUTEX -D__const__= -D_GNU_SOURCE -DUSE_SYMBOLIZE -DNO_TCMALLOC -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -DBRPC_REVISION=\\\"${BRPC_REVISION}\\\" -D__STRICT_ANSI__")
-+set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} -DBTHREAD_USE_FAST_PTHREAD_MUTEX -D__const__=__unused__ -D_GNU_SOURCE -DUSE_SYMBOLIZE -DNO_TCMALLOC -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -DBRPC_REVISION=\\\"${BRPC_REVISION}\\\" -D__STRICT_ANSI__")
+ set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} -DBTHREAD_USE_FAST_PTHREAD_MUTEX -D__const__=__unused__ -D_GNU_SOURCE -DUSE_SYMBOLIZE -DNO_TCMALLOC -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -DBRPC_REVISION=\\\"${BRPC_REVISION}\\\" -D__STRICT_ANSI__")
  set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} ${DEBUG_SYMBOL} ${THRIFT_CPP_FLAG}")
 -set(CMAKE_CXX_FLAGS "${CMAKE_CPP_FLAGS} -O2 -pipe -Wall -W -fPIC -fstrict-aliasing -Wno-invalid-offsetof -Wno-unused-parameter -fno-omit-frame-pointer")
 -set(CMAKE_C_FLAGS "${CMAKE_CPP_FLAGS} -O2 -pipe -Wall -W -fPIC -fstrict-aliasing -Wno-unused-parameter -fno-omit-frame-pointer")
@@ -30,7 +27,7 @@
  
  macro(use_cxx11)
  if(CMAKE_VERSION VERSION_LESS "3.1.3")
-@@ -131,7 +131,7 @@
+@@ -140,7 +140,7 @@ use_cxx11()
  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
      #required by butil/crc32.cc to boost performance for 10x
      if((CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)") AND NOT (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.4))
@@ -39,24 +36,7 @@
      elseif((CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64"))
          # segmentation fault in libcontext
          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-gcse")
-@@ -141,11 +141,14 @@
-     endif()
- endif()
- 
--include(FindProtobuf)
--include(FindThreads)
-+find_package(Protobuf)
-+find_package(Threads)
- 
- find_path(LEVELDB_INCLUDE_PATH NAMES leveldb/db.h)
-+# prefer static lib for leveldb
-+list(PREPEND CMAKE_FIND_LIBRARY_SUFFIXES .a)
- find_library(LEVELDB_LIB NAMES leveldb)
-+list(POP_FRONT CMAKE_FIND_LIBRARY_SUFFIXES)
- if ((NOT LEVELDB_INCLUDE_PATH) OR (NOT LEVELDB_LIB))
-     message(FATAL_ERROR "Fail to find leveldb")
- endif()
-@@ -175,40 +178,36 @@
+@@ -202,44 +202,39 @@ if(NOT PROTOC_LIB)
      message(FATAL_ERROR "Fail to find protoc lib")
  endif()
  
@@ -71,8 +51,7 @@
 +#        )
 +#endif()
  
--include(FindOpenSSL)
-+#include(FindOpenSSL)
+-find_package(OpenSSL)
  
  include_directories(
 +        AFTER SYSTEM
@@ -99,7 +78,11 @@
      list(APPEND DYNAMIC_LIB ${MESALINK_LIB})
  else()
 -    list(APPEND DYNAMIC_LIB ${OPENSSL_SSL_LIBRARY})
-+    #list(APPEND DYNAMIC_LIB ${OPENSSL_SSL_LIBRARY})
++    # list(APPEND DYNAMIC_LIB ${OPENSSL_SSL_LIBRARY})
+ endif()
+ 
+ if(WITH_RDMA)
+     list(APPEND DYNAMIC_LIB ${RDMA_LIB})
  endif()
  
 -set(BRPC_PRIVATE_LIBS "-lgflags -lprotobuf -lleveldb -lprotoc -lssl -lcrypto -ldl -lz")
@@ -107,7 +90,7 @@
  
  if(WITH_GLOG)
      set(DYNAMIC_LIB ${DYNAMIC_LIB} ${GLOG_LIB})
-@@ -412,7 +411,7 @@
+@@ -453,7 +448,7 @@ set(PROTO_FILES idl_options.proto
                  brpc/streaming_rpc_meta.proto
                  brpc/proto_base.proto)
  file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/output/include/brpc)
@@ -116,16 +99,7 @@
  compile_proto(PROTO_HDRS PROTO_SRCS ${PROJECT_BINARY_DIR}
                                      ${PROJECT_BINARY_DIR}/output/include
                                      ${PROJECT_SOURCE_DIR}/src
-@@ -433,7 +432,7 @@
-     enable_testing()
-     add_subdirectory(test)
- endif()
--add_subdirectory(tools)
-+#add_subdirectory(tools)
- 
- file(COPY ${CMAKE_CURRENT_BINARY_DIR}/brpc/
-         DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/output/include/brpc/
-@@ -449,6 +448,7 @@
+@@ -493,6 +488,7 @@ file(COPY ${PROJECT_SOURCE_DIR}/src/
          )
  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/output/include/
          DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
@@ -133,7 +107,7 @@
          FILES_MATCHING
          PATTERN "*.h"
          PATTERN "*.hpp"
-@@ -456,4 +456,4 @@
+@@ -500,4 +496,4 @@ install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/output/include/
  
  # Install pkgconfig
  configure_file(cmake/brpc.pc.in ${PROJECT_BINARY_DIR}/brpc.pc @ONLY)

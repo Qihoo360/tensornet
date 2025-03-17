@@ -33,12 +33,9 @@ set(CMAKE_INSTALL_DEFAULT_DIRECTORY_PERMISSIONS # chmod 755
 
 # build brpc from source
 set(_brpc_patches
-    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/patches/01-fix_dl_sym.patch"
     "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/patches/02-fix-brpc-compile.patch"
     "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/patches/03-fix-brpc-cxx-flags.patch"
-    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/patches/04-boringssl.patch"
-    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/patches/05-fix-1693-compile-on-gcc-12.patch"
-    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/patches/06-disable-install-brpc.patch")
+    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/patches/04-boringssl.patch")
 
 find_package(Patch REQUIRED)
 
@@ -57,7 +54,7 @@ foreach(pf ${_brpc_patches})
 endforeach()
 list(REMOVE_AT _brpc_patch_command 0)
 
-set(_brpc_source_url https://github.com/apache/brpc/archive/0.9.7.tar.gz)
+set(_brpc_source_url https://github.com/apache/brpc/archive/1.5.0.tar.gz)
 if(DEFINED ENV{URL_MIRROR_github_com} AND NOT "$ENV{URL_MIRROR_github_com}" STREQUAL "")
   string(REPLACE "https://github.com/" "$ENV{URL_MIRROR_github_com}" _brpc_source_url "${_brpc_source_url}")
 endif()
@@ -65,8 +62,8 @@ endif()
 # hash for brpc source tgz, compute with cmd: openssl dgst -sha3-512 path
 set(_brpc_source_hash
     "\
-f4f98ecc16eb4995e6850e39b6075dbb1a1c775a7f8dd42f252800e8558630a3\
-b4cdcb3656cb23a40775e1a3e62205c38971b49b2ea2fcaa1467079cec95ead4")
+6f6891ea2a35313f073e68c9857a9e0ea3d70f5b95335e4229c3789dec0395ed\
+eeb7a652736e7289e4269fa43ac698cf22b9589690255addd2242cdf74b6157f")
 
 FetchContent_Declare(
   brpc
@@ -99,6 +96,8 @@ find_package(MPI REQUIRED)
 
 # options for brpc
 set(GFLAGS_STATIC TRUE)
+set(BUILD_SHARED_LIBS 1)
+set(BUILD_BRPC_TOOLS OFF)
 find_package(brpc REQUIRED)
 
 # Tensorflow::framework is a system library, use user libraries to avoid ssl and protobuf conflicts
