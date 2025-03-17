@@ -24,6 +24,12 @@ add_test(
   COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=. "${PROJECT_SOURCE_DIR}/examples/integration-test.py"
   WORKING_DIRECTORY "${PROJECT_BINARY_DIR}" COMMAND_EXPAND_LISTS)
 
+# add local mpi test
+add_test(
+  NAME mpi-integration-test
+  COMMAND mpirun -n 2 -x PYTHONPATH=. "${PROJECT_SOURCE_DIR}/examples/integration-test.py"
+  WORKING_DIRECTORY "${PROJECT_BINARY_DIR}" COMMAND_EXPAND_LISTS)
+
 if(CMAKE_GENERATOR MATCHES "Makefiles")
   add_custom_target(
     test_autorun ALL
