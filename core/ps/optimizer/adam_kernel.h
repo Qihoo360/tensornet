@@ -34,7 +34,7 @@ public:
         return w_;
     }
 
-    void Apply(const Adam* opt, const Eigen::ArrayXf& g);
+    void Apply(const Adam* opt, const Eigen::ArrayXf& g, const float lr);
 
     size_t DataSize() const {
         return sizeof(float) * 2

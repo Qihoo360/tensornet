@@ -64,13 +64,14 @@ void PsLocalServer::DensePushPullAsync(brpc::Controller *cntl,
     CHECK(nullptr != table);
 
     int shard_id = PsCluster::Instance()->Rank();
+    float lr = request->learning_rate();
 
     const auto opt_kernel = table->GetOptKernels(shard_id);
 
     CHECK(nullptr != opt_kernel);
 
     butil::IOBuf& grad_buf = cntl->request_attachment();
-    opt_kernel->Apply(grad_buf);
+    opt_kernel->Apply(grad_buf, lr);
 
     butil::IOBuf& output = cntl->response_attachment();
     opt_kernel->GetWeight(output);

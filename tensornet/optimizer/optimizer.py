@@ -18,6 +18,7 @@ import tensornet as tn
 from tensornet.core import gen_dense_table_ops
 
 from tensorflow.python.keras.optimizer_v2 import optimizer_v2
+from tensorflow.python.keras.optimizer_v2 import learning_rate_schedule
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import control_flow_ops
 from tensorflow.python.ops import array_ops
@@ -35,6 +36,13 @@ class Optimizer(optimizer_v2.OptimizerV2):
                  dense_opt,
                  name='TensornetOptimizer',
                  **kwargs):
+        scheduler = tn.core.get_opt_learning_rate(dense_opt)
+        if isinstance(scheduler, learning_rate_schedule.LearningRateSchedule): 
+            self.learning_rate_scheduler = tn.core.get_opt_learning_rate(dense_opt)
+        else:
+            if isinstance(scheduler, float):
+                lr_constant = tf.constant(float(scheduler), dtype=tf.float32)
+                self.learning_rate_scheduler = lambda x: lr_constant
         self.dense_table_handle = tn.core.create_dense_table(dense_opt)
         self.is_var_inited = False
 
@@ -66,7 +74,7 @@ class Optimizer(optimizer_v2.OptimizerV2):
 
             tn.core.barrier()
 
-        gen_dense_table_ops.dense_table_push_pull(vars, grads, table_handle=self.dense_table_handle)
+        gen_dense_table_ops.dense_table_push_pull(vars, grads, self.learning_rate_scheduler(self.iterations), table_handle=self.dense_table_handle)
 
         super(Optimizer, self)._distributed_apply(distribution, grads_and_vars, name, apply_state)
 

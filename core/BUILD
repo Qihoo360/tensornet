@@ -116,6 +116,7 @@ cc_library(
     deps = [
         "//core/utility:file_io",
         "@brpc//:brpc",
+        "@pybind11",
         "@boost//:iostreams",
         "@org_tensorflow//third_party/eigen3:eigen3",
     ],

@@ -27,6 +27,7 @@ message SparsePushResponse {
 
 message DensePushPullRequest {
     uint32 table_handle = 1;
+    float learning_rate = 2;
 };
 
 message DensePushPullResponse {
