@@ -39,12 +39,12 @@ void DenseAdaGradValue::SetWeight(butil::IOBuf& w_buf) {
     w_buf.copy_to(w_.data(), w_.size() * sizeof(float));
 }
 
-void DenseAdaGradValue::Apply(const AdaGrad* opt, const Eigen::ArrayXf& g) {
+void DenseAdaGradValue::Apply(const AdaGrad* opt, const Eigen::ArrayXf& g, const float lr) {
     d2sum_ = opt->grad_decay_rate * d2sum_ + 1;
     g2sum_ = opt->grad_decay_rate * g2sum_ + g.square();
 
     m_ += (g - m_) * (1.0 - opt->mom_decay_rate);
-    w_ -= opt->learning_rate * m_ / (g2sum_.sqrt() / d2sum_.sqrt() + opt->epsilon);
+    w_ -= lr * m_ / (g2sum_.sqrt() / d2sum_.sqrt() + opt->epsilon);
 }
 
 std::ostream& operator<<(std::ostream& os, const DenseAdaGradValue& value) {

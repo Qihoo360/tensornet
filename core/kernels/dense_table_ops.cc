@@ -42,9 +42,10 @@ const ResourceHandle& HandleFromInput(OpKernelContext* ctx, int input);
 
 class DensePushPullCall {
 public:
-    DensePushPullCall(int table_handle, int shard_id)
+    DensePushPullCall(int table_handle, int shard_id, float lr)
         : shard_id_(shard_id) {
         req.set_table_handle(table_handle);
+        req.set_learning_rate(lr);
     }
 
     ~DensePushPullCall() {}
@@ -135,12 +136,16 @@ public:
     void ComputeAsync(OpKernelContext* c, DoneCallback done) override {
         OpInputList grads;
         OP_REQUIRES_OK_ASYNC(c, c->input_list("grads", &grads), done);
+        const Tensor* learning_rate_tensor;
+        OP_REQUIRES_OK_ASYNC(c, c->input("learning_rate", &learning_rate_tensor), done);
 
-        OP_REQUIRES_ASYNC(c, c->num_inputs() == N_ * 2,
+        OP_REQUIRES_ASYNC(c, c->num_inputs() == N_ * 2 + 1,
                           errors::InvalidArgument("DenseTable pushpull num_inputs:",
                                                   c->num_inputs(),
-                                                  " not equal:", N_ * 2),
+                                                  " not equal:", N_ * 2 + 1),
                           done);
+
+        float lr_ = learning_rate_tensor->scalar<float>()();
 
         std::vector<Var*> variables;
 
@@ -198,7 +203,7 @@ public:
                 continue;
             }
 
-            auto* call = new DensePushPullCall(table_handle_, shard_id);
+            auto* call = new DensePushPullCall(table_handle_, shard_id, lr_);
 
             butil::IOBuf k_buf;
             int k_len = opt_kernel->Length() * sizeof(float);

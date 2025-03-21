@@ -43,11 +43,11 @@ void DenseAdamValue::SetWeight(butil::IOBuf& w_buf) {
     w_buf.copy_to(w_.data(), w_.size() * sizeof(float));
 }
 
-void DenseAdamValue::Apply(const Adam* opt, const Eigen::ArrayXf& g) {
+void DenseAdamValue::Apply(const Adam* opt, const Eigen::ArrayXf& g, const float lr) {
     beta1_power_ *= opt->beta1;
     beta2_power_ *= opt->beta2;
 
-    const float alpha = opt->learning_rate
+    const float alpha = lr
         * Eigen::numext::sqrt(1.0 - beta2_power_) / (1.0 - beta1_power_);
 
     m_ += (g - m_) * (1.0 - opt->beta1);

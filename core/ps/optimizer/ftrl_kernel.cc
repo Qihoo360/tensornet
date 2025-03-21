@@ -29,7 +29,7 @@ void DenseFtrlValue::SetWeight(butil::IOBuf& w_buf) {
     return;
 }
 
-void DenseFtrlValue::Apply(const Ftrl* opt, const Eigen::ArrayXf& g) {
+void DenseFtrlValue::Apply(const Ftrl* opt, const Eigen::ArrayXf& g, const float lr) {
     return;
 }
 

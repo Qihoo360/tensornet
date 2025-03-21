@@ -20,6 +20,7 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <pybind11/pybind11.h>
 
 namespace tensornet {
 
@@ -28,6 +29,7 @@ class SparseOptimizerKernelBase;
 
 typedef std::shared_ptr<DenseOptimizerKernelBase> DenseOptKernelSharedPtr;
 typedef std::shared_ptr<SparseOptimizerKernelBase> SparseOptKernelSharedPtr;
+
 
 class OptimizerBase {
 public:
@@ -52,11 +54,26 @@ public:
         return use_cvm_;
     }
 
+    void SetUseLrScheduler(bool if_use_schedule_){
+        use_lr_scheduler_ = if_use_schedule_;
+    }  
+
+    pybind11::object GetSchedule() const {
+        return schedule_;
+    }
+
+    void SetSchedule(pybind11::object schedule) {
+        use_lr_scheduler_ = true;
+        schedule_ = schedule;
+    }
+    
 public:
     float learning_rate = 0.01;
     float show_decay_rate = 0.98;
     bool sparse_zero_init_ = false;
     float use_cvm_ = false;
+    bool use_lr_scheduler_ = false;
+    pybind11::object schedule_;
 };
 
 class Adam : public OptimizerBase {

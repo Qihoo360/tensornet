@@ -34,7 +34,7 @@ public:
         return w_;
     }
 
-    void Apply(const Ftrl* opt, const Eigen::ArrayXf& g);
+    void Apply(const Ftrl* opt, const Eigen::ArrayXf& g, const float lr);
 
     size_t DataSize() const {
         return w_.size() * sizeof(float) * 4;

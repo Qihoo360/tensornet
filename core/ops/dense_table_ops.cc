@@ -32,6 +32,7 @@ REGISTER_OP("DenseTablePushPull")
     )doc")
     .Input("vars: N * resource")
     .Input("grads: N * float")
+    .Input("learning_rate: float")
     .Attr("table_handle: int")
     .Attr("N: int")
     .SetShapeFn(shape_inference::NoOutputs);

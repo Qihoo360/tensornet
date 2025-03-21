@@ -64,7 +64,7 @@ public:
         return size_t(off_e_ - off_b_);
     }
 
-    virtual void Apply(butil::IOBuf& grad) = 0;
+    virtual void Apply(butil::IOBuf& grad, float lr) = 0;
 
     virtual void SetWeight(butil::IOBuf& w_buf) = 0;
 
@@ -140,9 +140,9 @@ public:
         return value_.GetWeight();
     }
 
-    void Apply(const Eigen::ArrayXf& g) {
+    void Apply(const Eigen::ArrayXf& g, const float lr) {
         const std::lock_guard<std::mutex> lock(*mu_);
-        value_.Apply(opt_, g);
+        value_.Apply(opt_, g, lr);
     }
 
     size_t DataSize() const {
@@ -203,7 +203,7 @@ public:
 
     virtual ~DenseOptimizerKernel() { }
 
-    virtual void Apply(butil::IOBuf& grad) {
+    virtual void Apply(butil::IOBuf& grad, float lr) {
         assert(grad.size() == Length() * sizeof(float));
 
         for (size_t i = 0; i < blocks_.size(); i++) {
@@ -213,7 +213,7 @@ public:
 
             CHECK_EQ(sizeof(float) * block_size, grad.cutn(g.data(), sizeof(float) * block_size));
 
-            blocks_[i].Apply(g);
+            blocks_[i].Apply(g, lr);
         }
     }
 

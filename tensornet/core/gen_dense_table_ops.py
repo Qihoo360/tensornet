@@ -91,15 +91,15 @@ def dense_table_init_eager_fallback(vars, table_handle, name, ctx):
   _result = None
   return _result
 
-
 @_dispatch.add_dispatch_list
 @tf_export('dense_table_push_pull')
-def dense_table_push_pull(vars, grads, table_handle, name=None):
+def dense_table_push_pull(vars, grads, learning_rate, table_handle, name=None):
   r"""push pull variable from parameter server
 
   Args:
     vars: A list of at least 1 `Tensor` objects with type `resource`.
     grads: A list with the same length as `vars` of `Tensor` objects with type `float32`.
+    learning_rate: A `Tensor` of type `int32`.
     table_handle: An `int`.
     name: A name for the operation (optional).
 
@@ -112,17 +112,20 @@ def dense_table_push_pull(vars, grads, table_handle, name=None):
     try:
       _result = pywrap_tfe.TFE_Py_FastPathExecute(
         _ctx._context_handle, tld.device_name, "DenseTablePushPull", name,
-        tld.op_callbacks, vars, grads, "table_handle", table_handle)
+        tld.op_callbacks, vars, grads, learning_rate, "table_handle",
+        table_handle)
       return _result
     except _core._FallbackException:
       try:
         return dense_table_push_pull_eager_fallback(
-            vars, grads, table_handle=table_handle, name=name, ctx=_ctx)
+            vars, grads, learning_rate, table_handle=table_handle, name=name,
+            ctx=_ctx)
       except _core._SymbolicException:
         pass  # Add nodes to the TensorFlow graph.
       except (TypeError, ValueError):
         result = _dispatch.dispatch(
               dense_table_push_pull, vars=vars, grads=grads,
+                                     learning_rate=learning_rate,
                                      table_handle=table_handle, name=name)
         if result is not _dispatch.OpDispatcher.NOT_SUPPORTED:
           return result
@@ -147,11 +150,12 @@ def dense_table_push_pull(vars, grads, table_handle, name=None):
   table_handle = _execute.make_int(table_handle, "table_handle")
   try:
     _, _, _op, _outputs = _op_def_library._apply_op_helper(
-        "DenseTablePushPull", vars=vars, grads=grads,
+        "DenseTablePushPull", vars=vars, grads=grads, learning_rate=learning_rate,
                               table_handle=table_handle, name=name)
   except (TypeError, ValueError):
     result = _dispatch.dispatch(
           dense_table_push_pull, vars=vars, grads=grads,
+                                 learning_rate=learning_rate,
                                  table_handle=table_handle, name=name)
     if result is not _dispatch.OpDispatcher.NOT_SUPPORTED:
       return result
@@ -160,7 +164,7 @@ def dense_table_push_pull(vars, grads, table_handle, name=None):
 DenseTablePushPull = tf_export("raw_ops.DenseTablePushPull")(_ops.to_raw_op(dense_table_push_pull))
 
 
-def dense_table_push_pull_eager_fallback(vars, grads, table_handle, name, ctx):
+def dense_table_push_pull_eager_fallback(vars, grads, learning_rate, table_handle, name, ctx):
   if not isinstance(vars, (list, tuple)):
     raise TypeError(
         "Expected list for 'vars' argument to "
@@ -178,10 +182,10 @@ def dense_table_push_pull_eager_fallback(vars, grads, table_handle, name, ctx):
   table_handle = _execute.make_int(table_handle, "table_handle")
   vars = _ops.convert_n_to_tensor(vars, _dtypes.resource)
   grads = _ops.convert_n_to_tensor(grads, _dtypes.float32)
-  _inputs_flat = list(vars) + list(grads)
+  learning_rate = _ops.convert_to_tensor(learning_rate, _dtypes.float32)
+  _inputs_flat = list(vars) + list(grads) + [learning_rate]
   _attrs = ("table_handle", table_handle, "N", _attr_N)
   _result = _execute.execute(b"DenseTablePushPull", 0, inputs=_inputs_flat,
                              attrs=_attrs, ctx=ctx, name=name)
   _result = None
   return _result
-

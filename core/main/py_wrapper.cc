@@ -44,7 +44,24 @@ using namespace tensornet;
         }                                                                       \
     }
 
+
+#define PYDICT_PARSE_LEARNING_RATE(kwargs) \
+    do { \
+        PyObject* lr_item = PyDict_GetItemString((kwargs).ptr(), "learning_rate"); \
+        if (lr_item) { \
+            if (PyFloat_Check(lr_item)) { \
+                PYDICT_PARSE_KWARGS(kwargs, learning_rate, 0.01); \
+                opt->SetUseLrScheduler(false); \
+            } else { \
+                py::object schedule = py::reinterpret_borrow<py::object>(lr_item); \
+                opt->SetSchedule(schedule); \
+            } \
+        } \
+    } while (0)
+
+
 PYBIND11_MODULE(_pywrap_tn, m) {
+
     m.def("init", []() {
         PsCluster* cluster = PsCluster::Instance();
 
@@ -67,7 +84,7 @@ PYBIND11_MODULE(_pywrap_tn, m) {
     .def("AdaGrad", [](py::kwargs kwargs) {
         auto opt = new AdaGrad();
 
-        PYDICT_PARSE_KWARGS(kwargs, learning_rate, 0.01);
+        PYDICT_PARSE_LEARNING_RATE(kwargs);
         PYDICT_PARSE_KWARGS(kwargs, show_decay_rate, 0.98);
         PYDICT_PARSE_KWARGS(kwargs, show_threshold, 0.0);
 
@@ -86,7 +103,7 @@ PYBIND11_MODULE(_pywrap_tn, m) {
     .def("Adam", [](py::kwargs kwargs) {
         auto opt = new Adam();
 
-        PYDICT_PARSE_KWARGS(kwargs, learning_rate, 0.001);
+        PYDICT_PARSE_LEARNING_RATE(kwargs);
         PYDICT_PARSE_KWARGS(kwargs, show_decay_rate, 0.98);
 
         PYDICT_PARSE_KWARGS(kwargs, beta1, 0.9);
@@ -99,9 +116,21 @@ PYBIND11_MODULE(_pywrap_tn, m) {
 
         return py::reinterpret_steal<py::object>(obj);
     })
+    .def("get_opt_learning_rate", [](py::object obj){
+        OptimizerBase* opt =
+          static_cast<OptimizerBase*>(PyCapsule_GetPointer(obj.ptr(), nullptr));
+
+        if(opt->use_lr_scheduler_){
+            return opt->GetSchedule();
+        } else {
+            return py::cast(opt->learning_rate);
+        }
+
+
+    })
     .def("Ftrl", [](py::kwargs kwargs) {
         auto opt = new Ftrl();
-        PYDICT_PARSE_KWARGS(kwargs, learning_rate, 0.05);
+        PYDICT_PARSE_LEARNING_RATE(kwargs);
         PYDICT_PARSE_KWARGS(kwargs, show_decay_rate, 0.98);
         PYDICT_PARSE_KWARGS(kwargs, show_threshold, 0.0);
 
@@ -118,11 +147,13 @@ PYBIND11_MODULE(_pywrap_tn, m) {
     .def("set_sparse_init_mode", [](py::object obj, bool is_training)-> void{
         OptimizerBase* opt =
           static_cast<OptimizerBase*>(PyCapsule_GetPointer(obj.ptr(), nullptr));
+
           opt->SetSparseZeroInit(!is_training);
     })
     .def("create_sparse_table", [](py::object obj, std::string name, int dimension, bool use_cvm) {
         OptimizerBase* opt =
-               static_cast<OptimizerBase*>(PyCapsule_GetPointer(obj.ptr(), nullptr));
+          static_cast<OptimizerBase*>(PyCapsule_GetPointer(obj.ptr(), nullptr));
+
 
         opt->SetUseCvm(use_cvm);
 
@@ -133,8 +164,9 @@ PYBIND11_MODULE(_pywrap_tn, m) {
         return table->GetHandle();
     })
     .def("create_dense_table", [](py::object obj) {
-         OptimizerBase* opt =
-               static_cast<OptimizerBase*>(PyCapsule_GetPointer(obj.ptr(), nullptr));
+        OptimizerBase* opt =
+          static_cast<OptimizerBase*>(PyCapsule_GetPointer(obj.ptr(), nullptr));
+
 
         PsCluster* cluster = PsCluster::Instance();
 
