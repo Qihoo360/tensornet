@@ -30,7 +30,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.pixi.project]
 channels = ["conda-forge"]
-platforms = ["linux-64"]
+platforms = ["linux-64", "osx-arm64"]
 
 [tool.pixi.activation]
 scripts = [ ".pixi/rc.sh" ]
@@ -45,6 +45,9 @@ libc = { family="glibc", version="2.12" } # at least centos 6
 [tool.pixi.feature.centos7.system-requirements]
 linux = "3.10" # at least centos 7
 libc = { family="glibc", version="2.17" } # at least centos 7
+
+[tool.pixi.feature.build]
+platforms = ["linux-64"]
 
 [tool.pixi.feature.build.dependencies]
 # build toolchains
@@ -84,16 +87,23 @@ bazel-build = "NEED_ACTIVATE_ENV=false \"$PIXI_PROJECT_ROOT\"/manager build --su
 copy-libs = "NEED_ACTIVATE_ENV=false \"$PIXI_PROJECT_ROOT\"/manager copy-libs"
 dist = "NEED_ACTIVATE_ENV=false \"$PIXI_PROJECT_ROOT\"/manager create_dist"
 
-[tool.pixi.feature.py37.dependencies]
-python = ">=3.7,<3.8" # to build wrapper for py37
-[tool.pixi.feature.py36.dependencies]
-python = ">=3.6,<3.7" # to build wrapper for py36
-[tool.pixi.feature.py35.dependencies]
-python = ">=3.5,<3.6a1" # to build wrapper for py35
+[tool.pixi.feature.py37]
+platforms = ["linux-64"]
+dependencies = { python = ">=3.7,<3.8" } # to build wrapper for py37
+[tool.pixi.feature.py36]
+platforms = ["linux-64"]
+dependencies = { python = ">=3.6,<3.7" } # to build wrapper for py36
+[tool.pixi.feature.py35]
+platforms = ["linux-64"]
+dependencies = { python = ">=3.5,<3.6a1" } # to build wrapper for py35
+
+[tool.pixi.feature.tools]
+platforms = ["linux-64", "osx-arm64"]
 
 [tool.pixi.feature.tools.dependencies]
 cmakelang = '*'
 shellcheck = '*'
+bump-my-version = "*"
 
 [tool.pixi.feature.tools.tasks]
 _cmake-lint = "cmake-lint cmake/*.cmake CMakeLists.txt test/CMakeLists.txt"
@@ -101,6 +111,8 @@ _shellcheck = "shellcheck pixiw cmake-build; shellcheck -s sh .pixi/rc.sh"
 lint = { depends-on = [ "_cmake-lint", "_shellcheck" ] }
 format = "cmake-format -i cmake/*.cmake CMakeLists.txt test/CMakeLists.txt"
 format-lint = { depends-on = [ "format", "lint" ] }
+bump-version = "./manager bump-version"
+bump-release = "./manager release"
 
 [tool.pixi.environments]
 default = { features = ["build"], solve-group = "default" }
@@ -108,3 +120,28 @@ py37 = { features = ["py37", "centos7"], solve-group = "py37" }
 py36 = { features = ["py36", "centos7"], solve-group = "py36" }
 py35 = { features = ["py35", "centos7"], solve-group = "py35" }
 tools = { features = ["tools", "centos7"], solve-group = "tools" }
+
+[tool.bumpversion]
+commit = false
+tag = false
+parse = """(?x)
+    (?P<major>0|[1-9]\\d*)\\.
+    (?P<minor>0|[1-9]\\d*)\\.
+    (?P<patch>0|[1-9]\\d*)
+    (?:
+        \\.
+        (?: post | (?P<release>[a-z]+) )
+        (?P<build>[1-9]\\d*)?
+    )?
+"""
+serialize = [
+    "{major}.{minor}.{patch}.{release}{build}",
+    "{major}.{minor}.{patch}.{release}",
+    "{major}.{minor}.{patch}.post{build}",
+    "{major}.{minor}.{patch}",
+]
+[tool.bumpversion.parts.release]
+values = [ "dev", "rc", "prod" ]
+optional_value = "prod"
+[[tool.bumpversion.files]]
+filename = "tensornet/version.py"
