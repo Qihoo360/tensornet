@@ -130,57 +130,82 @@ start_upload(){
 }
 
 bump_dev_version() {
-  hash bumpversion >/dev/null || die "cannot find bumpversion command"
+  hash bump-my-version >/dev/null || die "cannot find bump-my-version command"
   local mode=${1:-patch}
   case "$mode" in
-  (major|minor|patch) bumpversion --commit "$mode" ;;
+  (major)
+    local tf_minor=$(sed -n '/tensorflow-cpu/ s/.*>=2\.\([0-9]*\)[^0-9].*/\1/ p' pyproject.toml)
+    (( tf_minor > 0 )) || die "failed to parse tensorflow-cpu version!"
+
+    local new_version=$( bump-my-version show current_version | awk -vFS=. -vOFS=. -vtf_minor="$tf_minor" '{
+        $1=$1+1
+        $2=tf_minor;
+        $3=0;
+        $4="dev";
+        print $0;
+        exit;
+    }')
+    [[ ${new_version-} ]] || die "failed to compute new version!"
+
+    bump-my-version bump --commit --new-version "$new_version"
+    ;;
+  (minor)
+    local tf_minor=$(sed -n '/tensorflow-cpu/ s/.*>=2\.\([0-9]*\)[^0-9].*/\1/ p' pyproject.toml)
+    (( tf_minor > 0 )) || die "failed to parse tensorflow-cpu version!"
+
+    local new_version=$( bump-my-version show current_version | awk -vFS=. -vOFS=. -vtf_minor="$tf_minor" '{
+        curr=$2;
+        tn_minor=int(curr/100);
+        new=tn_minor * 100 + tf_minor;
+        if (new <= curr) { new+=100; }
+        $2=new;
+        $3=0;
+        $4="dev";
+        print $0;
+        exit;
+    }')
+    [[ ${new_version-} ]] || die "failed to compute new version!"
+
+    bump-my-version bump --commit --new-version "$new_version"
+    ;;
+  (patch) bump-my-version bump --commit "$mode" ;;
   (build)
     local release_part=''
-    release_part=$(bumpversion --allow-dirty build --dry-run --list | awk -vFS=. '/^current_version=/ && $NF ~ "^[a-z]" { print $NF }')
+    release_part=$(bump-my-version show current_version | awk -vFS=. '$NF ~ "^[a-z]" { print $NF }')
     case "${release_part-}" in
-    (dev*) bumpversion --commit "$mode" ;;
+    (dev*) bump-my-version bump --commit "$mode" ;;
     (*) die "use '$0 release ...' to bump the build number of a release version." ;;
     esac
     ;;
-  (*) die "Unknown mode ($mode) for bump_dev_version" ;;
+  (*) die "Unknown mode ($mode) for bump_dev_version, should be one of 'major', 'minor', 'patch' or 'build'." ;;
   esac
 }
 
 bump_release_version() {
-  hash bumpversion >/dev/null || die "cannot find bumpversion command"
-  local mode=${1:-prod} release_part='' tag_name_option='' tool_deploy=false
-  [[ $# -gt 1 && $2 == 'tool' ]] && tool_deploy=true
-  release_part=$(bumpversion --allow-dirty build --dry-run --list | awk -vFS=. '/^current_version=/ && $NF ~ "^[a-z]" { print $NF }')
+  hash bump-my-version >/dev/null || die "cannot find bump-my-version command"
+  local mode=${1:-prod} release_part='' tag_name_option=''
+  [[ $# -gt 1 && $2 == 'tool' ]] && tag_name_option='--tag-name v{new_version}-tool'
+  release_part=$(bump-my-version show current_version | awk -vFS=. '$NF ~ "^[a-z]" { print $NF }')
 
   case "$mode" in
   (rc)
     case "${release_part-}" in
-    (dev*) bumpversion --commit --tag release ;;
-    (rc*) bumpversion --commit --tag build ;;
+    (dev*) bump-my-version bump --commit --tag release ;;
+    (rc*) bump-my-version bump --commit --tag build ;;
     (''|post*) die "An production version cannot do a pre-release" ;;
     (*) die "Unknown release part ($release_part) for bump_release_version" ;;
     esac
     ;;
   (prod)
     case "${release_part-}" in
-    (dev*)
-      local release_version=''
-      release_version=$(bumpversion --allow-dirty release --dry-run --list | grep '^current_version=' | cut -s -d = -f 2 | sed -E 's/\.[^0-9]+([0-9]*)$//')
-      [[ $tool_deploy == true ]] && tag_name_option="--tag-name ${release_version}-tool"
-      bumpversion --commit --tag ${tag_name_option} --new-version "$release_version" release # prod release, skip rc
-      ;;
-    (rc*)
-      [[ $tool_deploy == true ]] && tag_name_option="--tag-name $(bumpversion --allow-dirty release --dry-run --list | grep '^new_version=' | cut -s -d = -f 2)-tool"
-      bumpversion --commit --tag ${tag_name_option} release 
-      ;;
-    (''|post*) 
-      [[ $tool_deploy == true ]] && tag_name_option="--tag-name $(bumpversion --allow-dirty build --dry-run --list | grep '^new_version=' | cut -s -d = -f 2)-tool"
-      bumpversion --commit --tag ${tag_name_option} build 
-      ;;
+    # def->prod release, skip rc
+    (dev*) bump-my-version bump --commit --tag ${tag_name_option} --serialize '{major}.{minor}.{patch}' release ;;
+    (rc*) bump-my-version bump --commit --tag ${tag_name_option} release ;;
+    (''|post*) bump-my-version bump --commit --tag ${tag_name_option} build ;;
     (*) die "Unknown release part ($release_part) for bump_release_version" ;;
     esac
     ;;
-  (*) die "Unknown mode ($mode) for bump_release_version" ;;
+  (*) die "Unknown mode ($mode) for bump_release_version, should either 'prod' or 'rc'." ;;
   esac
 }
 
