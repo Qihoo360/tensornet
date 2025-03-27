@@ -20,7 +20,8 @@
 #include <string>
 #include <iostream>
 #include <sstream>
-#include <pybind11/pybind11.h>
+
+namespace pybind11 { class object; }
 
 namespace tensornet {
 
@@ -46,6 +47,7 @@ public:
     }
 
     void SetSparseZeroInit(bool sparse_zero_init) { sparse_zero_init_ = sparse_zero_init;}
+
     virtual void SetUseCvm(bool use_cvm) {
         use_cvm_ = use_cvm;
     }
@@ -54,26 +56,22 @@ public:
         return use_cvm_;
     }
 
-    void SetUseLrScheduler(bool if_use_schedule_){
-        use_lr_scheduler_ = if_use_schedule_;
-    }  
+    const pybind11::object *GetSchedule() const { return scheduler_.get(); }
 
-    pybind11::object GetSchedule() const {
-        return schedule_;
+    void SetSchedule(std::unique_ptr<pybind11::object, void(*)(pybind11::object*)> &&schedule) {
+            scheduler_ = std::move(schedule);
     }
 
-    void SetSchedule(pybind11::object schedule) {
-        use_lr_scheduler_ = true;
-        schedule_ = schedule;
+    void SetSchedule(float const_lr) {
+        learning_rate = const_lr;
     }
-    
+
 public:
     float learning_rate = 0.01;
     float show_decay_rate = 0.98;
     bool sparse_zero_init_ = false;
     float use_cvm_ = false;
-    bool use_lr_scheduler_ = false;
-    pybind11::object schedule_;
+    std::unique_ptr<pybind11::object, void(*)(pybind11::object*)> scheduler_{nullptr, nullptr};
 };
 
 class Adam : public OptimizerBase {

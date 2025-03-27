@@ -50,11 +50,10 @@ using namespace tensornet;
         PyObject* lr_item = PyDict_GetItemString((kwargs).ptr(), "learning_rate"); \
         if (lr_item) { \
             if (PyFloat_Check(lr_item)) { \
-                PYDICT_PARSE_KWARGS(kwargs, learning_rate, 0.01); \
-                opt->SetUseLrScheduler(false); \
+                opt->SetSchedule(PyFloat_AsDouble(lr_item)); \
             } else { \
                 py::object schedule = py::reinterpret_borrow<py::object>(lr_item); \
-                opt->SetSchedule(schedule); \
+                opt->SetSchedule(std::unique_ptr<py::object, void(*)(py::object*)>(new py::object(std::move(schedule)),  [](py::object* obj) { delete obj; })); \
             } \
         } \
     } while (0)
@@ -120,13 +119,13 @@ PYBIND11_MODULE(_pywrap_tn, m) {
         OptimizerBase* opt =
           static_cast<OptimizerBase*>(PyCapsule_GetPointer(obj.ptr(), nullptr));
 
-        if(opt->use_lr_scheduler_){
-            return opt->GetSchedule();
+        auto scheduler_ptr = opt->GetSchedule();
+
+        if(scheduler_ptr){
+          return *scheduler_ptr;
         } else {
-            return py::cast(opt->learning_rate);
+          return py::cast(opt->learning_rate);
         }
-
-
     })
     .def("Ftrl", [](py::kwargs kwargs) {
         auto opt = new Ftrl();
