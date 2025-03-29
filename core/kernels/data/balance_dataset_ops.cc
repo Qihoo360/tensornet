@@ -20,7 +20,6 @@
 #include "core/utility/semaphore.h"
 
 #include <brpc/server.h>
-#include <butil/rand_util.h>
 
 #include "tensorflow/core/framework/op_kernel.h"
 #include "tensorflow/core/framework/partial_tensor_shape.h"
@@ -87,7 +86,7 @@ void BalanceInputDataInfo::ProcessBrpcDatasetPullReq(const DatasetPullRequest* r
     CHECK(op_elements_.count(balance_handle)) << "balance_handle " << balance_handle << " not registered.";
     auto* elements = op_elements_[balance_handle];
     std::vector<Tensor> tensors;
-    if (elements->get(&tensors)) {
+    if (elements->get_wait(&tensors)) {
         VariantTensorData variant_tensor;
         {
             for (auto& element : tensors) {
@@ -226,6 +225,13 @@ private:
             BufferQueueWithLock* q = data_info->op_elements_[dataset()->balance_handle_];
             if (q->empty() && *end_of_sequence) {
                 GetDataFromBrpcInternal(end_of_sequence, out_tensors);
+
+                if (*end_of_sequence) {
+                    LOG(INFO) << "Shard [" << PsCluster::Instance()->Rank() 
+                              << "] consumed all data, total spend " 
+                              << data_info->TimerElapsedInSecond() << " seconds.";
+                }
+
                 return Status::OK();
             }
 
@@ -294,14 +300,17 @@ private:
 
             auto* data_info = BalanceInputDataInfo::Instance();
             BufferQueueWithLock* q = data_info->op_elements_[dataset()->balance_handle_];
-            while (!q->buffer_full() && !*end_of_sequence) {
+            std::vector<std::vector<Tensor> > inputs;
+            size_t fill_count = q->fill_count();
+            for (size_t i = 0; i < fill_count && !*end_of_sequence; ++i) {
                 std::vector<Tensor> input_vec;
                 TF_RETURN_IF_ERROR(
                     input_impl_->GetNext(ctx, &input_vec, end_of_sequence));
                 if (!*end_of_sequence) {
-                    q->put(std::move(input_vec));
+                    inputs.emplace_back(std::move(input_vec));
                 }
             }
+            q->put(std::move(inputs));
 
             return Status::OK();
         }

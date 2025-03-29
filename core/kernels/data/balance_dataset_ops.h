@@ -21,6 +21,10 @@
 #include <vector>
 #include <mutex>
 #include <queue>
+#include <condition_variable>
+#include <chrono>
+
+#include <butil/time.h>
 
 #include "core/ps/ps_server_interface.h"
 #include "core/ps/ps_cluster.h"
@@ -49,6 +53,16 @@ public:
     void put(std::vector<Tensor>&& element) {
         const std::lock_guard<std::mutex> lock(mu_);
         elements_.emplace(element);
+        cv_.notify_one();
+    }
+
+    void put(std::vector<std::vector<Tensor> >&& elements) {
+        const std::lock_guard<std::mutex> lock(mu_);
+        for (auto&& v : elements) {
+            elements_.emplace(v);
+        }
+        cv_.notify_all();
+        
     }
 
     bool empty() {
@@ -56,14 +70,13 @@ public:
         return elements_.empty();
     }
 
-    bool buffer_full() {
+    size_t fill_count() {
         const std::lock_guard<std::mutex> lock(mu_);
-        return elements_.size() > buffer_size_;
+        return buffer_size_ - elements_.size();
     }
 
     bool get(std::vector<Tensor>* tensors) {
         const std::lock_guard<std::mutex> lock(mu_);
-
         if (empty_unlock()) {
             return false;
         }
@@ -71,6 +84,17 @@ public:
         *tensors = std::move(elements_.front());
         elements_.pop();
         return true;
+    }
+
+    bool get_wait(std::vector<Tensor>* tensors) {
+        {
+            std::unique_lock<std::mutex> lock(mu_);
+            if (empty_unlock()) {
+                cv_.wait_for(lock, std::chrono::seconds(timeout_s_));
+            }
+        }
+
+        return get(tensors);
     }
 
     void pop() {
@@ -90,6 +114,8 @@ private:
 
 private:
     size_t buffer_size_ = 100;
+    int64_t timeout_s_ = 10;
+    std::condition_variable cv_;
     std::mutex mu_;
     std::queue<std::vector<Tensor> > elements_;
 };
@@ -104,7 +130,6 @@ public:
     uint32_t Register(BufferQueueWithLock* elements) {
         const std::lock_guard<std::mutex> lock(mu_);
         uint32_t handle = op_elements_.size();
-        // LOG(INFO) << "Register:" << handle << " pid:" << std::this_thread::get_id();
         op_elements_[handle] = elements;
         return handle;
     }
@@ -117,6 +142,8 @@ public:
         remaining_shards_.erase(self_shard);
 
         finished_ = false;
+
+        timer_.start();
 
         return 0;
     }
@@ -144,6 +171,11 @@ public:
 
     void CopyDataToBuffer(const tensornet::DatasetPullResponse* resp, uint32_t balance_handle);
 
+    double TimerElapsedInSecond() {
+        timer_.stop();
+        return timer_.s_elapsed();
+    }
+
 public:
     std::mutex remaining_mu_;
     std::set<uint32_t> remaining_shards_;
@@ -151,6 +183,8 @@ public:
     std::mutex mu_;
     bool finished_ = false;
     std::map<uint32_t, BufferQueueWithLock*> op_elements_;
+
+    butil::Timer timer_;
 };
 
 }  // namespace tensorflow
