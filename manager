@@ -10,6 +10,7 @@ readonly WORKSPACE_DIR TN_BUILD_ENV_NAME
 
 export MAMBA_EXE=${HOME}/.local/bin/micromamba
 export MAMBA_ROOT_PREFIX=${HOME}/micromamba
+: "${MAMBA_INSTALLER_URL:=https://raw.githubusercontent.com/mamba-org/micromamba-releases/main/install.sh}"
 
 : "${NEED_PREPARE_ENV:=false}"
 : "${NEED_ACTIVATE_ENV:=true}"
@@ -21,9 +22,14 @@ die() {
   exit $err
 }
 
+
 _prepare_mamba_env(){
    if ! type micromamba >/dev/null 2>&1;then
-     HTTPS_PROXY=${PROXY_URL:=${HTTPS_PROXY}} "${SHELL}" <(curl -L micro.mamba.pm/install.sh)
+       if [ -n "${URL_MIRROR_github_com-}" ]; then
+           "${SHELL}" <(curl -L "${MAMBA_INSTALLER_URL-}" | sed "s|https://github.com/|$URL_MIRROR_github_com|g")
+       else
+           "${SHELL}" <(curl -L "${MAMBA_INSTALLER_URL-}")
+       fi
    fi
    _mamba_source
    [[ -z ${NEXUS3_HEADER} ]] || {

@@ -1,31 +1,59 @@
-tn_build:
-  stage: build
-  tags:
-    - image-unlocked
-  image:
-    name: r.addops.soft.360.cn/sycp-container/centos7.2:base
+workflow:
+  rules:
+  # avoid duplicate pipelines for branches with opened merge requests
+  - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && $CI_OPEN_MERGE_REQUESTS != ""
+    when: never
+  - when: always
 
+bazel_build:
+  tags:
+    - python
+  interruptible: true
   variables:
     NEED_PREPARE_ENV: "true"
-
   before_script:
-    - mkdir -p ${HOME}/.config/pip
-    - |
-      cat > "${HOME}/.config/pip/pip.conf" <<END
-      [global]
-      index-url = ${NEXUS3_PYPI_REPO}
-      END
-
-  script:
+    - pip config set global.index-url "${NEXUS3_PYPI_REPO}"
     - sed -i "s|https://github.com|${NEXUS3_HEADER}/github.com|g" WORKSPACE
+    - mkdir -p .cache ~/.local/bin
+    - |
+      if [ -x .cache/micromamba ]; then
+        ln -s `pwd`/.cache/micromamba ~/.local/bin/micromamba
+      else
+        ./manager prepare_build_env
+        NEED_PREPARE_ENV=false
+        cp ~/.local/bin/micromamba .cache/
+      fi
+  script:
     - ./manager build
+    - NEED_PREPARE_ENV=false
     - ./manager copy-libs
     - ./manager test
+    - ./manager create_dist
+    - ls -alh dist
   cache:
-    - key: cache-$CI_COMMIT_REF_NAME
+    - key: cache-micromamba-$CI_COMMIT_REF_NAME
       paths:
-        - /root/.cache/bazel/_bazel_root/cache
-        - /root/.cache/bazel/_bazel_root/install
-        - /root/micromamba/pkgs
-  when: manual
+        - .cache/micromamba
+      when: always
 
+cmake_build:
+  tags:
+    - python
+  interruptible: true
+  variables:
+    OMPI_ALLOW_RUN_AS_ROOT: 1
+    OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
+  before_script:
+    - mkdir -p .cache ~/.pixi/bin
+    - test ! -x .cache/pixi || cp .cache/pixi ~/.pixi/bin/
+    - ./pixiw --version
+    - diff -q ~/.pixi/bin/pixi .cache/pixi >/dev/null 2>/dev/null || cp ~/.pixi/bin/pixi .cache/
+
+  script:
+    - ./pixiw run create-wheel
+    - ls -alh dist
+  cache:
+    - key: cache-pixi-$CI_COMMIT_REF_NAME
+      paths:
+        - .cache/pixi
+      when: always
