@@ -35,7 +35,8 @@ set(CMAKE_INSTALL_DEFAULT_DIRECTORY_PERMISSIONS # chmod 755
 set(_brpc_patches
     "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/patches/02-fix-brpc-compile.patch"
     "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/patches/03-fix-brpc-cxx-flags.patch"
-    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/patches/04-boringssl.patch")
+    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/patches/04-boringssl.patch"
+    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/patches/05-disable-install-brpc.patch")
 
 find_package(Patch REQUIRED)
 

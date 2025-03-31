@@ -51,6 +51,7 @@ cmake_build:
 
   script:
     - ./pixiw run create-wheel
+    - ./pixiw run -e tools check-wheel-contents dist
     - ls -alh dist
   cache:
     - key: cache-pixi-$CI_COMMIT_REF_NAME
