@@ -104,6 +104,7 @@ platforms = ["linux-64", "osx-arm64"]
 cmakelang = '*'
 shellcheck = '*'
 bump-my-version = "*"
+check-wheel-contents = "*"
 
 [tool.pixi.feature.tools.tasks]
 _cmake-lint = "cmake-lint cmake/*.cmake CMakeLists.txt test/CMakeLists.txt"

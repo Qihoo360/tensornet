@@ -1,0 +1,26 @@
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -66,9 +66,9 @@
+     target_link_libraries(protoc-gen-mcpack brpc-shared ${DYNAMIC_LIB} pthread)
+ 
+     install(TARGETS brpc-shared
+-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+-            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
++            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} EXCLUDE_FROM_ALL
++            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} EXCLUDE_FROM_ALL
++            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} EXCLUDE_FROM_ALL
+             )
+ else()
+     target_link_libraries(protoc-gen-mcpack brpc-static ${DYNAMIC_LIB} pthread)
+@@ -77,7 +77,7 @@
+ 
+ 
+ install(TARGETS brpc-static
+-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
++        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} EXCLUDE_FROM_ALL
++        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} EXCLUDE_FROM_ALL
++        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} EXCLUDE_FROM_ALL
+         )
