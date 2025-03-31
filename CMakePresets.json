@@ -65,7 +65,8 @@
       "configurePreset": "default",
       "inheritConfigureEnvironment": true,
       "output": {
-        "verbosity": "verbose"
+        "verbosity": "verbose",
+        "outputOnFailure": true
       }
     },
     {
