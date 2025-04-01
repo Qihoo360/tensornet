@@ -211,19 +211,26 @@ target_compile_options(
          # should be fixed from tf 2.8 by
          # https://github.com/tensorflow/tensorflow/commit/895943537b80e8cea0e1ba71c6dd4c2d651b84d0
          -DNDEBUG
-         $<$<CONFIG:Debug,RelWithDebInfo>:-g>
+         $<$<CONFIG:Debug,RelWithDebInfo>:-g
+         -fno-omit-frame-pointer>
          $<$<CONFIG:Debug>:-O1>
-         $<$<CONFIG:MinSizeRel>:-O2>
-         $<$<CONFIG:Release,RelWithDebInfo>:-O3>
-         $<$<CONFIG:Release,MinSizeRel>:-Os>)
+         $<$<CONFIG:MinSizeRel>:-O2
+         -Os>
+         $<$<CONFIG:Release,RelWithDebInfo>:-O3>)
 target_include_directories(tensornet PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
 # hide all linked dynamic libraries for py wrappers
 target_link_libraries(
   tensornet
   PRIVATE tensornet-interface
   PUBLIC brpc-static)
-target_link_options(tensornet PUBLIC -fuse-ld=gold $<$<CONFIG:Release,MinSizeRel,RelWithDebInfo>:-s> PRIVATE
-                    LINKER:-as-needed)
+target_link_options(
+  tensornet
+  PUBLIC
+  -fuse-ld=gold
+  $<$<CONFIG:Release,MinSizeRel,RelWithDebInfo>:-s>
+  $<$<CONFIG:Debug>:LINKER:-z,relro,-z,now>
+  PRIVATE
+  LINKER:-as-needed)
 
 # this target is used for test, publish tensornet and all the dynamic dependencies
 add_library(tensornet-full-link INTERFACE)

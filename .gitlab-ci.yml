@@ -5,7 +5,7 @@ workflow:
     when: never
   - when: always
 
-bazel_build:
+bazel_create_wheel:
   tags:
     - python
   interruptible: true
@@ -36,7 +36,7 @@ bazel_build:
         - .cache/micromamba
       when: always
 
-cmake_build:
+cmake_create_wheel:
   tags:
     - python
   interruptible: true
@@ -53,6 +53,27 @@ cmake_build:
     - ./pixiw run create-wheel
     - ./pixiw run -e tools check-wheel-contents dist
     - ls -alh dist
+  cache:
+    - key: cache-pixi-$CI_COMMIT_REF_NAME
+      paths:
+        - .cache/pixi
+      when: always
+
+cmake_build:
+  tags:
+    - python
+  interruptible: true
+  variables:
+    OMPI_ALLOW_RUN_AS_ROOT: 1
+    OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
+  before_script:
+    - mkdir -p .cache ~/.pixi/bin
+    - test ! -x .cache/pixi || cp .cache/pixi ~/.pixi/bin/
+    - ./pixiw --version
+    - diff -q ~/.pixi/bin/pixi .cache/pixi >/dev/null 2>/dev/null || cp ~/.pixi/bin/pixi .cache/
+
+  script:
+    - ./pixiw run build
   cache:
     - key: cache-pixi-$CI_COMMIT_REF_NAME
       paths:
