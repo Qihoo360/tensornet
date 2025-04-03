@@ -1,100 +1,104 @@
 {
-  "version": 6,
+  "buildPresets": [
+    {
+      "configurePreset": "default",
+      "description": "Build with Debug configuration",
+      "displayName": "Build (Debug)",
+      "inheritConfigureEnvironment": true,
+      "jobs": 0,
+      "name": "default"
+    },
+    {
+      "description": "Build with Debug configuration w/o running UT",
+      "displayName": "Build (Debug)",
+      "inherits": "default",
+      "name": "default-skip-tests",
+      "nativeToolOptions": [
+        "SKIP_RUN_TESTS=1"
+      ]
+    },
+    {
+      "configurePreset": "release",
+      "description": "Build with Release configuration",
+      "displayName": "Build (Release)",
+      "inherits": "default",
+      "name": "release"
+    },
+    {
+      "cleanFirst": true,
+      "description": "Build with Release configuration w/o running UT",
+      "displayName": "Build (Release)",
+      "inherits": "release",
+      "name": "release-skip-tests",
+      "nativeToolOptions": [
+        "SKIP_RUN_TESTS=1"
+      ]
+    }
+  ],
   "configurePresets": [
     {
-      "name": "default",
-      "displayName": "Configure (Debug)",
-      "description": "Configure using ${generator} generator with Debug configuration",
-      "generator": "Unix Makefiles",
       "binaryDir": "${sourceDir}/build/debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      },
+      "description": "Configure using ${generator} generator with Debug configuration",
+      "displayName": "Configure (Debug)",
       "environment": {
         "CMAKE_PRESET_NAME": "${presetName}"
       },
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
+      "generator": "Unix Makefiles",
+      "name": "default"
     },
     {
-      "name": "release",
-      "displayName": "Configure (Release)",
-      "description": "Configure using ${generator} generator with Release configuration",
-      "inherits": "default",
       "binaryDir": "${sourceDir}/build/release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
-      }
-    }
-  ],
-  "buildPresets": [
-    {
-      "name": "default",
-      "displayName": "Build (Debug)",
-      "description": "Build with Debug configuration",
-      "configurePreset": "default",
-      "inheritConfigureEnvironment": true,
-      "jobs": 0
-    },
-    {
-      "name": "default-skip-tests",
-      "displayName": "Build (Debug)",
-      "description": "Build with Debug configuration w/o running UT",
+      },
+      "description": "Configure using ${generator} generator with Release configuration",
+      "displayName": "Configure (Release)",
       "inherits": "default",
-      "nativeToolOptions": [ "SKIP_RUN_TESTS=1" ]
-    },
-    {
-      "name": "release",
-      "displayName": "Build (Release)",
-      "description": "Build with Release configuration",
-      "inherits": "default",
-      "configurePreset": "release"
-    },
-    {
-      "name": "release-skip-tests",
-      "displayName": "Build (Release)",
-      "description": "Build with Release configuration w/o running UT",
-      "inherits": "release",
-      "cleanFirst": true,
-      "nativeToolOptions": [ "SKIP_RUN_TESTS=1" ]
+      "name": "release"
     }
   ],
   "testPresets": [
     {
-      "name": "default",
-      "displayName": "Test (Debug)",
-      "description": "Test with Debug configuration",
       "configurePreset": "default",
+      "description": "Test with Debug configuration",
+      "displayName": "Test (Debug)",
       "inheritConfigureEnvironment": true,
+      "name": "default",
       "output": {
-        "verbosity": "verbose",
-        "outputOnFailure": true
+        "outputOnFailure": true,
+        "verbosity": "verbose"
       }
     },
     {
-      "name": "release",
-      "displayName": "Test (Release)",
-      "description": "Test with Release configuration",
-      "inherits": "default",
       "configurePreset": "release",
+      "description": "Test with Release configuration",
+      "displayName": "Test (Release)",
+      "inherits": "default",
+      "name": "release",
       "output": {
         "verbosity": "default"
       }
     }
   ],
+  "version": 6,
   "workflowPresets": [
     {
       "name": "default",
       "steps": [
         {
-          "type": "configure",
-          "name": "default"
+          "name": "default",
+          "type": "configure"
         },
         {
-          "type": "build",
-          "name": "default-skip-tests"
+          "name": "default-skip-tests",
+          "type": "build"
         },
         {
-          "type": "test",
-          "name": "default"
+          "name": "default",
+          "type": "test"
         }
       ]
     },
@@ -102,16 +106,16 @@
       "name": "release",
       "steps": [
         {
-          "type": "configure",
-          "name": "release"
+          "name": "release",
+          "type": "configure"
         },
         {
-          "type": "build",
-          "name": "release-skip-tests"
+          "name": "release-skip-tests",
+          "type": "build"
         },
         {
-          "type": "test",
-          "name": "release"
+          "name": "release",
+          "type": "test"
         }
       ]
     }

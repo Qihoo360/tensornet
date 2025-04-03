@@ -29,6 +29,19 @@ repos:
         language: system
         types: [file, toml]
         stages: [pre-commit, manual]
+      - id: check-json
+        name: Validate json files
+        entry: ./pixiw run -e tools check-json
+        language: system
+        types: [json]
+        stages: [pre-commit, manual]
+      - id: format-json
+        name: Format json files
+        entry: ./pixiw run -e tools pretty-format-json --autofix
+        language: system
+        types: [json]
+        stages: [pre-commit, manual]
+        exclude: "^doc/"
       - id: shellcheck
         name: Check shell scripts
         entry: ./pixiw run -e tools shellcheck
