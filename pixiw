@@ -1,64 +1,47 @@
 #!/bin/sh
 
-require_ver=0.43.3
-
 set -euf
 [ "${DEBUG-}" != true ] || set -x
 
-IFS=. read -r __req_major __req_minor __req_patch <<-END
-	$require_ver
-	END
+# requires at least pixi 0.44.0
+# environment parameters:
+#   PIXI_INSTALLER_URL - custom pixi installer
+#   URL_MIRROR_github_com - custom mirror for github.com
+# run directly if already under pixi environment
+[ -z "${PIXI_EXE-}" ] || exec "${PIXI_EXE-}" "$@"
 
 __check_pixi() {
   __pixi="${1-}"
-  [ -x "${__pixi-}" ] || hash "${__pixi-}" 2>/dev/null || return 1
+  command -v -- "${__pixi-}" >/dev/null || return 1 # check runnable
 
-  # accept any version
-  [ "${__req_major:=0}.${__req_minor:=0}.${__req_patch:=0}" != 0.0.0 ] || return 0
-
-  IFS=' .' read -r __prefix __major __minor __patch <<-END
-	$("$__pixi" -V 2>/dev/null)
-	END
-
-  [ "${__prefix-}" = pixi ] || return 1
-
-  if [ "${__major:=0}" = "$__req_major" ]; then
-    if [ "${__minor:=0}" = "$__req_minor" ]; then
-      [ "${__patch:=0}" -ge "$__req_patch" ]
-    else
-      [ "$__minor" -gt "$__req_minor" ]
-    fi
+  if "$__pixi" workspace requires-pixi verify; then
+    return 0
   else
-    [ "$__major" -gt "$__req_major" ]
+    case $? in
+    # 2: less than 0.44.0
+    # 4: verify fail
+    (2|4) return 1 ;;
+    (*) exit $? ;; # unknown error
+    esac
   fi
 }
 
 __download_to_stdin() {
-  if hash curl 2>/dev/null; then
-    curl -sfSL --compressed "$1"
-  elif hash wget 2>/dev/null; then
+  if hash wget 2>/dev/null; then
     wget -qO- "$1"
+  elif hash curl 2>/dev/null; then
+    curl -sfSL --compressed "$1"
   else
-    echo echo "\"[ERROR] you need either 'curl' or 'wget' installed.\""
+    echo echo "\"[ERROR] you need either 'curl' or 'wget' installed.\" >&2"
     echo exit 1
   fi
 }
 
 __install_pixi() (
-  # require curl, bash and sed commands
-  if ! hash bash 2>/dev/null; then
-    echo "[ERROR] you do not have 'bash' installed."
-    return 1
-  fi
-
-  unset PIXI_VERSION PIXI_HOME
-  export PIXI_NO_PATH_UPDATE=true
-
-  if [ -n "${URL_MIRROR_github_com-}" ]; then
-    if ! hash sed 2>/dev/null; then
-      echo "[WARN] you do not have 'sed' installed to use URL_MIRROR_github_com, ignore the mirror."
-      unset URL_MIRROR_github_com
-    fi
+  # require curl, posix sh and sed commands
+  if [ -n "${URL_MIRROR_github_com-}" ] && ! hash sed 2>/dev/null; then
+    echo "[WARN] you do not have 'sed' installed to use URL_MIRROR_github_com, ignore the mirror." >&2
+    unset URL_MIRROR_github_com
   fi
 
   : "${PIXI_INSTALLER_URL:=https://raw.githubusercontent.com/prefix-dev/pixi/main/install/install.sh}"
@@ -66,7 +49,7 @@ __install_pixi() (
     __download_to_stdin "${PIXI_INSTALLER_URL-}" | sed "s|https://github.com/|$URL_MIRROR_github_com|g"
   else
     __download_to_stdin "${PIXI_INSTALLER_URL-}"
-  fi | bash
+  fi | PIXI_VERSION='' PIXI_HOME='' PIXI_NO_PATH_UPDATE=true /bin/sh -s
 )
 
 pixi_prj_rc="${0%/*}/.pixi/rc.sh"
@@ -74,12 +57,13 @@ pixi_prj_rc="${0%/*}/.pixi/rc.sh"
 # shellcheck source=/dev/null
 [ ! -r "$pixi_prj_rc" ] || PIXIW_INSTALL=1 PIXI_PROJECT_ROOT="${0%/*}" . "$pixi_prj_rc"
 
-if __check_pixi pixi; then
-  exec pixi "$@"
-elif ! __check_pixi "${HOME:-}/.pixi/bin/pixi"; then
+# search pixi from $PATH
+! __check_pixi pixi || exec pixi "$@"
+
+if ! __check_pixi "${HOME:-}/.pixi/bin/pixi"; then
   if __install_pixi; then
     if ! __check_pixi "${HOME:-}/.pixi/bin/pixi"; then
-      echo "[ERROR] After install/update, pixi version still does not meet the requirement '${require_ver-}' ." >&2
+      echo "[ERROR] After install/update, pixi version still does not meet the requirement $("${HOME:-}/.pixi/bin/pixi" workspace requires-pixi get)." >&2
       exit 1
     fi
   else
