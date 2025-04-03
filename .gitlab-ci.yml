@@ -5,6 +5,18 @@ workflow:
     when: never
   - when: always
 
+pre_commit:
+  tags:
+    - python
+  interruptible: true
+  before_script:
+    - mkdir -p .cache ~/.pixi/bin
+    - test ! -x .cache/pixi || cp .cache/pixi ~/.pixi/bin/
+    - ./pixiw --version
+    - diff -q ~/.pixi/bin/pixi .cache/pixi >/dev/null 2>/dev/null || cp ~/.pixi/bin/pixi .cache/
+  script:
+    - ./pixiw run pre-commit-run --color=always --show-diff-on-failure
+
 bazel_create_wheel:
   tags:
     - python

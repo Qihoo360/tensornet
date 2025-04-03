@@ -1,3 +1,4 @@
+# shellcheck shell=sh
 
 # put activation scripts under .pixi/activate.d/ folder to setup
 # development environment, such as export https_proxy.

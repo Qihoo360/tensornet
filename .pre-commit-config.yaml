@@ -1,0 +1,36 @@
+exclude: ^.pixi/envs/
+
+repos:
+  - repo: local
+    hooks:
+      - id: check-yaml
+        name: Check YAML
+        entry: ./pixiw run -e tools check-yaml
+        language: system
+        types: [yaml]
+        stages: [pre-commit, manual]
+      - id: toml-format
+        name: TOML format
+        entry: ./pixiw run -e tools toml-format
+        language: system
+        types: [file, toml]
+        stages: [pre-commit, manual]
+      - id: shellcheck
+        name: Check shell scripts
+        entry: ./pixiw run -e tools shellcheck
+        language: system
+        types: [shell]
+        stages: [pre-commit, manual]
+        exclude: "manager|tools/package.sh|tensornet-tools/bin/tn_tools.sh|configure.sh"
+      - id: cmake-format
+        name: Format cmake list files
+        entry: ./pixiw run -e tools cmake-format --in-place
+        language: system
+        types: [cmake]
+        stages: [pre-commit, manual]
+      - id: cmake-lint
+        name: Lint cmake list files
+        entry: ./pixiw run -e tools cmake-lint
+        language: system
+        types: [cmake]
+        stages: [pre-commit, manual]
