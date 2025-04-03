@@ -246,6 +246,7 @@ environments:
       linux-64:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-2_gnu.tar.bz2
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/actionlint-1.7.7-hd0c01bc_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.7.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/anyio-4.9.0-pyh29332c3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/attrs-25.3.0-pyh71513ae_0.conda
@@ -329,6 +330,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/wheel-filename-1.4.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/yaml-0.2.5-h7f98852_2.tar.bz2
       osx-arm64:
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/actionlint-1.7.7-h48c0fde_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.7.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/anyio-4.9.0-pyh29332c3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/attrs-25.3.0-pyh71513ae_0.conda
@@ -434,6 +436,26 @@ packages:
   version: 2.2.1
   sha256: ca8209abd5005ae6e700ef36e2edc84ad5338678f95625a3f15275410a89ffbc
   requires_python: '>=3.8'
+- conda: https://conda.anaconda.org/conda-forge/linux-64/actionlint-1.7.7-hd0c01bc_0.conda
+  sha256: a6fb8bfb2ef6c7f48195ac2b7683656aecc55429f7fc3123ec6bbb1e1ce06b2b
+  md5: 4dcdf2570573cf76931efb97d14e4641
+  depends:
+  - __glibc >=2.17
+  - libgcc >=13
+  - __glibc >=2.17,<3.0.a0
+  license: MIT
+  license_family: MIT
+  size: 1947627
+  timestamp: 1737388180543
+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/actionlint-1.7.7-h48c0fde_0.conda
+  sha256: 93f9426c61265adaa8afa900bf2b35627732fed1fa15886e8836af58547e7830
+  md5: 2ec2ec4893bcee0ccd4858b7c8c14d23
+  depends:
+  - __osx >=11.0
+  license: MIT
+  license_family: MIT
+  size: 1727363
+  timestamp: 1737388223041
 - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.7.0-pyhd8ed1ab_1.conda
   sha256: e0ea1ba78fbb64f17062601edda82097fcf815012cf52bb704150a2668110d48
   md5: 2934f256a8acfe48f6ebb4fce6cde29c

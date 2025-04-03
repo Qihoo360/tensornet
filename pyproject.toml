@@ -102,6 +102,7 @@ dependencies = { python = ">=3.5,<3.6a1" } # to build wrapper for py35
 platforms = ["linux-64", "osx-arm64"]
 
 [tool.pixi.feature.tools.dependencies]
+actionlint = "*"
 bump-my-version = "*"
 check-wheel-contents = "*"
 cmakelang = '*'

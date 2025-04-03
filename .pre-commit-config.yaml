@@ -61,3 +61,11 @@ repos:
         language: system
         types: [cmake]
         stages: [pre-commit, manual]
+
+      - id: actionlint
+        name: Lint GitHub Actions workflow files
+        language: system
+        entry: ./pixiw run -e tools actionlint
+        types: [yaml]
+        files: ^\.github/workflows/
+        stages: [pre-commit, manual]
