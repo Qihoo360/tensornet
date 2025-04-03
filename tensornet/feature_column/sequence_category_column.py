@@ -65,7 +65,7 @@ class SequenceCategoryColumn(fc.SequenceCategoricalColumn,
         sparse_tensors = fc.CategoricalColumn.IdWeightPair(
             transformation_cache.get(self, state_manager), None)
         return self._get_sparse_tensors_helper(sparse_tensors)
-    
+
     def get_config(self):
         """See 'FeatureColumn` base class."""
         from tensorflow.python.feature_column.serialization import serialize_feature_column  # pylint: disable=g-import-not-at-top
@@ -95,8 +95,8 @@ class SequenceCategoryColumn(fc.SequenceCategoricalColumn,
         id_tensor = sparse_ops.sparse_reshape(id_tensor, target_shape)
         if weight_tensor is not None:
             weight_tensor = sparse_ops.sparse_reshape(weight_tensor, target_shape)
-        return fc.CategoricalColumn.IdWeightPair(id_tensor, weight_tensor) 
- 
+        return fc.CategoricalColumn.IdWeightPair(id_tensor, weight_tensor)
+
 
 def sequence_category_column(categorical_column):
     """Represents sparse feature where ids are set by hashing.

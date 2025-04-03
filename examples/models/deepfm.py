@@ -3,7 +3,7 @@ import tensorflow as tf
 import tensornet as tn
 from common.config import Config as C
 from common.layers import FMLayer
-from common.feature_column import tn_category_columns_builder, embedding_columns_builder, create_emb_model  
+from common.feature_column import tn_category_columns_builder, embedding_columns_builder, create_emb_model
 
 
 def create_sub_model(linear_embs, deep_embs, deep_hidden_units):
@@ -43,7 +43,7 @@ def create_sub_model(linear_embs, deep_embs, deep_hidden_units):
 
 
 def DeepFM(linear_features, dnn_features, dnn_hidden_units=(128, 128)):
-    features = set(linear_features + dnn_features) 
+    features = set(linear_features + dnn_features)
     columns_group = {}
     tn_category_columns = tn_category_columns_builder(features)
     columns_group["linear"] = embedding_columns_builder(linear_features, tn_category_columns, 1)

@@ -13,17 +13,17 @@ from tensorflow.python.ops import variable_scope, array_ops
 
 
 class TNBatchNormalizationBase(Layer):
-    """ 
+    """
     Reference: https://github.com/keras-team/keras/blob/v3.5.0/keras/src/layers/normalization/batch_normalization.py
 
     Args:
         center, scale, epsilon are the same as original batch normalization layer.
         momentum: same defination of original batch normalization, but it's for bn statistics, not original moving_mean, moving_var
-        synchronized: Whether bn statistics(sum, squared sum, count) should be passed to other tensornet rank during training. 
+        synchronized: Whether bn statistics(sum, squared sum, count) should be passed to other tensornet rank during training.
             If set to False, on train end, rank 0 will pull all statistics from other rank and calculate moving_mean and moving var, only once.
             If set to True, with 'sync_freq' argument, every 'sync_freq' batches, incremental bn statistics will be broadcast to all other ranks.
         sync_freq: frequency that bn statistics will be sent to other ranks(based on batches). Only should be used when 'synchronized' is True
-        max_count: Threshold that to avoid bn statistics overflow. Note that: it's record number, not batch number. This is an empirical parameter that needs to be adjusted based on the size of the training data. 
+        max_count: Threshold that to avoid bn statistics overflow. Note that: it's record number, not batch number. This is an empirical parameter that needs to be adjusted based on the size of the training data.
     """
     _USE_PCTR_DNN_BN = False
 
@@ -79,7 +79,7 @@ class TNBatchNormalizationBase(Layer):
             name="moving_variance",
             initializer=self.moving_variance_initializer,
             trainable=False)
-        
+
         self.local_count = self.add_weight(
             shape=self.apply_axis,
             name="local_count",
@@ -92,7 +92,7 @@ class TNBatchNormalizationBase(Layer):
             name="local_sum",
             initializer=self.local_sum_initializer,
             trainable=False)
- 
+
         self.local_squared_sum = self.add_weight(
             shape=self.apply_axis,
             name="local_squared_sum",
@@ -151,15 +151,15 @@ class TNBatchNormalizationBase(Layer):
 
 class TNBatchNormalization(TNBatchNormalizationBase):
     """
-    Calculate incremental count, sum, squared sum. use (squared_sum / count - (sum / count).square) as var 
-    """ 
+    Calculate incremental count, sum, squared sum. use (squared_sum / count - (sum / count).square) as var
+    """
 
 class PCTRDNNBatchNormalization(TNBatchNormalizationBase):
     """
     Calculate incremental count, sum. Calculate incremental (data - mean).sqrt() as var
     """
     _USE_PCTR_DNN_BN = True
-    
+
     def call(self, inputs, training=None):
 
         @tf.function

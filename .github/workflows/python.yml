@@ -13,7 +13,7 @@ on:
 
 jobs:
   tn_build:
-    runs-on: ubuntu-latest 
+    runs-on: ubuntu-latest
     env:
       NEED_ACTIVATE_ENV: "false"
     steps:
@@ -37,7 +37,7 @@ jobs:
 
       - name: Create setup dist
         run: |
-          ./manager create_dist 
+          ./manager create_dist
         shell: micromamba-shell {0}
 
       - name: Store wheels
@@ -51,7 +51,7 @@ jobs:
     if: github.repository == 'Qihoo360/tensornet' && startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
     needs:
     - tn_build
-    runs-on: ubuntu-latest 
+    runs-on: ubuntu-latest
     permissions:
       id-token: write  # mandatory for pypi trusted publishing
       contents: write  # mandatory for create a github release

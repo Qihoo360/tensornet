@@ -37,7 +37,7 @@ class Optimizer(optimizer_v2.OptimizerV2):
                  name='TensornetOptimizer',
                  **kwargs):
         scheduler = tn.core.get_opt_learning_rate(dense_opt)
-        if isinstance(scheduler, learning_rate_schedule.LearningRateSchedule): 
+        if isinstance(scheduler, learning_rate_schedule.LearningRateSchedule):
             self.learning_rate_scheduler = tn.core.get_opt_learning_rate(dense_opt)
         else:
             if isinstance(scheduler, float):

@@ -45,7 +45,7 @@ public:
     std::tuple<Eigen::ArrayXf,Eigen::ArrayXf> GetIncMoments();
 
     Eigen::ArrayXf DivideNoNan(const Eigen::ArrayXd& numerator, const Eigen::ArrayXd& denominator);
-    
+
     void TotalSumAcc(Eigen::ArrayXd acc_sum);
     void TotalSquareSumAcc(Eigen::ArrayXd acc_square_sum);
     void Save(const std::string& filepath);

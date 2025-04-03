@@ -9,6 +9,13 @@ repos:
         language: system
         types: [text]
         stages: [pre-commit, manual]
+      - id: trailing-whitespace
+        name: Fix trailing whitespace
+        entry: ./pixiw run -e tools trailing-whitespace-fixer
+        language: system
+        types: [text]
+        stages: [pre-commit, manual]
+        exclude: "\\.patch$"
 
       - id: check-yaml
         name: Check YAML

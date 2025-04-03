@@ -392,7 +392,7 @@ public:
                 << " you must make sure that use same optimizer when incremental training";
 
             is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> block.dim_;
-            
+
 	    std::tuple<bool, std::string> tuple = block.opt_->NeedOldCompat(is, block.dim_);
             bool need_old_compat = std::get<0>(tuple);
             std::string sample_line = std::get<1>(tuple);

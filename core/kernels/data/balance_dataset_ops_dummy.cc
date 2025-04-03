@@ -106,7 +106,7 @@ private:
                 *end_of_sequence = false;
                 return Status::OK();
             }
-            
+
             TF_RETURN_IF_ERROR(
                     input_impl_->GetNext(ctx, out_tensors, end_of_sequence));
             *end_of_sequence = false;
@@ -129,7 +129,7 @@ private:
             }
             return Status::OK();
         }
-#else 
+#else
         Status SaveInternal(SerializationContext* ctx,
                             IteratorStateWriter* writer) override {
             mutex_lock l(mu_);

@@ -56,7 +56,7 @@ http_archive(
 
 编译完成之后的so在`bazal-bin/core`目录下，其拷贝到python包所在的目录就可以随意使用了。
 
-    cp -f bazel-bin/core/_pywrap_tn.so tensornet/core 
+    cp -f bazel-bin/core/_pywrap_tn.so tensornet/core
     export PYTHONPATH=$(pwd):${PYTHONPATH}
     export LD_LIBRARY_PATH="/da2/zhangyansheng/openmpi-1.4.5/lib:${LD_LIBRARY_PATH}"
     python -c "import tensorflow as tf; import tensornet as tn; print(tn.version)"

@@ -28,7 +28,7 @@ class SparseTablePathInfo:
             self.user = user
         self.fs = pa.hdfs.connect(self.hdfs_head, user=user)
         self.leaf_file_path = fetch_sparse_leaf_file_path(input_dir, self.fs)
-        self.sparse_parent = "/".join(self.leaf_file_path.split("/")[:-3]) 
+        self.sparse_parent = "/".join(self.leaf_file_path.split("/")[:-3])
         self.handles = [ path.split('/')[-1] for path in self.fs.ls(self.sparse_parent)]
         self.total_rank_num = max([ int(path.split('/')[-1].split('_')[1]) for path in self.fs.ls(self.fs.ls(self.sparse_parent)[0])]) + 1
         self.fs.close()
@@ -44,19 +44,19 @@ def get_hdfs_head(path):
 
 def get_hdfs_path_without_hdfs_head(path):
     if path.startswith('hdfs'):
-        start_index = path.find("/", path.find("//") + 2)  
+        start_index = path.find("/", path.find("//") + 2)
         return path[start_index:]
     else:
         return path
 
 
-def extract_single_number(s):  
-    match = re.search(r'\d+', s)  
-    if match:  
-        # 将匹配到的数字字符串转换为整数  
-        return int(match.group(0))  
-    else:  
-        # 如果没有找到数字，返回None  
+def extract_single_number(s):
+    match = re.search(r'\d+', s)
+    if match:
+        # 将匹配到的数字字符串转换为整数
+        return int(match.group(0))
+    else:
+        # 如果没有找到数字，返回None
         return None
 
 
@@ -83,8 +83,8 @@ def get_sign_rank_num(sign, mod):
     return int(sign) % int(mod)
 
 
-def get_sign_block_num(sign):  
-    flipped_sign = (int(sign) >> 32) | (int(sign) << 32)  
+def get_sign_block_num(sign):
+    flipped_sign = (int(sign) >> 32) | (int(sign) << 32)
     return flipped_sign % BLOCK_NUM
 
 
@@ -215,7 +215,7 @@ def resize_partition(iterator, bc_output_path, bc_format, bc_number, bc_handle_n
 def get_weight_for_extra_embedding(itr, total_rank_num, input_dir):
     handle_data_map = {}
     fs = pa.hdfs.connect(get_hdfs_head(input_dir))
-    
+
     for row in itr:
             print(row)
             raw_data = row[1]
@@ -253,7 +253,7 @@ def init_sparse_file(dim, file_format):
 
 def write_txt_data(input_data, file_io):
     result_list = list(input_data[:2]) + input_data[2] + list(input_data[3:6])
-    res_data = '\t'.join(str(item) for item in result_list) 
+    res_data = '\t'.join(str(item) for item in result_list)
     file_io.write((res_data + '\n').encode('utf-8'))
 
 
@@ -304,7 +304,7 @@ def output_line(line, need_bracket):
 
 def load_sparse_table_to_df(sc, input_path, file_format):
     """
-    load sparse table file to DF. output format should be ['sign', 'dim', 'weights', 'g2sum', 'show', 'no_show_days', 'handle'] 
+    load sparse table file to DF. output format should be ['sign', 'dim', 'weights', 'g2sum', 'show', 'no_show_days', 'handle']
     """
     if file_format == 'txt':
         get_handle_name_udf = udf(get_handle_name, StringType())
@@ -321,7 +321,7 @@ def load_sparse_table_to_df(sc, input_path, file_format):
                      .mapPartitions(process_binary_partition)\
                      .toDF(sparse_ada_grad_schema + ['handle']).filter(col("sign") != "")
         return dims_df
-   
+
 
 def mapIndexToDenseRecord(row):
     """

@@ -57,10 +57,10 @@ void BnTable::SetHandle(uint32_t handle) {
 
 void BnTable::Append(butil::IOBuf& bn_statistics_buf, bool isLocal) {
     const std::lock_guard<std::mutex> lock(*mu_);
-    Eigen::ArrayXd acc_sum = Eigen::ArrayXd::Zero(bn_size_); 
-    Eigen::ArrayXd acc_squared_sum = Eigen::ArrayXd::Zero(bn_size_); 
-    Eigen::ArrayXd acc_count = Eigen::ArrayXd::Zero(bn_size_); 
- 
+    Eigen::ArrayXd acc_sum = Eigen::ArrayXd::Zero(bn_size_);
+    Eigen::ArrayXd acc_squared_sum = Eigen::ArrayXd::Zero(bn_size_);
+    Eigen::ArrayXd acc_count = Eigen::ArrayXd::Zero(bn_size_);
+
     bn_statistics_buf.cutn(acc_sum.data(), acc_sum.size() * sizeof(double));
     bn_statistics_buf.cutn(acc_squared_sum.data(), acc_squared_sum.size() * sizeof(double));
     bn_statistics_buf.cutn(acc_count.data(), acc_count.size() * sizeof(double));
@@ -73,7 +73,7 @@ void BnTable::Append(butil::IOBuf& bn_statistics_buf, bool isLocal) {
     }
 
     uint64_t cur_count = static_cast<uint64_t>(total_count_.maxCoeff());
-    
+
     if(max_count_ > 0 && cur_count > max_count_) {
         uint64_t acc_count_num = static_cast<uint64_t>(acc_count.maxCoeff());
         double ratio = (double) acc_count_num / cur_count;
@@ -81,7 +81,7 @@ void BnTable::Append(butil::IOBuf& bn_statistics_buf, bool isLocal) {
         TotalSumAcc((1 - moment_) * ratio * acc_sum);
         total_squared_sum_ *= (1 - (1 - moment_) * ratio);
         TotalSquareSumAcc((1 - moment_) * ratio * acc_squared_sum);
-    } else { 
+    } else {
         TotalSumAcc(acc_sum);
         TotalSquareSumAcc(acc_squared_sum);
         total_count_ += acc_count;
@@ -142,16 +142,16 @@ void BnTable::Refresh() {
 }
 
 
-Eigen::ArrayXf BnTable::DivideNoNan(const Eigen::ArrayXd& numerator, const Eigen::ArrayXd& denominator) {  
+Eigen::ArrayXf BnTable::DivideNoNan(const Eigen::ArrayXd& numerator, const Eigen::ArrayXd& denominator) {
    Eigen::ArrayXd result = numerator;
-   for (int i = 0; i < numerator.size(); ++i) {  
-        if (!std::isnan(denominator(i)) && denominator(i) != 0.0) {  
-            result(i) = numerator(i) / denominator(i);  
-        } else {  
-            result(i) = 0.0;  
-        }  
-    }  
-    return result.cast<float>();  
+   for (int i = 0; i < numerator.size(); ++i) {
+        if (!std::isnan(denominator(i)) && denominator(i) != 0.0) {
+            result(i) = numerator(i) / denominator(i);
+        } else {
+            result(i) = 0.0;
+        }
+    }
+    return result.cast<float>();
 }
 
 void BnTable::PrintDetail(){
@@ -178,7 +178,7 @@ void BnTable::Load(const std::string& filepath) {
     CHECK_EQ(use_pctr_dnn_bn_, use_pctr_dnn_bn) << "bn calculate logic should be same, before use pctrdnn is " << use_pctr_dnn_bn;
 
     in_stream.read(reinterpret_cast<char*>(&bn_size), sizeof(bn_size));
-    
+
     for( int i = 0; i < bn_size; i++) {
         in_stream.read(reinterpret_cast<char*>(&total_sum_[i]), sizeof(total_sum_[i]));
         in_stream.read(reinterpret_cast<char*>(&total_squared_sum_[i]), sizeof(total_squared_sum_[i]));

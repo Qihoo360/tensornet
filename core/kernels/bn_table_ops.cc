@@ -62,7 +62,7 @@ public:
     }
 
     void Start(const tensornet::Callback& done) {
-		const PsServerInterface* si = 
+		const PsServerInterface* si =
 			PsCluster::Instance()->GetServer(shard_id_);
         si->BnStatisticsPushAsync(&cntl, &req, &resp, done);
     }
@@ -87,7 +87,7 @@ public:
     }
 
     void ComputeAsync(OpKernelContext* c, DoneCallback done) override {
-        butil::IOBuf acc_buf; 
+        butil::IOBuf acc_buf;
 
         std::vector<double*> allocated_pointers;
 
@@ -106,7 +106,7 @@ public:
             double* dynamic_double_data = new double[num_elements];
             const float* float_data = var_tensor->flat<float>().data();
             for (int i = 0; i < num_elements; ++i) {
-                dynamic_double_data[i] = static_cast<double>(float_data[i]);    
+                dynamic_double_data[i] = static_cast<double>(float_data[i]);
             }
             acc_buf.append_user_data(dynamic_double_data, num_elements * sizeof(double), NoOpDeleter);
             allocated_pointers.push_back(dynamic_double_data);
@@ -115,9 +115,9 @@ public:
         BnTable* table = BnTableRegistry::Instance()->Get(table_handle_);
         table->Append(acc_buf, true);
 
-        for (auto ptr : allocated_pointers) {  
-            delete[] ptr;  
-        }  
+        for (auto ptr : allocated_pointers) {
+            delete[] ptr;
+        }
         allocated_pointers.clear();
 
         if(synchronized_){
@@ -151,7 +151,7 @@ public:
         }
 
         done();
-        
+
         return;
     }
 
@@ -197,7 +197,7 @@ public:
         auto& global_var_var = bn_vars[1];
         float* global_var_flat = global_var_var->tensor()->flat<float>().data();
         std::copy(std::get<1>(moments_tuple).data(), std::get<1>(moments_tuple).data() + std::get<1>(moments_tuple).size(), global_var_flat);
-        
+
         return;
     }
 
@@ -221,7 +221,7 @@ public:
     ~BnStatisticsPullCall() {}
 
     void Start(const tensornet::Callback& done) {
-		const PsServerInterface* si = 
+		const PsServerInterface* si =
 			PsCluster::Instance()->GetServer(shard_id_);
         si->BnStatisticsPullAsync(&cntl, &req, &resp, done);
     }

@@ -67,7 +67,7 @@ public:
         if (empty_unlock()) {
             return false;
         }
-        
+
         *tensors = std::move(elements_.front());
         elements_.pop();
         return true;

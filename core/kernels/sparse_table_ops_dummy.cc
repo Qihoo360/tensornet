@@ -39,7 +39,7 @@ REGISTER_KERNEL_BUILDER(Name("SparseTablePull").Device(DEVICE_CPU),
 
 class SparseTablePushKernel : public AsyncOpKernel {
 public:
-    explicit SparseTablePushKernel(OpKernelConstruction* c) 
+    explicit SparseTablePushKernel(OpKernelConstruction* c)
         : AsyncOpKernel(c) {
         OP_REQUIRES_OK(c, c->GetAttr("table_handle", &table_handle_));
     }

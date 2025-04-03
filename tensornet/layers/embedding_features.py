@@ -149,7 +149,7 @@ class StateManagerImpl(fc.StateManager):
 
             grads.append(grad.values)
             feature_values.append(sparse_feature.values)
-            feature_label = self._layer.feature_clicks[column_name] 
+            feature_label = self._layer.feature_clicks[column_name]
             feature_labels.append(tf.squeeze(feature_label.value()))
 
         # grads and feature_values must not empty
@@ -196,7 +196,7 @@ class EmbeddingFeatures(Layer):
             name: Name to give to the EmbeddingFeatures.
             is_concat: when this parameter is True, all the tensor of pulled will be concat
                 with axis=-1 and returned.
-            target_columns: labels used for cvm plugin. labels will be counted as a feature, 
+            target_columns: labels used for cvm plugin. labels will be counted as a feature,
                 calculate total_count, label_count (usually used for ctr, counting show/click number)
                 embedding output will include embedding size float + totol_count + label_count / total_count
 
@@ -231,7 +231,7 @@ class EmbeddingFeatures(Layer):
 
     def build(self, input_shapes):
         for column in self._feature_columns:
-            initial_value = tf.zeros([0, 1], dtype=tf.int64) 
+            initial_value = tf.zeros([0, 1], dtype=tf.int64)
             var = tf.Variable(initial_value, shape=[None, 1], name="label_count" + column.categorical_column.name, trainable=False)
             self.feature_clicks[column.categorical_column.name] = var
             with ops.name_scope(column.name):
@@ -248,10 +248,10 @@ class EmbeddingFeatures(Layer):
         transformation_cache = fc.FeatureTransformationCache(using_features)
 
         self.sparse_pulling_features, self.sparse_target_features = self.get_sparse_pulling_feature(using_features)
-        
+
         if self._target_columns:
             labels = features[self._target_columns[0]]
-        
+
         for tensor_index, sparse_tensor_key in enumerate(self.sparse_pulling_features):
             sparse_tensor = features[sparse_tensor_key]
             indices_for_gather = tf.expand_dims(sparse_tensor.indices[:, 0], axis=-1)

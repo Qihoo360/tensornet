@@ -3,7 +3,7 @@ import tensorflow as tf
 import tensornet as tn
 from common.config import Config as C
 from common.layers import DeepCrossLayer
-from common.feature_column import tn_category_columns_builder, embedding_columns_builder, create_emb_model  
+from common.feature_column import tn_category_columns_builder, embedding_columns_builder, create_emb_model
 
 
 def create_sub_model(embeddings, deep_hidden_units):

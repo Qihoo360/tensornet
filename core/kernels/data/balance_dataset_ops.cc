@@ -254,7 +254,7 @@ private:
             }
             return Status::OK();
         }
-#else 
+#else
         Status SaveInternal(SerializationContext* ctx,
                             IteratorStateWriter* writer) override {
             mutex_lock l(mu_);

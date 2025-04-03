@@ -117,7 +117,7 @@ public:
     SparsePullVarInfo(tensorflow::Var* t_var,
                       const tensorflow::Tensor* value, Tensor* out_tensor)
         : var(t_var)
-        , sign_value(value) 
+        , sign_value(value)
         , out_tensor(out_tensor) {
         const int64* feasign_vec = value->flat<int64>().data();
         int64* out_vec = out_tensor->flat<int64>().data();
@@ -158,7 +158,7 @@ public:
 
     // in order to use embedding_lookup, we must map the feature sign into index
     // which will not exceed *var* first dimension(max_var_count)
-    // the mapping id begin from 0, depend on signs order in sign_value 
+    // the mapping id begin from 0, depend on signs order in sign_value
     std::vector<uint64> signs;
 };
 

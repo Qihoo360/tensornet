@@ -14,7 +14,7 @@ spark-submit3 --executor-memory 8g --driver-memory 10g --py-files utils.py merge
 -o/--output |  None  |  输出路径
 -f/--format |  bin   |  输入文件格式
 -n/--number |  20    |  输出并行度
--b/--bracker | False |  输出的Weights是否需要用[]包括, []当作一列, 用\t分割  
+-b/--bracker | False |  输出的Weights是否需要用[]包括, []当作一列, 用\t分割
 
 
 ## sparse切换并行度

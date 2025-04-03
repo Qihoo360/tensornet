@@ -12,7 +12,7 @@ def read_dataset(data_path, days, match_pattern, batch_size, parse_func, num_par
                                        cycle_length=4, block_length=8,
                                        num_parallel_calls=tf.data.experimental.AUTOTUNE)
     dataset = dataset.batch(batch_size)
-    dataset = dataset.map(map_func=lambda example_proto: parse_func(example_proto), 
+    dataset = dataset.map(map_func=lambda example_proto: parse_func(example_proto),
                           num_parallel_calls=num_parallel_calls)
     dataset = tn.data.BalanceDataset(dataset)
     dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)

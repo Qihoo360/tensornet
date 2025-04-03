@@ -90,7 +90,7 @@ private:
     float show_ = 0.0;
     float click_ = 0.0;
     int no_show_days_ = 0;
-    bool use_cvm_ = false; 
+    bool use_cvm_ = false;
     float data_[0];
 };
 

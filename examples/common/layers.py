@@ -72,7 +72,7 @@ class FMLayer(Layer):
         cross_term = square_of_sum - sum_of_square
         fm = 0.5 * tf.math.reduce_sum(cross_term, axis=-1, keepdims=False)
 
-        return fm 
+        return fm
 
     def compute_output_shape(self, input_shape):
         return (None, 1)
