@@ -118,4 +118,3 @@ def balance_dataset_eager_fallback(input_dataset, output_types, output_shapes, n
         "BalanceDataset", _inputs_flat, _attrs, _result)
   _result, = _result
   return _result
-

@@ -57,4 +57,3 @@ TensorNet最核心的优化是将模型的embedding tensor优化到了最小。
 ## License
 
 [Apache License 2.0](LICENSE)
-

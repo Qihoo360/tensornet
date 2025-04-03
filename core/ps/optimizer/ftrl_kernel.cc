@@ -140,4 +140,3 @@ bool SparseFtrlValue::DeleteByShow(const Ftrl* opt) {
 }
 
 } // namespace tensornet
-

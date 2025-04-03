@@ -35,4 +35,3 @@ TEST(optimizer, GetWeightPerf) {
 
     //EXPECT_LT(timer.u_elapsed(), 10000);
 }
-

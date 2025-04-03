@@ -68,4 +68,3 @@ TEST_F(SparseTableTest, pull) {
 
     //EXPECT_LT(timer.u_elapsed(), 10000);
 }
-

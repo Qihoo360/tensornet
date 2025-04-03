@@ -17,4 +17,3 @@ cc_proto_library(
     deps = [":server_proto"],
     visibility = ["//visibility:public"]
 )
-

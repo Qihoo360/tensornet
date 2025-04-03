@@ -392,4 +392,3 @@ class EmbeddingFeatures(Layer):
         metadata = json.loads(super(EmbeddingFeatures, self)._tracking_metadata)
         metadata['_is_feature_layer'] = True
         return json.dumps(metadata, default=serialization.get_json_type)
-

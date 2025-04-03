@@ -219,4 +219,3 @@ def sparse_table_push_eager_fallback(values, grads, feature_labels, table_handle
                              attrs=_attrs, ctx=ctx, name=name)
   _result = None
   return _result
-

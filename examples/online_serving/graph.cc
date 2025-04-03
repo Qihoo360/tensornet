@@ -51,4 +51,3 @@ extern "C" int Run(const std::vector<std::vector<std::vector<float>>>& input,
 
     return 0;
 }
-

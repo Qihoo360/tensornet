@@ -111,4 +111,3 @@ class COPC(metrics.Metric):
 
     def result(self):
         return math_ops.div_no_nan(self.ctr_total, self.pctr_total)
-

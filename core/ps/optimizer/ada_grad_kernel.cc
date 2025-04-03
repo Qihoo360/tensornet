@@ -204,4 +204,3 @@ bool SparseAdaGradValue::DeleteByShow(const AdaGrad* opt) {
 }
 
 } // namespace tensornet
-

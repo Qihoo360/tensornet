@@ -171,4 +171,3 @@ bool FileUtils::GetChildren(const std::string& dir, std::vector<std::string>* re
 }
 
 } // namespace tensornet
-

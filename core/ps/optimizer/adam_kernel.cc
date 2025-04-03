@@ -170,4 +170,3 @@ void SparseAdamValue::DeSerializeBin_(std::istream& is, int dim) {
 }
 
 } // namespace tensornet {
-

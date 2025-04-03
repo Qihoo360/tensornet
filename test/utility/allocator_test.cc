@@ -31,4 +31,3 @@ TEST(allocator, perf) {
 
     EXPECT_LT(timer.u_elapsed(), 10000);
 }
-
