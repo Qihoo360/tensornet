@@ -1,6 +1,9 @@
-exclude: ^.pixi/envs/
-
 repos:
+  - repo: meta
+    hooks:
+      - id: check-hooks-apply
+      - id: check-useless-excludes
+
   - repo: local
     hooks:
       - id: end-of-file
@@ -16,6 +19,12 @@ repos:
         types: [text]
         stages: [pre-commit, manual]
         exclude: "\\.patch$"
+      - id: fix-byte-order-marker
+        name: Fix utf-8 byte order marker
+        entry: ./pixiw run -e tools fix-byte-order-marker
+        language: system
+        types: [text]
+        stages: [pre-commit, manual]
 
       - id: check-executables-have-shebangs
         name: Check that executable scripts have shebangs
