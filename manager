@@ -4,7 +4,7 @@ set -efo pipefail
 
 [[ ${DEBUG-} != true ]] || set -x
 
-WORKSPACE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKSPACE_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 TN_BUILD_ENV_NAME=tn_build
 readonly WORKSPACE_DIR TN_BUILD_ENV_NAME
 
@@ -137,13 +137,13 @@ start_upload(){
 
 bump_dev_version() {
   hash bump-my-version >/dev/null || die "cannot find bump-my-version command"
-  local mode=${1:-patch}
+  local tf_minor='' new_version='' mode=${1:-patch}
   case "$mode" in
   (major)
-    local tf_minor=$(sed -n '/tensorflow-cpu/ s/.*>=2\.\([0-9]*\)[^0-9].*/\1/ p' pyproject.toml)
+    tf_minor=$(sed -n '/tensorflow-cpu/ s/.*>=2\.\([0-9]*\)[^0-9].*/\1/ p' pyproject.toml)
     (( tf_minor > 0 )) || die "failed to parse tensorflow-cpu version!"
 
-    local new_version=$( bump-my-version show current_version | awk -vFS=. -vOFS=. -vtf_minor="$tf_minor" '{
+    new_version=$( bump-my-version show current_version | awk -vFS=. -vOFS=. -vtf_minor="$tf_minor" '{
         $1=$1+1
         $2=tf_minor;
         $3=0;
@@ -156,10 +156,10 @@ bump_dev_version() {
     bump-my-version bump --commit --new-version "$new_version"
     ;;
   (minor)
-    local tf_minor=$(sed -n '/tensorflow-cpu/ s/.*>=2\.\([0-9]*\)[^0-9].*/\1/ p' pyproject.toml)
+    tf_minor=$(sed -n '/tensorflow-cpu/ s/.*>=2\.\([0-9]*\)[^0-9].*/\1/ p' pyproject.toml)
     (( tf_minor > 0 )) || die "failed to parse tensorflow-cpu version!"
 
-    local new_version=$( bump-my-version show current_version | awk -vFS=. -vOFS=. -vtf_minor="$tf_minor" '{
+    new_version=$( bump-my-version show current_version | awk -vFS=. -vOFS=. -vtf_minor="$tf_minor" '{
         curr=$2;
         tn_minor=int(curr/100);
         new=tn_minor * 100 + tf_minor;
@@ -189,8 +189,8 @@ bump_dev_version() {
 
 bump_release_version() {
   hash bump-my-version >/dev/null || die "cannot find bump-my-version command"
-  local mode=${1:-prod} release_part='' tag_name_option=''
-  [[ $# -gt 1 && $2 == 'tool' ]] && tag_name_option='--tag-name v{new_version}-tool'
+  local mode=${1:-prod} release_part='' tag_name_option=()
+  [[ $# -gt 1 && $2 == 'tool' ]] && tag_name_option=( --tag-name 'v{new_version}-tool' )
   release_part=$(bump-my-version show current_version | awk -vFS=. '$NF ~ "^[a-z]" { print $NF }')
 
   case "$mode" in
@@ -205,9 +205,9 @@ bump_release_version() {
   (prod)
     case "${release_part-}" in
     # def->prod release, skip rc
-    (dev*) bump-my-version bump --commit --tag ${tag_name_option} --serialize '{major}.{minor}.{patch}' release ;;
-    (rc*) bump-my-version bump --commit --tag ${tag_name_option} release ;;
-    (''|post*) bump-my-version bump --commit --tag ${tag_name_option} build ;;
+    (dev*) bump-my-version bump --commit --tag "${tag_name_option[@]}" --serialize '{major}.{minor}.{patch}' release ;;
+    (rc*) bump-my-version bump --commit --tag "${tag_name_option[@]}" release ;;
+    (''|post*) bump-my-version bump --commit --tag "${tag_name_option[@]}" build ;;
     (*) die "Unknown release part ($release_part) for bump_release_version" ;;
     esac
     ;;
