@@ -24,7 +24,7 @@
 #include "core/ps/ps_remote_server.h"
 
 namespace brpc {
-// NOTE! do not inlcude brpc/server.h in this header file,
+// NOTE! do not include brpc/server.h in this header file,
 // its will cause butil LOG macro conflict with tensorflow LOG macro
 class Server;
 

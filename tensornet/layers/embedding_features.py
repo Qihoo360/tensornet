@@ -198,7 +198,7 @@ class EmbeddingFeatures(Layer):
                 with axis=-1 and returned.
             target_columns: labels used for cvm plugin. labels will be counted as a feature,
                 calculate total_count, label_count (usually used for ctr, counting show/click number)
-                embedding output will include embedding size float + totol_count + label_count / total_count
+                embedding output will include embedding size float + total_count + label_count / total_count
 
         """
         super(EmbeddingFeatures, self).__init__(

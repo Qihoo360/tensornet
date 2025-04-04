@@ -112,7 +112,7 @@ set_target_properties(protoc-gen-mcpack PROPERTIES EXCLUDE_FROM_ALL TRUE)
 target_include_directories(brpc-static INTERFACE ${brpc_BINARY_DIR}/output/include)
 target_include_directories(brpc-static SYSTEM INTERFACE ${GFLAGS_INCLUDE_PATH})
 
-# build brpc-shared to verify all symboles are resolved
+# build brpc-shared to verify all symbols are resolved
 target_link_libraries(brpc-shared Tensorflow::protobuf Tensorflow::boringssl)
 target_link_options(brpc-shared PRIVATE LINKER:--no-undefined)
 
@@ -188,7 +188,7 @@ set(CC_HEADERS
     core/utility/random.h
     core/utility/fix_redef.h)
 
-# this target holds tensornet dependents that should be hiden to _pywrap_tn, but public to test
+# this target holds tensornet dependents that should be hidden to _pywrap_tn, but public to test
 add_library(tensornet-interface INTERFACE)
 target_link_libraries(
   tensornet-interface INTERFACE Tensorflow::framework Tensorflow::internal Boost::iostreams MPI::MPI_CXX
@@ -207,7 +207,7 @@ target_compile_options(
   PUBLIC -march=x86-64-v2
          -mavx
          -mtune=broadwell
-         # workround tensorflow issue #19747, tf operators using RefCount should be compiled with -DNDEBUG and -O[123]
+         # workaround tensorflow issue #19747, tf operators using RefCount should be compiled with -DNDEBUG and -O[123]
          # should be fixed from tf 2.8 by
          # https://github.com/tensorflow/tensorflow/commit/895943537b80e8cea0e1ba71c6dd4c2d651b84d0
          -DNDEBUG

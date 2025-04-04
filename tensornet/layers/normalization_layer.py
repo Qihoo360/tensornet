@@ -18,7 +18,7 @@ class TNBatchNormalizationBase(Layer):
 
     Args:
         center, scale, epsilon are the same as original batch normalization layer.
-        momentum: same defination of original batch normalization, but it's for bn statistics, not original moving_mean, moving_var
+        momentum: same definition of original batch normalization, but it's for bn statistics, not original moving_mean, moving_var
         synchronized: Whether bn statistics(sum, squared sum, count) should be passed to other tensornet rank during training.
             If set to False, on train end, rank 0 will pull all statistics from other rank and calculate moving_mean and moving var, only once.
             If set to True, with 'sync_freq' argument, every 'sync_freq' batches, incremental bn statistics will be broadcast to all other ranks.

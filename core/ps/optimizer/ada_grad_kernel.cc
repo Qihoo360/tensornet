@@ -50,7 +50,7 @@ void DenseAdaGradValue::Apply(const AdaGrad* opt, const Eigen::ArrayXf& g, const
 std::ostream& operator<<(std::ostream& os, const DenseAdaGradValue& value) {
     int array_size = value.w_.size();
 
-    os << "arrary_size:" << array_size << std::endl;
+    os << "array_size:" << array_size << std::endl;
 
     for (int i = 0; i < array_size; i++) {
         os << value.w_[i] << "\t"

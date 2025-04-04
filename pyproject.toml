@@ -110,6 +110,7 @@ pre-commit = "*"
 pre-commit-hooks = "*"
 shellcheck = '*'
 taplo = "*"
+typos = "*"
 
 [tool.pixi.feature.tools.tasks]
 bump-version = "./manager bump-version"
@@ -149,3 +150,14 @@ values = ["dev", "rc", "prod"]
 optional_value = "prod"
 [[tool.bumpversion.files]]
 filename = "tensornet/version.py"
+
+[tool.typos.default]
+extend-ignore-re = [
+  # https://github.com/github/gitignore/pull/4420
+  "# IntelliJ project files and plugin configuration\\. Seperate directories are",
+]
+[tool.typos.default.extend-identifiers]
+get_splited_str = "get_splited_str" # TODO should fix
+gather_nd = "gather_nd"
+[tool.typos.default.extend-words]
+mape = "mape"

@@ -25,7 +25,7 @@
     ```
     wget https://download.open-mpi.org/release/open-mpi/v1.4/openmpi-1.4.5.tar.gz
     tar -zxvf openmpi-1.4.5.tar.gz
-    ./configure CFLAGS="-fPIC" CXXFlAGS="-fPIC" --prefix=/da2/zhangyansheng/openmpi-1.4.5 --enable-static
+    ./configure CFLAGS="-fPIC" CXXFLAGS="-fPIC" --prefix=/da2/zhangyansheng/openmpi-1.4.5 --enable-static
     make -j20
     make install
     ```

@@ -25,6 +25,12 @@ repos:
         language: system
         types: [text]
         stages: [pre-commit, manual]
+      - id: typos
+        name: Check spell typos
+        entry: ./pixiw run -e tools typos
+        language: system
+        types: [text]
+        stages: [pre-commit, manual]
 
       - id: check-executables-have-shebangs
         name: Check that executable scripts have shebangs

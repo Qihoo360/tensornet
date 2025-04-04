@@ -91,7 +91,7 @@ def get_sign_block_num(sign):
 def process_txt_line(line):
     """
     Fetch sign and weights from sparse
-    Data should be seperated by '\t', sign\tdim_num\tdim_num*weight
+    Data should be separated by '\t', sign\tdim_num\tdim_num*weight
     """
     data_list = line.split('\t')
     if len(data_list) < 3:

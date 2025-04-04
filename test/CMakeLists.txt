@@ -11,7 +11,7 @@ set_target_properties(tn_test PROPERTIES ${TN_COMMON_TARGET_PROPERTIES} ${TN_COM
 target_link_libraries(tn_test PRIVATE tensornet-full-link GTest::Main)
 
 # Force linking embed python lib is required by _pywrap_tensorflow_internal.so python module. Before cmake 4.0, portable
-# linke option syntax `LINKER:-option` cannot be used in target_link_libraries(...), so manually collect the options in
+# link option syntax `LINKER:-option` cannot be used in target_link_libraries(...), so manually collect the options in
 # order with target_link_options(...)
 target_link_options(tn_test PRIVATE ${Python3_LINK_OPTIONS} LINKER:-no-as-needed ${Python3_LIBRARIES} LINKER:-as-needed)
 

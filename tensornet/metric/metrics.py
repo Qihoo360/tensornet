@@ -29,7 +29,7 @@ from tensorflow.python.ops.losses import util as tf_losses_utils
 
 
 class CTR(metrics.Mean):
-    """caclulate average of label
+    """calculate average of label
     """
 
     def __init__(self, name="CTR", dtype=None):
@@ -55,7 +55,7 @@ class CTR(metrics.Mean):
 
 
 class PCTR(metrics.Mean):
-    """caclulate average of label
+    """calculate average of label
     """
 
     def __init__(self, name="PCTR", dtype=None):

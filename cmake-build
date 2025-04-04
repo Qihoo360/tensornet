@@ -62,7 +62,7 @@ exec_cbuild() {
 if [ $# != 0 ]; then
   # parse dir mode
   case "${1-}" in
-  (-*) # for some corner cases which the build dir is a realitive dir starting with a dash
+  (-*) # for some corner cases which the build dir is a relative dir starting with a dash
        # use `cmake --build ./-build-dir-with-dash` format
        ;;
   (*) __b_mode=dir

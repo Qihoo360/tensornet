@@ -22,7 +22,7 @@ RUN wget https://download.open-mpi.org/release/open-mpi/v1.4/openmpi-1.4.5.tar.g
     tar -zxf openmpi-1.4.5.tar.gz -C /root/opt/ && \
     mv /root/opt/openmpi-1.4.5 /root/opt/openmpi && \
     cd /root/opt/openmpi && \
-    ./configure CFLAGS="-fPIC" CXXFlAGS="-fPIC" --prefix=/root/opt/openmpi --enable-static && \
+    ./configure CFLAGS="-fPIC" CXXFLAGS="-fPIC" --prefix=/root/opt/openmpi --enable-static && \
     make -j20 && \
     make install
 
