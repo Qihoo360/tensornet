@@ -41,11 +41,11 @@ function simple_eval_param()
     done
 
     if [[ ${OPENMPI_PATH-} ]]; then
+        echo "OPENMPI_PATH=${OPENMPI_PATH}"
+    else
         echo "please specify where openmpi installed"
         _simple_help
         exit 1
-    else
-      echo "OPENMPI_PATH=${OPENMPI_PATH}"
     fi
 
     return 0
