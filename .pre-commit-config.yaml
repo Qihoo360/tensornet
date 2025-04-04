@@ -17,6 +17,13 @@ repos:
         stages: [pre-commit, manual]
         exclude: "\\.patch$"
 
+      - id: check-executables-have-shebangs
+        name: Check that executable scripts have shebangs
+        entry: ./pixiw run -e tools check-executables-have-shebangs
+        language: system
+        types: [text, executable]
+        stages: [pre-commit, manual]
+
       - id: check-yaml
         name: Check YAML
         entry: ./pixiw run -e tools check-yaml
