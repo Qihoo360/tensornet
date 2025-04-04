@@ -157,7 +157,6 @@ extend-ignore-re = [
   "# IntelliJ project files and plugin configuration\\. Seperate directories are",
 ]
 [tool.typos.default.extend-identifiers]
-get_splited_str = "get_splited_str" # TODO should fix
 gather_nd = "gather_nd"
 [tool.typos.default.extend-words]
 mape = "mape"

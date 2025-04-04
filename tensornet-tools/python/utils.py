@@ -60,7 +60,7 @@ def extract_single_number(s):
         return None
 
 
-def get_splited_str(input_str, delimiter, index):
+def get_split_str(input_str, delimiter, index):
     return input_str.split(delimiter)[index]
 
 
