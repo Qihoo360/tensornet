@@ -48,7 +48,7 @@ repos:
         language: system
         types: [shell]
         stages: [pre-commit, manual]
-        exclude: "manager|configure.sh"
+        exclude: "manager"
       - id: cmake-format
         name: Format cmake list files
         entry: ./pixiw run -e tools cmake-format --in-place

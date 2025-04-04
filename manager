@@ -63,7 +63,7 @@ _prepare_compile_env() {
 
 _build_config(){
     CUR_ENV_PATH=$(ompi_info --parsable --path prefix 2>/dev/null | awk -F":" '{print $NF}')
-    cd -- "${WORKSPACE_DIR}"; bash configure.sh --openmpi_path "${CUR_ENV_PATH}"
+    cd -- "${WORKSPACE_DIR}"; ./configure.sh --openmpi_path "${CUR_ENV_PATH}"
     _prepare_compile_env
 }
 

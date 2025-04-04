@@ -28,7 +28,7 @@ RUN wget https://download.open-mpi.org/release/open-mpi/v1.4/openmpi-1.4.5.tar.g
 
 RUN git clone https://github.com/Qihoo360/tensornet.git && \
     cd /tensornet && \
-    bash configure.sh --openmpi_path /root/opt/openmpi && \
+    ./configure.sh --openmpi_path /root/opt/openmpi && \
     bazel build -c opt //core:_pywrap_tn.so && \
     cp -f /tensornet/bazel-bin/core/_pywrap_tn.so /tensornet/tensornet/core
 

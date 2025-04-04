@@ -34,7 +34,7 @@
 
 执行下面命令编译：
 
-    bash configure.sh --openmpi_path /da2/zhangyansheng/openmpi-1.4.5
+    ./configure.sh --openmpi_path /da2/zhangyansheng/openmpi-1.4.5
     bazel build -c opt //core:_pywrap_tn.so
 **tips**:
 如果bazel build出错，有可能是因为下载太慢导致，下方有解决方案。
