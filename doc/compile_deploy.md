@@ -61,7 +61,7 @@ http_archive(
     export LD_LIBRARY_PATH="/da2/zhangyansheng/openmpi-1.4.5/lib:${LD_LIBRARY_PATH}"
     python -c "import tensorflow as tf; import tensornet as tn; print(tn.version)"
 
-在`tools`目录下我们提供了一个脚本`sh tools/package.sh`可以将python程序及依赖的so打包起来，用户在使用的时候只需要将这个包拷贝到自己的项目下面，通过设置PYTHONPATH就可以导入使用了。
+在`tools`目录下我们提供了一个脚本`tools/package.sh`可以将python程序及依赖的so打包起来，用户在使用的时候只需要将这个包拷贝到自己的项目下面，通过设置PYTHONPATH就可以导入使用了。
 
 ## tips
 

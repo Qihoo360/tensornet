@@ -1,9 +1,9 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-readonly WORKSPACE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly THIS_FILE="${WORKSPACE_DIR}/$(basename "${BASH_SOURCE[0]}")"
+WORKSPACE_DIR=$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+readonly WORKSPACE_DIR
 
-pushd $WORKSPACE_DIR > /dev/null
+cd -- "$WORKSPACE_DIR" || exit $?
 
 # set -o errexit
 set -o pipefail
@@ -17,15 +17,15 @@ function do_package()
     (
         set -o xtrace
 
-        rm -rf ${WORKSPACE_DIR}/tensornet*
+        rm -rf "${WORKSPACE_DIR}"/tensornet*
 
-        cp -r ${WORKSPACE_DIR}/../tensornet ${WORKSPACE_DIR}
+        cp -r "${WORKSPACE_DIR}/../tensornet" "${WORKSPACE_DIR}"
 
-        cp -f ${WORKSPACE_DIR}/../bazel-bin/core/_pywrap_tn.so ${WORKSPACE_DIR}/tensornet/core/
+        cp -f "${WORKSPACE_DIR}"/../bazel-bin/core/_pywrap_tn.so "${WORKSPACE_DIR}"/tensornet/core/
 
-        rm ${WORKSPACE_DIR}/tensornet/core/.gitignore
+        rm "${WORKSPACE_DIR}"/tensornet/core/.gitignore
 
-        find ${WORKSPACE_DIR}/tensornet -name "__pycache__" | xargs rm -rf
+        find "${WORKSPACE_DIR}"/tensornet -name "__pycache__" -exec rm -rf {} +
 
         tar -zcvf tensornet.tar.gz tensornet
     )
@@ -33,15 +33,4 @@ function do_package()
     return 0
 }
 
-function main()
-{
-    do_package
-
-    return 0
-}
-
-main $@
-
-popd > /dev/null
-
-exit 0
+do_package
