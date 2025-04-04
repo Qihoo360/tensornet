@@ -23,6 +23,12 @@ repos:
         language: system
         types: [text, executable]
         stages: [pre-commit, manual]
+      - id: check-shebang-scripts-are-executable
+        name: Check that scripts with shebangs are executable
+        entry: ./pixiw run -e tools check-shebang-scripts-are-executable
+        language: system
+        types: [text]
+        stages: [pre-commit, manual]
 
       - id: check-yaml
         name: Check YAML
