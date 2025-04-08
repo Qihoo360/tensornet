@@ -95,6 +95,21 @@ repos:
         types: [cmake]
         stages: [pre-commit, manual]
 
+      - id: ruff-lint
+        name: Ruff lint
+        entry: ./pixiw run ruff-lint
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+        stages: [pre-commit, manual]
+      - id: ruff-format
+        name: Ruff format
+        entry: ./pixiw run ruff-format
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+        stages: [pre-commit, manual]
+
       - id: actionlint
         name: Lint GitHub Actions workflow files
         language: system

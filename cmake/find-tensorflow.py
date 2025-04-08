@@ -8,36 +8,47 @@ from tensorflow.python import _pywrap_tensorflow_internal as internal
 main_inc_dir = sysconfig.get_include()
 main_link_dir = sysconfig.get_lib()
 
+
 def escape_cmake_str(s):
     s = s.replace("\\", "\\\\")
-    s = s.replace("\"", "\\\"")
+    s = s.replace('"', '\\"')
     s = s.replace("$", "\\$")
     return f'"{s}"'
 
+
 compile_defs = []
 compile_flags = []
-include_dirs = [ main_inc_dir ]
+include_dirs = [main_inc_dir]
 link_flags = []
-link_dirs = [ main_link_dir ]
+link_dirs = [main_link_dir]
 link_libs = []
 
 for flag in sysconfig.get_compile_flags():
-    if flag.startswith('-I'):
+    if flag.startswith("-I"):
         d = flag[2:]
         if d not in include_dirs:
             include_dirs.append(d)
-    elif flag.startswith('-D'):
+    elif flag.startswith("-D"):
         if flag not in compile_defs:
             compile_defs.append(flag)
     else:
         compile_flags.append(flag)
 
 for flag in sysconfig.get_link_flags():
-    if flag.startswith('-L'):
+    if flag.startswith("-L"):
         d = flag[2:]
         if d not in link_dirs:
             link_dirs.append(d)
-    elif flag.startswith('-l') or flag.endswith('.so') or flag.endswith('.dylib') or flag.endswith('.dll') or flag.endswith('.a') or flag.endswith('.lib') or flag.endswith('.o') or flag.endswith('.obj'):
+    elif (
+        flag.startswith("-l")
+        or flag.endswith(".so")
+        or flag.endswith(".dylib")
+        or flag.endswith(".dll")
+        or flag.endswith(".a")
+        or flag.endswith(".lib")
+        or flag.endswith(".o")
+        or flag.endswith(".obj")
+    ):
         if flag not in link_libs:
             link_libs.append(flag)
     else:
@@ -69,7 +80,7 @@ for x in link_dirs:
     print(f"list(APPEND Tensorflow_LIBRARY_DIRS {escape_cmake_str(x)})")
 
 print("")
-print(f"set(Tensorflow_LIBRARY {escape_cmake_str(link_libs[0])})") # at least one
+print(f"set(Tensorflow_LIBRARY {escape_cmake_str(link_libs[0])})")  # at least one
 print("unset(Tensorflow_LIBRARIES)")
 for x in link_libs:
     print(f"list(APPEND Tensorflow_LIBRARIES {escape_cmake_str(x)})")

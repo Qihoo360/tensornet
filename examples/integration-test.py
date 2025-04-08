@@ -2,7 +2,6 @@
 
 import os
 import shutil
-import sys
 
 from common.config import Config as C
 from main import main
@@ -15,6 +14,8 @@ for d in C.TRAIN_DAYS:
 
 if need_gen:
     import gen_example_data
+
+    gen_example_data.main()
 
 # remove existing model
 shutil.rmtree(C.MODEL_DIR, ignore_errors=True)

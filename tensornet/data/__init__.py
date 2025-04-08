@@ -12,4 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .dataset import *
+from .dataset import list_files as list_files
+from .dataset import BalanceDataset as BalanceDataset

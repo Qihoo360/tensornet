@@ -21,21 +21,13 @@ from tensorflow.python.keras.optimizer_v2 import optimizer_v2
 from tensorflow.python.keras.optimizer_v2 import learning_rate_schedule
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import control_flow_ops
-from tensorflow.python.ops import array_ops
-from tensorflow.python.eager import backprop
-from tensorflow.python.util import nest
-from tensorflow.python.keras import backend
 import numpy as np
-import random
 
 
 class Optimizer(optimizer_v2.OptimizerV2):
-    """
-    """
-    def __init__(self,
-                 dense_opt,
-                 name='TensornetOptimizer',
-                 **kwargs):
+    """ """
+
+    def __init__(self, dense_opt, name="TensornetOptimizer", **kwargs):
         scheduler = tn.core.get_opt_learning_rate(dense_opt)
         if isinstance(scheduler, learning_rate_schedule.LearningRateSchedule):
             self.learning_rate_scheduler = tn.core.get_opt_learning_rate(dense_opt)
@@ -74,7 +66,9 @@ class Optimizer(optimizer_v2.OptimizerV2):
 
             tn.core.barrier()
 
-        gen_dense_table_ops.dense_table_push_pull(vars, grads, self.learning_rate_scheduler(self.iterations), table_handle=self.dense_table_handle)
+        gen_dense_table_ops.dense_table_push_pull(
+            vars, grads, self.learning_rate_scheduler(self.iterations), table_handle=self.dense_table_handle
+        )
 
         super(Optimizer, self)._distributed_apply(distribution, grads_and_vars, name, apply_state)
 
@@ -90,42 +84,45 @@ class Optimizer(optimizer_v2.OptimizerV2):
 
 
 class PCGrad(Optimizer):
-    """
-    """
-    def __init__(self,
-                 dense_opt,
-                 name='TensornetPCGrad',
-                 **kwargs):
+    """ """
 
+    def __init__(self, dense_opt, name="TensornetPCGrad", **kwargs):
         super(PCGrad, self).__init__(dense_opt, name, **kwargs)
 
     def compute_gradients(self, loss, var_list, tape, grad_loss=None):
         assert type(loss) is list
         num_tasks = len(loss)
         tf.random.shuffle(loss)
-        #loss = tf.stack(loss)
-        #tf.random.shuffle(loss)
-        #print('loss:%s' % loss)
+        # loss = tf.stack(loss)
+        # tf.random.shuffle(loss)
+        # print('loss:%s' % loss)
 
         def sub_loss_compute(x, tape, var_list, grad_loss):
-            print('x:%s' % x)
+            print("x:%s" % x)
             temp_loss_value = []
             gradients = tape.gradient(x, var_list, grad_loss)
             for grad in gradients:
                 if grad is not None:
-                    temp_loss_value.append(tf.reshape(grad, [-1,]))
+                    temp_loss_value.append(
+                        tf.reshape(
+                            grad,
+                            [
+                                -1,
+                            ],
+                        )
+                    )
 
             return tf.concat(temp_loss_value, axis=0)
 
-        #compute gradient projections
+        # compute gradient projections
         def proj_grad(grad_task):
             for k in range(num_tasks):
                 inner_product = tf.reduce_sum(grad_task * grads_task[k])
                 proj_direction = inner_product / tf.reduce_sum(grads_task[k] * grads_task[k])
-                grad_task = grad_task - tf.minimum(proj_direction, 0.) * grads_task[k]
+                grad_task = grad_task - tf.minimum(proj_direction, 0.0) * grads_task[k]
             return grad_task
 
-        #compute per-task gradients
+        # compute per-task gradients
         proj_grads_flatten = []
         grads_task = []
         for ls in loss:
@@ -135,14 +132,14 @@ class PCGrad(Optimizer):
         for grad_task in grads_task:
             proj_grads_flatten.append(proj_grad(grad_task))
 
-        #unpack flattened projected gradients back to their original shapes
+        # unpack flattened projected gradients back to their original shapes
         proj_grads = []
         for j in range(num_tasks):
             start_idx = 0
             for idx, var in enumerate(var_list):
                 grad_shape = var.get_shape()
                 flatten_dim = np.prod([grad_shape.dims[i].value for i in range(len(grad_shape.dims))])
-                proj_grad = proj_grads_flatten[j][start_idx:start_idx+flatten_dim]
+                proj_grad = proj_grads_flatten[j][start_idx : start_idx + flatten_dim]
                 proj_grad = tf.reshape(proj_grad, grad_shape)
                 proj_grad = self._clip_gradients(proj_grad)
                 if len(proj_grads) < len(var_list):

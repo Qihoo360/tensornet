@@ -13,18 +13,25 @@
 # limitations under the License.
 
 # -*- coding: utf-8 -*-
-import datetime
 
 import tensornet as tn
 from tensorflow.python.keras.callbacks import Callback
 
 
 class PsWeightCheckpoint(Callback):
-    """Save ps weight after every fit.
-    """
+    """Save ps weight after every fit."""
 
-    def __init__(self, checkpoint_dir, checkpoint_save=None, need_save_model=False, dt=None, delta_days=0, save_mode="txt",
-                 model_path_incl_dt=False, **kwargs):
+    def __init__(
+        self,
+        checkpoint_dir,
+        checkpoint_save=None,
+        need_save_model=False,
+        dt=None,
+        delta_days=0,
+        save_mode="txt",
+        model_path_incl_dt=False,
+        **kwargs,
+    ):
         """
         :param checkpoint_dir: path of save model
         :param need_save_model: whether save model
@@ -34,9 +41,9 @@ class PsWeightCheckpoint(Callback):
         self.checkpoint_dir = checkpoint_dir
         self.checkpoint_save = checkpoint_save if checkpoint_save else checkpoint_dir
         self.need_save_model = need_save_model
-        self.need_load_model = kwargs.get('need_load_model', True)
+        self.need_load_model = kwargs.get("need_load_model", True)
         self.save_mode = save_mode
-        self.load_mode = kwargs.get('load_mode', self.save_mode)
+        self.load_mode = kwargs.get("load_mode", self.save_mode)
         self.model_path_incl_dt = model_path_incl_dt
         self.dt = dt
         self.delta_days = delta_days

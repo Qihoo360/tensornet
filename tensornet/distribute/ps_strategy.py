@@ -13,25 +13,23 @@
 # limitations under the License.
 
 # -*- coding: utf-8 -*-
-import time
 
 import tensornet as tn
 
 
-from tensorflow.python.distribute import distribute_lib
 from tensorflow.python.distribute.one_device_strategy import OneDeviceStrategy, OneDeviceExtended
 
 
 class PsStrategy(OneDeviceStrategy):
-    """
-    """
+    """ """
+
     def __init__(self):
         super(OneDeviceStrategy, self).__init__(PsExtend(self))
 
 
 class PsExtend(OneDeviceExtended):
-    """
-    """
+    """ """
+
     def __init__(self, container_strategy):
         tn.core.init()
 
@@ -44,18 +42,17 @@ class PsExtend(OneDeviceExtended):
         return tn.core.self_shard_id() == 0
 
     def _validate_colocate_with_variable(self, colocate_with_variable):
-        """
-        """
+        """ """
         pass
 
     def _experimental_assign_to_logical_device(self, tensor, logical_device_id):
-        raise NotImplemented("not implement")
+        raise NotImplementedError("not implement")
 
     def _experimental_split_to_logical_devices(self, tensor, partition_dimensions):
-        raise NotImplemented("not implement")
+        raise NotImplementedError("not implement")
 
     def _experimental_replicate_to_logical_devices(self, tensor):
-        raise NotImplemented("not implement")
+        raise NotImplementedError("not implement")
 
     def variable_created_in_scope(self, v):
         return True

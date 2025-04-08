@@ -108,6 +108,7 @@ check-wheel-contents = "*"
 cmakelang = '*'
 pre-commit = "*"
 pre-commit-hooks = "*"
+ruff = "*"
 shellcheck = '*'
 taplo = "*"
 typos = "*"
@@ -119,6 +120,8 @@ bump-release = "./manager release"
 pre-commit-install = "pre-commit install --install-hooks -t=pre-commit"
 pre-commit-run = "pre-commit run --all-files"
 toml-format = { cmd = "taplo fmt", env = { RUST_LOG = "warn" } }
+ruff-format = "ruff format --force-exclude"
+ruff-lint = "ruff check --fix --exit-non-zero-on-fix --force-exclude"
 
 [tool.pixi.environments]
 default = { features = ["build"], solve-group = "default" }
@@ -151,6 +154,14 @@ values = ["dev", "rc", "prod"]
 optional_value = "prod"
 [[tool.bumpversion.files]]
 filename = "tensornet/version.py"
+
+[tool.ruff]
+line-length = 120
+target-version = "py38"
+exclude = ["doc/tutorial/", "tensornet/core/gen_*_ops.py"]
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "double"
 
 [tool.typos.default]
 extend-ignore-re = [
