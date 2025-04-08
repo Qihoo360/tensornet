@@ -1,0 +1,5 @@
+line_ending: lf
+formatter:
+  type: basic
+  retain_line_breaks: true
+  max_line_length: 120

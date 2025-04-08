@@ -111,6 +111,7 @@ pre-commit-hooks = "*"
 shellcheck = '*'
 taplo = "*"
 typos = "*"
+yamlfmt = "*"
 
 [tool.pixi.feature.tools.tasks]
 bump-version = "./manager bump-version"

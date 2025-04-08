@@ -45,6 +45,12 @@ repos:
         types: [text]
         stages: [pre-commit, manual]
 
+      - id: format-yaml
+        name: Format YAML
+        entry: ./pixiw run -e tools yamlfmt
+        language: system
+        types: [yaml]
+        stages: [pre-commit, manual]
       - id: check-yaml
         name: Check YAML
         entry: ./pixiw run -e tools check-yaml
