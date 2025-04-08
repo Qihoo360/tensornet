@@ -20,7 +20,7 @@
 // tensornet support tensorflow-2.3, the following macro is compatible with tensorflow-2.2
 // https://github.com/tensorflow/tensorflow/releases/tag/v2.3.0
 #if (TF_MAJOR_VERSION == 2) && (TF_MINOR_VERSION == 2)
-    #define TN_COMPATIBLE_INTERFACE_2_2 1
+#define TN_COMPATIBLE_INTERFACE_2_2 1
 #endif
 
 #endif  // TENSORNET_CORE_PUBLIC_VERSION_H_

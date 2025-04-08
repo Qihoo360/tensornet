@@ -1,5 +1,8 @@
+---
 line_ending: lf
 formatter:
   type: basic
-  retain_line_breaks: true
+  include_document_start: true
   max_line_length: 120
+  pad_line_comments: 2
+  retain_line_breaks: true

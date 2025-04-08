@@ -20,17 +20,16 @@
 
 namespace tensornet {
 
-#define MPICHECK(cmd) do {                              \
-    int e = cmd;                                        \
-    if( e != MPI_SUCCESS ) {                            \
-        printf("Failed: MPI error %s:%d '%d'\n",        \
-                __FILE__,__LINE__, e);                  \
-        exit(EXIT_FAILURE);                             \
-    }                                                   \
-} while(0)
+#define MPICHECK(cmd)                                                        \
+    do {                                                                     \
+        int e = cmd;                                                         \
+        if (e != MPI_SUCCESS) {                                              \
+            printf("Failed: MPI error %s:%d '%d'\n", __FILE__, __LINE__, e); \
+            exit(EXIT_FAILURE);                                              \
+        }                                                                    \
+    } while (0)
 
-
-MpiManager::MpiManager() { }
+MpiManager::MpiManager() {}
 
 MpiManager::~MpiManager() {
     if (is_initialized_) {
@@ -63,12 +62,10 @@ int MpiManager::Init() {
             ip_table_[rank].resize(len);
         }
 
-        MPI_Bcast(const_cast<char*>(ip_table_[rank].data()), len,
-                MPI_BYTE, rank, MPI_COMM_WORLD);
+        MPI_Bcast(const_cast<char*>(ip_table_[rank].data()), len, MPI_BYTE, rank, MPI_COMM_WORLD);
     }
 
-    MPICHECK(MPI_Allgather(MPI_IN_PLACE, 0, MPI_SHORT, &port_table_[0], 1,
-                             MPI_SHORT, MPI_COMM_WORLD));
+    MPICHECK(MPI_Allgather(MPI_IN_PLACE, 0, MPI_SHORT, &port_table_[0], 1, MPI_SHORT, MPI_COMM_WORLD));
 
     is_initialized_ = true;
 
@@ -110,6 +107,6 @@ std::vector<std::string> MpiManager::GetWorkers() {
     return workers;
 }
 
-} // namespace tensornet
+}  // namespace tensornet
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

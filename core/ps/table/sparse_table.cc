@@ -26,8 +26,8 @@
 
 namespace tensornet {
 
-SparseTable::SparseTable(const OptimizerBase* opt, const std::string& name,
-        int dimension, int shard_num, int self_shard_id)
+SparseTable::SparseTable(
+    const OptimizerBase* opt, const std::string& name, int dimension, int shard_num, int self_shard_id)
     : shard_num_(shard_num)
     , self_shard_id_(self_shard_id)
     , opt_(opt)
@@ -61,7 +61,6 @@ void SparseTable::Pull(const SparsePullRequest* req, butil::IOBuf& out_emb_buf, 
 }
 
 void SparseTable::Push(const SparsePushRequest* req, butil::IOBuf& grad_buf, SparsePushResponse* resp) {
-
     float grad[req->dim()];
     SparsePushSignInfo sign_info;
 
@@ -97,12 +96,9 @@ void SparseTable::Save(const std::string& filepath, const std::string& mode) {
 
     int new_key_count = op_kernel_->KeyCount();
 
-    LOG(INFO) << "SparseTable save. rank:" << self_shard_id_
-              << " name:" << name_
-              << " handle:" << GetHandle()
+    LOG(INFO) << "SparseTable save. rank:" << self_shard_id_ << " name:" << name_ << " handle:" << GetHandle()
               << " latency:" << timer.s_elapsed() << "s"
-              << " key_count:" << new_key_count
-              << " increased key_count:" << new_key_count - saved_key_count_;
+              << " key_count:" << new_key_count << " increased key_count:" << new_key_count - saved_key_count_;
 
     saved_key_count_ = new_key_count;
 }
@@ -115,7 +111,7 @@ void SparseTable::Load(const std::string& filepath, const std::string& mode) {
     if (name_.empty()) {
         file += std::to_string(GetHandle());
     } else {
-        if(FileUtils::CheckFileExists(file + name_)){
+        if (FileUtils::CheckFileExists(file + name_)) {
             file += name_;
         } else {
             file += std::to_string(GetHandle());
@@ -130,16 +126,12 @@ void SparseTable::Load(const std::string& filepath, const std::string& mode) {
 
     saved_key_count_ = op_kernel_->KeyCount();
 
-    LOG(INFO) << "SparseTable load. rank:" << self_shard_id_
-              << " name:" << name_
-              << " handle:" << GetHandle()
+    LOG(INFO) << "SparseTable load. rank:" << self_shard_id_ << " name:" << name_ << " handle:" << GetHandle()
               << " latency:" << timer.s_elapsed() << "s"
               << " key_count:" << saved_key_count_;
 }
 
-void SparseTable::ShowDecay(int delta_days) const {
-    op_kernel_->ShowDecay(delta_days);
-}
+void SparseTable::ShowDecay(int delta_days) const { op_kernel_->ShowDecay(delta_days); }
 
 SparseTableRegistry* SparseTableRegistry::Instance() {
     static SparseTableRegistry instance;
@@ -147,8 +139,7 @@ SparseTableRegistry* SparseTableRegistry::Instance() {
 }
 
 SparseTable* SparseTableRegistry::Get(uint32_t table_handle) {
-    CHECK(table_handle < tables_.size())
-        << " table_handle:" << table_handle << " table size:" << tables_.size();
+    CHECK(table_handle < tables_.size()) << " table_handle:" << table_handle << " table size:" << tables_.size();
     return tables_[table_handle];
 }
 
@@ -160,8 +151,8 @@ uint32_t SparseTableRegistry::Register(SparseTable* table) {
     return table_handle;
 }
 
-SparseTable* CreateSparseTable(const OptimizerBase* opt, const std::string& name,
-        int dimension, int shard_num, int self_shard_id) {
+SparseTable* CreateSparseTable(
+    const OptimizerBase* opt, const std::string& name, int dimension, int shard_num, int self_shard_id) {
     SparseTable* table = new SparseTable(opt, name, dimension, shard_num, self_shard_id);
 
     table->SetHandle(SparseTableRegistry::Instance()->Register(table));

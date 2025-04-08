@@ -42,5 +42,4 @@ void SparseOptValue::DeSerialize(std::istream& is, int dim) {
     }
 }
 
-
-} // namespace tensornet
+}  // namespace tensornet

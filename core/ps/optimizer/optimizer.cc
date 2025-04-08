@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "core/ps/optimizer/optimizer_kernel.h"
-#include "core/ps/optimizer/adam_kernel.h"
 #include "core/ps/optimizer/ada_grad_kernel.h"
+#include "core/ps/optimizer/adam_kernel.h"
 #include "core/ps/optimizer/ftrl_kernel.h"
+#include "core/ps/optimizer/optimizer_kernel.h"
 
 #include <memory>
 
@@ -29,35 +29,28 @@ typedef SparseKernelBlock<Adam, SparseAdamValue> SparseAdamKernelBlock;
 typedef SparseKernelBlock<AdaGrad, SparseAdaGradValue> SparseAdaGradKernelBlock;
 typedef SparseKernelBlock<Ftrl, SparseFtrlValue> SparseFtrlKernelBlock;
 
-
-DenseOptKernelSharedPtr Adam::CreateDenseOptKernel(
-    int offset_begin, int offset_end) const {
-    return std::make_shared<DenseOptimizerKernel<DenseAdamKernelBlock>>(
-            this, offset_begin, offset_end);
+DenseOptKernelSharedPtr Adam::CreateDenseOptKernel(int offset_begin, int offset_end) const {
+    return std::make_shared<DenseOptimizerKernel<DenseAdamKernelBlock>>(this, offset_begin, offset_end);
 }
 
 SparseOptKernelSharedPtr Adam::CreateSparseOptKernel(int dimension) const {
     return std::make_shared<SparseOptimizerKernel<SparseAdamKernelBlock>>(this, dimension);
 }
 
-DenseOptKernelSharedPtr AdaGrad::CreateDenseOptKernel(
-    int offset_begin, int offset_end) const {
-    return std::make_shared<DenseOptimizerKernel<DenseAdaGradKernelBlock>>(
-            this, offset_begin, offset_end);
+DenseOptKernelSharedPtr AdaGrad::CreateDenseOptKernel(int offset_begin, int offset_end) const {
+    return std::make_shared<DenseOptimizerKernel<DenseAdaGradKernelBlock>>(this, offset_begin, offset_end);
 }
 
 SparseOptKernelSharedPtr AdaGrad::CreateSparseOptKernel(int dimension) const {
     return std::make_shared<SparseOptimizerKernel<SparseAdaGradKernelBlock>>(this, dimension);
 }
 
-DenseOptKernelSharedPtr Ftrl::CreateDenseOptKernel(
-    int offset_begin, int offset_end) const {
-    return std::make_shared<DenseOptimizerKernel<DenseFtrlKernelBlock>>(
-            this, offset_begin, offset_end);
+DenseOptKernelSharedPtr Ftrl::CreateDenseOptKernel(int offset_begin, int offset_end) const {
+    return std::make_shared<DenseOptimizerKernel<DenseFtrlKernelBlock>>(this, offset_begin, offset_end);
 }
 
 SparseOptKernelSharedPtr Ftrl::CreateSparseOptKernel(int dimension) const {
     return std::make_shared<SparseOptimizerKernel<SparseFtrlKernelBlock>>(this, dimension);
 }
 
-} // namespace tensornet {
+}  // namespace tensornet

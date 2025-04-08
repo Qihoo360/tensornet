@@ -14,12 +14,12 @@
 
 #include "core/utility/net_util.h"
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <net/if.h>
-#include <sys/ioctl.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 namespace tensornet {
@@ -33,15 +33,15 @@ std::string get_local_ip_internal() {
     ifconf.ifc_len = 512;
     ifconf.ifc_buf = buf;
 
-    if((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         return "";
     }
 
-    if(ioctl(sockfd, SIOCGIFCONF, &ifconf) < 0) {
+    if (ioctl(sockfd, SIOCGIFCONF, &ifconf) < 0) {
         return "";
     }
 
-    if(0 != close(sockfd)) {
+    if (0 != close(sockfd)) {
         return "";
     }
 
@@ -61,8 +61,8 @@ std::string get_local_ip_internal() {
 
 static uint16_t get_useable_port_aux() {
     struct sockaddr_in addr;
-    addr.sin_port = htons(0);  // have system pick up a random port available for me
-    addr.sin_family = AF_INET;  // IPV4
+    addr.sin_port = htons(0);                  // have system pick up a random port available for me
+    addr.sin_family = AF_INET;                 // IPV4
     addr.sin_addr.s_addr = htonl(INADDR_ANY);  // set our addr to any interface
 
     int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -92,4 +92,4 @@ uint16_t get_useable_port() {
     return port;
 }
 
-} // namespace tensornet
+}  // namespace tensornet

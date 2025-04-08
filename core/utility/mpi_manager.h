@@ -15,10 +15,10 @@
 #ifndef TENSORNET_UTILITY_MPI_MANAGER_H_
 #define TENSORNET_UTILITY_MPI_MANAGER_H_
 
-#include <vector>
-#include <string>
-#include <cstdint>
 #include <mpi.h>
+#include <cstdint>
+#include <string>
+#include <vector>
 
 namespace tensornet {
 
@@ -28,13 +28,9 @@ public:
 
     int Init();
 
-    int Rank() const {
-        return rank_;
-    }
+    int Rank() const { return rank_; }
 
-    int RankNum() const {
-        return rank_num_;
-    }
+    int RankNum() const { return rank_num_; }
 
     std::vector<std::string> GetWorkers();
 
@@ -53,8 +49,8 @@ private:
     std::vector<uint16_t> port_table_;
 };
 
-} // namespace tensornet
+}  // namespace tensornet
 
-#endif // TENSORNET_UTILITY_MPI_MANAGER_H_
+#endif  // TENSORNET_UTILITY_MPI_MANAGER_H_
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

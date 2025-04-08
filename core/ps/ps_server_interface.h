@@ -54,14 +54,14 @@ public:
                                   Callback done) const = 0;
 
     virtual void BnStatisticsPushAsync(brpc::Controller *cntl,
-                                 const BnStatisticsPushRequest *request,
-                                 BnStatisticsPushResponse *response,
-                                 Callback done) const = 0;
+                                       const BnStatisticsPushRequest *request,
+                                       BnStatisticsPushResponse *response,
+                                       Callback done) const = 0;
 
     virtual void BnStatisticsPullAsync(brpc::Controller *cntl,
-                                 const BnStatisticsPullRequest *request,
-                                 BnStatisticsPullResponse *response,
-                                 Callback done) const = 0;
+                                       const BnStatisticsPullRequest *request,
+                                       BnStatisticsPullResponse *response,
+                                       Callback done) const = 0;
 
 private:
     typedef PsServerInterface ME;

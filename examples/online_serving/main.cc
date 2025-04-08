@@ -12,21 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <iostream>
+#include <dlfcn.h>
+#include <boost/algorithm/string.hpp>
 #include <chrono>
 #include <fstream>
+#include <iostream>
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
-#include <boost/algorithm/string.hpp>
-#include <dlfcn.h>
 
 #include "core/utility/random.h"
 
 using namespace std::chrono;
 
-typedef int (*RUN_FUNC)(const std::vector<std::vector<std::vector<float>>>&,
-                        std::vector<float>&);
+typedef int (*RUN_FUNC)(const std::vector<std::vector<std::vector<float>>>&, std::vector<float>&);
 
 const int k_batch_size = 32;
 
@@ -66,7 +65,7 @@ int combine_fea(std::vector<std::vector<float>> emb_feas, std::vector<float>& me
     return 0;
 }
 
-int emb_lookup(const std::vector<std::vector<std::vector<uint64_t> > >& inputs,
+int emb_lookup(const std::vector<std::vector<std::vector<uint64_t>>>& inputs,
                std::vector<std::vector<std::vector<float>>>& emb_inputs) {
     for (size_t b = 0; b < inputs.size(); ++b) {
         std::vector<std::vector<float>> emb_slots;
@@ -111,12 +110,11 @@ int main() {
         std::cerr << "dlopen error." << std::endl;
         return -1;
     }
-    RUN_FUNC run_func = reinterpret_cast<RUN_FUNC> (dlsym(handle, "Run"));
+    RUN_FUNC run_func = reinterpret_cast<RUN_FUNC>(dlsym(handle, "Run"));
     if (run_func == NULL) {
         std::cerr << "get Run error." << std::endl;
         return -1;
     }
-
 
     std::string file_name = "./data/feature.data";
     std::ifstream data_if(file_name);
@@ -125,10 +123,10 @@ int main() {
         return -1;
     }
 
-    std::vector<std::vector<std::vector<uint64_t> > > inputs;
+    std::vector<std::vector<std::vector<uint64_t>>> inputs;
     std::vector<std::vector<std::vector<float>>> emb_inputs;
-    while(getline(data_if, input)) {
-        std::vector<std::vector<uint64_t> > one_input;
+    while (getline(data_if, input)) {
+        std::vector<std::vector<uint64_t>> one_input;
         one_input.assign(slot2pos.size(), {});
         std::vector<std::string> vec;
         boost::split(vec, input, boost::is_any_of("\t"));
@@ -137,7 +135,7 @@ int main() {
             std::vector<std::string> slot_feas;
             boost::split(slot_feas, vec[i], boost::is_any_of("\001"));
             int index;
-            //std::cout << "slot fea:" << slot_feas[0] << std::endl;
+            // std::cout << "slot fea:" << slot_feas[0] << std::endl;
             if (slot2pos.count(std::stoi(slot_feas[0])) > 0) {
                 index = slot2pos[std::stoi(slot_feas[0])];
                 std::vector<std::string> feas_vec;
@@ -157,7 +155,7 @@ int main() {
             std::vector<float> outputs;
             auto start = system_clock::now();
             run_func(emb_inputs, outputs);
-            auto end   = system_clock::now();
+            auto end = system_clock::now();
             auto duration = duration_cast<microseconds>(end - start);
 
             for (size_t i = 0; i < outputs.size(); ++i) {
@@ -174,11 +172,11 @@ int main() {
         std::vector<float> outputs;
         auto start = system_clock::now();
         run_func(emb_inputs, outputs);
-        auto end   = system_clock::now();
+        auto end = system_clock::now();
         auto duration = duration_cast<microseconds>(end - start);
 
         for (auto w : outputs) {
-            std::cout <<  w << std::endl;
+            std::cout << w << std::endl;
         }
     }
 

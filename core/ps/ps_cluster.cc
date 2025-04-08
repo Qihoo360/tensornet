@@ -15,17 +15,14 @@
 #include "core/ps/ps_cluster.h"
 #include "core/utility/mpi_manager.h"
 
-#include <brpc/server.h>
 #include <brpc/channel.h>
+#include <brpc/server.h>
 
 namespace tensornet {
 
-PsCluster::PsCluster() {
-    server_ = std::make_unique<brpc::Server>();
-}
+PsCluster::PsCluster() { server_ = std::make_unique<brpc::Server>(); }
 
-PsCluster::~PsCluster() {
-}
+PsCluster::~PsCluster() {}
 
 PsCluster* PsCluster::Instance() {
     static PsCluster cluster;
@@ -69,13 +66,9 @@ int PsCluster::Init() {
     return 0;
 }
 
-size_t PsCluster::RankNum() const {
-    return MpiManager::Instance()->RankNum();
-}
+size_t PsCluster::RankNum() const { return MpiManager::Instance()->RankNum(); }
 
-int PsCluster::Rank() const {
-    return MpiManager::Instance()->Rank();
-}
+int PsCluster::Rank() const { return MpiManager::Instance()->Rank(); }
 
 int PsCluster::InitRemoteServers_() {
     brpc::ChannelOptions options;
@@ -86,8 +79,7 @@ int PsCluster::InitRemoteServers_() {
     options.max_retry = 1;
 
     for (size_t i = 0; i < workers_.size(); i++) {
-        std::shared_ptr<brpc::Channel> channel =
-            std::make_shared<brpc::Channel>();
+        std::shared_ptr<brpc::Channel> channel = std::make_shared<brpc::Channel>();
 
         if (channel->Init(workers_[i].c_str(), "", &options) != 0) {
             LOG(ERROR) << "Fail to initialize channel with " << workers_[i];
@@ -109,9 +101,7 @@ const PsServerInterface* PsCluster::GetServer(int shard_id) const {
     }
 }
 
-void PsCluster::Barrier() const {
-    MpiManager::Instance()->Barrier();
-}
+void PsCluster::Barrier() const { MpiManager::Instance()->Barrier(); }
 
 uint16_t PsCluster::GetSelfPort_() {
     const std::string& worker = workers_[Rank()];
@@ -125,4 +115,4 @@ uint16_t PsCluster::GetSelfPort_() {
     return std::stoul(port_str);
 }
 
-} // namespace tensornet
+}  // namespace tensornet

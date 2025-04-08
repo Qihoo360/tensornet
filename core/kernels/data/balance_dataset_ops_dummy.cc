@@ -51,38 +51,25 @@ public:
 
     std::unique_ptr<IteratorBase> MakeIteratorInternal(const string& prefix) const override {
         data::name_utils::IteratorPrefixParams params;
-        return absl::make_unique<Iterator>(Iterator::Params{
-            this, data::name_utils::IteratorPrefix(kDatasetType, prefix, params)});
+        return absl::make_unique<Iterator>(
+            Iterator::Params{this, data::name_utils::IteratorPrefix(kDatasetType, prefix, params)});
     }
 
-    const DataTypeVector& output_dtypes() const override {
-        return input_->output_dtypes();
-    }
+    const DataTypeVector& output_dtypes() const override { return input_->output_dtypes(); }
 
-    const std::vector<PartialTensorShape>& output_shapes() const override {
-        return input_->output_shapes();
-    }
+    const std::vector<PartialTensorShape>& output_shapes() const override { return input_->output_shapes(); }
 
-    string DebugString() const override {
-        return data::name_utils::DatasetDebugString(kDatasetType);
-    }
+    string DebugString() const override { return data::name_utils::DatasetDebugString(kDatasetType); }
 
-    int64 Cardinality() const override {
-        return input_->Cardinality();
-    }
+    int64 Cardinality() const override { return input_->Cardinality(); }
 
-    Status CheckExternalState() const override {
-        return input_->CheckExternalState();
-    }
+    Status CheckExternalState() const override { return input_->CheckExternalState(); }
 
 protected:
-    Status AsGraphDefInternal(SerializationContext* ctx,
-                              DatasetGraphDefBuilder* b,
-                              Node** output) const override {
+    Status AsGraphDefInternal(SerializationContext* ctx, DatasetGraphDefBuilder* b, Node** output) const override {
         Node* input_graph_node = nullptr;
         TF_RETURN_IF_ERROR(b->AddInputDataset(ctx, input_, &input_graph_node));
-        TF_RETURN_IF_ERROR(
-            b->AddDataset(this, {input_graph_node}, output));
+        TF_RETURN_IF_ERROR(b->AddDataset(this, {input_graph_node}, output));
         return Status::OK();
     }
 
@@ -91,13 +78,11 @@ private:
     public:
         explicit Iterator(const Params& params)
             : DatasetIterator<Dataset>(params) {}
-            Status Initialize(IteratorContext* ctx) override {
+        Status Initialize(IteratorContext* ctx) override {
             return dataset()->input_->MakeIterator(ctx, this, prefix(), &input_impl_);
         }
 
-        Status GetNextInternal(IteratorContext* ctx,
-                               std::vector<Tensor>* out_tensors,
-                               bool* end_of_sequence) override {
+        Status GetNextInternal(IteratorContext* ctx, std::vector<Tensor>* out_tensors, bool* end_of_sequence) override {
             mutex_lock l(mu_);
 
             if (!input_impl_) {
@@ -107,15 +92,14 @@ private:
                 return Status::OK();
             }
 
-            TF_RETURN_IF_ERROR(
-                    input_impl_->GetNext(ctx, out_tensors, end_of_sequence));
+            TF_RETURN_IF_ERROR(input_impl_->GetNext(ctx, out_tensors, end_of_sequence));
             *end_of_sequence = false;
             return Status::OK();
         }
 
     protected:
-        std::shared_ptr<data::model::Node> CreateNode(
-                IteratorContext* ctx, data::model::Node::Args args) const override {
+        std::shared_ptr<data::model::Node> CreateNode(IteratorContext* ctx,
+                                                      data::model::Node::Args args) const override {
             return data::model::MakeKnownRatioNode(std::move(args), /*ratio=*/1);
         }
 
@@ -130,20 +114,18 @@ private:
             return Status::OK();
         }
 #else
-        Status SaveInternal(SerializationContext* ctx,
-                            IteratorStateWriter* writer) override {
+        Status SaveInternal(SerializationContext* ctx, IteratorStateWriter* writer) override {
             mutex_lock l(mu_);
             if (!input_impl_) {
-              TF_RETURN_IF_ERROR(writer->WriteScalar(full_name(kInputImplEmpty), ""));
+                TF_RETURN_IF_ERROR(writer->WriteScalar(full_name(kInputImplEmpty), ""));
             } else {
-              TF_RETURN_IF_ERROR(SaveInput(ctx, writer, input_impl_));
+                TF_RETURN_IF_ERROR(SaveInput(ctx, writer, input_impl_));
             }
             return Status::OK();
         }
 #endif
 
-        Status RestoreInternal(IteratorContext* ctx,
-                               IteratorStateReader* reader) override {
+        Status RestoreInternal(IteratorContext* ctx, IteratorStateReader* reader) override {
             mutex_lock l(mu_);
             if (!reader->Contains(full_name(kInputImplEmpty))) {
                 TF_RETURN_IF_ERROR(RestoreInput(ctx, reader, input_impl_));
@@ -163,16 +145,13 @@ private:
 };
 
 BalanceDatasetOp::BalanceDatasetOp(OpKernelConstruction* ctx)
-    : UnaryDatasetOpKernel(ctx) {
-}
+    : UnaryDatasetOpKernel(ctx) {}
 
-void BalanceDatasetOp::MakeDataset(OpKernelContext* ctx, DatasetBase* input,
-                                  DatasetBase** output) {
+void BalanceDatasetOp::MakeDataset(OpKernelContext* ctx, DatasetBase* input, DatasetBase** output) {
     *output = new Dataset(ctx, input);
 }
 
 namespace {
-REGISTER_KERNEL_BUILDER(Name("BalanceDataset").Device(DEVICE_CPU),
-                        BalanceDatasetOp);
+REGISTER_KERNEL_BUILDER(Name("BalanceDataset").Device(DEVICE_CPU), BalanceDatasetOp);
 }  // namespace
 }  // namespace tensorflow

@@ -15,13 +15,15 @@
 #ifndef TENSORNET_OPTIMIZER_OPTIMIZER_H_
 #define TENSORNET_OPTIMIZER_OPTIMIZER_H_
 
-#include <vector>
-#include <memory>
-#include <string>
 #include <iostream>
+#include <memory>
 #include <sstream>
+#include <string>
+#include <vector>
 
-namespace pybind11 { class object; }
+namespace pybind11 {
+class object;
+}
 
 namespace tensornet {
 
@@ -31,11 +33,9 @@ class SparseOptimizerKernelBase;
 typedef std::shared_ptr<DenseOptimizerKernelBase> DenseOptKernelSharedPtr;
 typedef std::shared_ptr<SparseOptimizerKernelBase> SparseOptKernelSharedPtr;
 
-
 class OptimizerBase {
 public:
-    virtual DenseOptKernelSharedPtr CreateDenseOptKernel(
-        int offset_begin, int offset_end) const = 0;
+    virtual DenseOptKernelSharedPtr CreateDenseOptKernel(int offset_begin, int offset_end) const = 0;
 
     virtual SparseOptKernelSharedPtr CreateSparseOptKernel(int dimension) const = 0;
 
@@ -46,44 +46,35 @@ public:
         return std::make_tuple(false, emptyString);
     }
 
-    void SetSparseZeroInit(bool sparse_zero_init) { sparse_zero_init_ = sparse_zero_init;}
+    void SetSparseZeroInit(bool sparse_zero_init) { sparse_zero_init_ = sparse_zero_init; }
 
-    virtual void SetUseCvm(bool use_cvm) {
-        use_cvm_ = use_cvm;
+    virtual void SetUseCvm(bool use_cvm) { use_cvm_ = use_cvm; }
+
+    virtual bool ShouldUseCvm() const { return use_cvm_; }
+
+    const pybind11::object* GetSchedule() const { return scheduler_.get(); }
+
+    void SetSchedule(std::unique_ptr<pybind11::object, void (*)(pybind11::object*)>&& schedule) {
+        scheduler_ = std::move(schedule);
     }
 
-    virtual bool ShouldUseCvm() const {
-        return use_cvm_;
-    }
-
-    const pybind11::object *GetSchedule() const { return scheduler_.get(); }
-
-    void SetSchedule(std::unique_ptr<pybind11::object, void(*)(pybind11::object*)> &&schedule) {
-            scheduler_ = std::move(schedule);
-    }
-
-    void SetSchedule(float const_lr) {
-        learning_rate = const_lr;
-    }
+    void SetSchedule(float const_lr) { learning_rate = const_lr; }
 
 public:
     float learning_rate = 0.01;
     float show_decay_rate = 0.98;
     bool sparse_zero_init_ = false;
     float use_cvm_ = false;
-    std::unique_ptr<pybind11::object, void(*)(pybind11::object*)> scheduler_{nullptr, nullptr};
+    std::unique_ptr<pybind11::object, void (*)(pybind11::object*)> scheduler_{nullptr, nullptr};
 };
 
 class Adam : public OptimizerBase {
 public:
-    virtual DenseOptKernelSharedPtr CreateDenseOptKernel(
-        int offset_begin, int offset_end) const;
+    virtual DenseOptKernelSharedPtr CreateDenseOptKernel(int offset_begin, int offset_end) const;
 
     virtual SparseOptKernelSharedPtr CreateSparseOptKernel(int dimension) const;
 
-    virtual std::string Name() const {
-        return "Adam";
-    }
+    virtual std::string Name() const { return "Adam"; }
 
 public:
     float beta1 = 0.9;
@@ -94,20 +85,17 @@ public:
 
 class AdaGrad : public OptimizerBase {
 public:
-    virtual DenseOptKernelSharedPtr CreateDenseOptKernel(
-        int offset_begin, int offset_end) const;
+    virtual DenseOptKernelSharedPtr CreateDenseOptKernel(int offset_begin, int offset_end) const;
 
     virtual SparseOptKernelSharedPtr CreateSparseOptKernel(int dimension) const;
 
-    virtual std::string Name() const {
-        return "AdaGrad";
-    }
+    virtual std::string Name() const { return "AdaGrad"; }
 
     std::tuple<bool, std::string> NeedOldCompat(std::istream& is, int dim) const {
         bool need_old_compat = false;
         std::string line;
         std::string cell;
-        std::getline(is, line); // 抹去换行符
+        std::getline(is, line);  // 抹去换行符
         std::getline(is, line);
         std::istringstream iss(line);
         int column_count = 0;
@@ -116,10 +104,10 @@ public:
             ++column_count;
         }
 
-        // if use cvm plugins, columns should be sign, dim_, dims_ * weight, g2sum, show, no_show_days, click,should be dim + 6
-		// if no use cvm, no click, should be dim + 5
+        // if use cvm plugins, columns should be sign, dim_, dims_ * weight, g2sum, show, no_show_days, click,should be
+        // dim + 6 if no use cvm, no click, should be dim + 5
         // for old version, no no_show_days column, column_count should be dim + 4
-        if(column_count == dim + 4){
+        if (column_count == dim + 4) {
             need_old_compat = true;
         }
 
@@ -139,14 +127,11 @@ public:
 
 class Ftrl : public OptimizerBase {
 public:
-    virtual DenseOptKernelSharedPtr CreateDenseOptKernel(
-        int offset_begin, int offset_end) const;
+    virtual DenseOptKernelSharedPtr CreateDenseOptKernel(int offset_begin, int offset_end) const;
 
     virtual SparseOptKernelSharedPtr CreateSparseOptKernel(int dimension) const;
 
-    virtual std::string Name() const {
-        return "Ftrl";
-    }
+    virtual std::string Name() const { return "Ftrl"; }
 
 public:
     float initial_scale = 0;
@@ -157,6 +142,6 @@ public:
     float show_threshold = 0.0;
 };
 
-} // namespace tensornet {
+}  // namespace tensornet
 
-#endif // !TENSORNET_OPTIMIZER_OPTIMIZER_H_
+#endif  // !TENSORNET_OPTIMIZER_OPTIMIZER_H_

@@ -105,6 +105,7 @@ platforms = ["linux-64", "osx-arm64"]
 actionlint = "*"
 bump-my-version = "*"
 check-wheel-contents = "*"
+clang-format = "*"
 cmakelang = '*'
 pre-commit = "*"
 pre-commit-hooks = "*"

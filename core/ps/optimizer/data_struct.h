@@ -41,13 +41,9 @@ public:
 
     void DeSerialize(std::istream& is, int dim);
 
-    void SetOldCompat(bool old_compat) {
-	old_compat_ = old_compat;
-    }
+    void SetOldCompat(bool old_compat) { old_compat_ = old_compat; }
 
-    float Show() const {
-        return show_;
-    }
+    float Show() const { return show_; }
 
 protected:
     virtual void SerializeTxt_(std::ostream& os, int dim) = 0;
@@ -62,6 +58,6 @@ protected:
     bool old_compat_ = false;
 };
 
-} // namespace tensornet {
+}  // namespace tensornet
 
-#endif // !TENSORNET_OPTIMIZER_DATA_STRUCT_H_
+#endif  // !TENSORNET_OPTIMIZER_DATA_STRUCT_H_

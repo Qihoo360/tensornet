@@ -15,9 +15,9 @@
 #ifndef TENSORNET_KERNEL_RESOURCE_VAR_WRAPPER_H_
 #define TENSORNET_KERNEL_RESOURCE_VAR_WRAPPER_H_
 
-// trick: do not include resource_mgr.h, use symbols (tensorflow::Var::*, LookupResource<Var, false>(...)) define at _pywrap_tensorflow_internal.so instead.
-// because of TypeIndex::Make<T>(name) function use static variable in core/framework/type_index.h,
-// they will generate different hash code for the same Symbol in different so file.
+// trick: do not include resource_mgr.h, use symbols (tensorflow::Var::*, LookupResource<Var, false>(...)) define at
+// _pywrap_tensorflow_internal.so instead. because of TypeIndex::Make<T>(name) function use static variable in
+// core/framework/type_index.h, they will generate different hash code for the same Symbol in different so file.
 #define TENSORFLOW_CORE_FRAMEWORK_RESOURCE_MGR_H_
 
 // 2.7: https://github.com/tensorflow/tensorflow/commit/69fc036bb636ea7f76d4b4d879e27f7e4cf0ad33
@@ -33,10 +33,10 @@ public:
     // Returns memory used by this resource.
     virtual int64 MemoryUsed() const { return 0; }
 };
-} // namespace tensorflow
+}  // namespace tensorflow
 
 #include "tensorflow/core/framework/resource_var.h"
 
 #undef TENSORFLOW_CORE_FRAMEWORK_RESOURCE_MGR_H_
 
-#endif // !TENSORNET_KERNEL_RESOURCE_VAR_WRAPPER_H_
+#endif  // !TENSORNET_KERNEL_RESOURCE_VAR_WRAPPER_H_

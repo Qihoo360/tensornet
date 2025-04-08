@@ -30,16 +30,11 @@ public:
 
     void SetWeight(butil::IOBuf& w_buf);
 
-    const Eigen::ArrayXf& GetWeight() const {
-        return w_;
-    }
+    const Eigen::ArrayXf& GetWeight() const { return w_; }
 
     void Apply(const Adam* opt, const Eigen::ArrayXf& g, const float lr);
 
-    size_t DataSize() const {
-        return sizeof(float) * 2
-            + (m_.size() + v_.size() + w_.size()) * sizeof(float);
-    }
+    size_t DataSize() const { return sizeof(float) * 2 + (m_.size() + v_.size() + w_.size()) * sizeof(float); }
 
     friend std::ostream& operator<<(std::ostream& os, const DenseAdamValue& value);
     friend std::istream& operator>>(std::istream& is, DenseAdamValue& value);
@@ -56,23 +51,16 @@ private:
 std::ostream& operator<<(std::ostream& os, const DenseAdamValue& value);
 std::istream& operator>>(std::istream& is, DenseAdamValue& value);
 
-class alignas(4) SparseAdamValue
-    : public SparseOptValue {
+class alignas(4) SparseAdamValue : public SparseOptValue {
 public:
     SparseAdamValue(int dim, const Adam* opt);
     ~SparseAdamValue() = default;
 
-    static constexpr int DynSizeof(int dim) {
-        return sizeof(SparseAdamValue) + sizeof(float) * dim * 3;
-    }
+    static constexpr int DynSizeof(int dim) { return sizeof(SparseAdamValue) + sizeof(float) * dim * 3; }
 
-    float* Weight() {
-        return data_;
-    }
+    float* Weight() { return data_; }
 
-    const float* Weight() const {
-        return data_;
-    }
+    const float* Weight() const { return data_; }
 
     void Apply(const Adam* opt, SparseGradInfo& grad_info, int dim);
 
@@ -81,21 +69,13 @@ public:
     bool DeleteByShow(const Adam* opt) { return false; }
 
 protected:
-    float* M(int dim) {
-        return data_ + dim * 1;
-    }
+    float* M(int dim) { return data_ + dim * 1; }
 
-    const float* M(int dim) const {
-        return data_ + dim * 1;
-    }
+    const float* M(int dim) const { return data_ + dim * 1; }
 
-    float* V(int dim) {
-        return data_ + dim * 2;
-    }
+    float* V(int dim) { return data_ + dim * 2; }
 
-    const float* V(int dim) const {
-        return data_ + dim * 2;
-    }
+    const float* V(int dim) const { return data_ + dim * 2; }
 
     virtual void SerializeTxt_(std::ostream& os, int dim);
     virtual void DeSerializeTxt_(std::istream& is, int dim);
@@ -106,6 +86,6 @@ private:
     float data_[0];
 };
 
-} // namespace tensornet {
+}  // namespace tensornet
 
-#endif // !TENSORNET_OPTIMIZER_ADAM_KERNEL_H_
+#endif  // !TENSORNET_OPTIMIZER_ADAM_KERNEL_H_

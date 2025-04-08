@@ -18,17 +18,16 @@
 #include "core/ps/optimizer/optimizer.h"
 
 #include <map>
-#include <vector>
 #include <mutex>
+#include <vector>
 
 namespace butil {
 class IOBuf;
-} // namespace butil
+}  // namespace butil
 
 namespace tensornet {
 
-class DenseTable
-{
+class DenseTable {
 public:
     DenseTable(const OptimizerBase* opt, int shard_num, int self_shard_id);
 
@@ -40,13 +39,9 @@ public:
 
     void SetHandle(uint32_t handle);
 
-    uint32_t GetHandle() const {
-        return handle_;
-    }
+    uint32_t GetHandle() const { return handle_; }
 
-    int TotalElements() {
-        return total_elements_;
-    }
+    int TotalElements() { return total_elements_; }
 
     const DenseOptKernelSharedPtr GetOptKernels(int shard_id) const;
 
@@ -90,6 +85,6 @@ private:
 
 DenseTable* CreateDenseTable(const OptimizerBase* opt, int shard_num, int self_shard_id);
 
-} // namespace tensornet {
+}  // namespace tensornet
 
-#endif // !TENSORNET_PS_TABLE_DENSE_TABLE_H_
+#endif  // !TENSORNET_PS_TABLE_DENSE_TABLE_H_

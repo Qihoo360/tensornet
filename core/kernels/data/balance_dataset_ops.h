@@ -17,13 +17,13 @@
 
 #include "tensorflow/core/framework/dataset.h"
 
-#include <set>
-#include <vector>
 #include <mutex>
 #include <queue>
+#include <set>
+#include <vector>
 
-#include "core/ps/ps_server_interface.h"
 #include "core/ps/ps_cluster.h"
+#include "core/ps/ps_server_interface.h"
 
 namespace tensorflow {
 
@@ -37,8 +37,7 @@ public:
     explicit BalanceDatasetOp(OpKernelConstruction* ctx);
 
 protected:
-    void MakeDataset(OpKernelContext* ctx, DatasetBase* input,
-                     DatasetBase** output) override;
+    void MakeDataset(OpKernelContext* ctx, DatasetBase* input, DatasetBase** output) override;
 
 private:
     class Dataset;
@@ -84,9 +83,7 @@ public:
     }
 
 private:
-    bool empty_unlock() {
-        return elements_.empty();
-    }
+    bool empty_unlock() { return elements_.empty(); }
 
 private:
     size_t buffer_size_ = 100;
@@ -121,13 +118,9 @@ public:
         return 0;
     }
 
-    const std::set<uint32_t>* RemainingShards() {
-        return &remaining_shards_;
-    }
+    const std::set<uint32_t>* RemainingShards() { return &remaining_shards_; }
 
-    std::mutex& RemainingShardsMutex() {
-        return remaining_mu_;
-    }
+    std::mutex& RemainingShardsMutex() { return remaining_mu_; }
 
     void ChangeShardStatus(uint32_t shard_id) {
         const std::lock_guard<std::mutex> lock(remaining_mu_);

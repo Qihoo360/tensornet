@@ -23,16 +23,13 @@ public:
         OP_REQUIRES_OK(c, c->GetAttr("table_handle", &table_handle_));
     }
 
-    void Compute(OpKernelContext* c) override {
-        return;
-    }
+    void Compute(OpKernelContext* c) override { return; }
 
 private:
     int table_handle_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("DenseTableInit").Device(DEVICE_CPU),
-                        DenseTableInitKernel);
+REGISTER_KERNEL_BUILDER(Name("DenseTableInit").Device(DEVICE_CPU), DenseTableInitKernel);
 
 class DenseTablePushPullKernel : public AsyncOpKernel {
 public:
@@ -50,7 +47,6 @@ private:
     int table_handle_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("DenseTablePushPull").Device(DEVICE_CPU),
-                        DenseTablePushPullKernel);
+REGISTER_KERNEL_BUILDER(Name("DenseTablePushPull").Device(DEVICE_CPU), DenseTablePushPullKernel);
 
 }  // namespace tensorflow

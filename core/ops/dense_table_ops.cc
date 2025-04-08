@@ -26,7 +26,6 @@ REGISTER_OP("DenseTableInit")
     .Attr("N: int")
     .SetShapeFn(shape_inference::NoOutputs);
 
-
 REGISTER_OP("DenseTablePushPull")
     .Doc(R"doc(push pull variable from parameter server
     )doc")

@@ -16,11 +16,11 @@
 #define TENSORNET_PS_TABLE_BN_TABLE_H_
 
 #include <memory>
+#include <mutex>
 #include <random>
 #include <set>
 #include <string>
 #include <vector>
-#include <mutex>
 
 #include <butil/iobuf.h>
 #include <Eigen/Dense>
@@ -31,7 +31,14 @@ namespace tensornet {
 
 class BnTable {
 public:
-    BnTable(const std::string& name,int shard_num, int self_shard_id, int bn_size, bool sync, float moment, uint64_t max_count, bool use_pctr_dnn_bn);
+    BnTable(const std::string& name,
+            int shard_num,
+            int self_shard_id,
+            int bn_size,
+            bool sync,
+            float moment,
+            uint64_t max_count,
+            bool use_pctr_dnn_bn);
 
     ~BnTable() = default;
 
@@ -41,8 +48,8 @@ public:
 
     void GetIncStatistics(butil::IOBuf& out_buf);
 
-    std::tuple<Eigen::ArrayXf,Eigen::ArrayXf> GetMoments();
-    std::tuple<Eigen::ArrayXf,Eigen::ArrayXf> GetIncMoments();
+    std::tuple<Eigen::ArrayXf, Eigen::ArrayXf> GetMoments();
+    std::tuple<Eigen::ArrayXf, Eigen::ArrayXf> GetIncMoments();
 
     Eigen::ArrayXf DivideNoNan(const Eigen::ArrayXd& numerator, const Eigen::ArrayXd& denominator);
 
@@ -55,9 +62,7 @@ public:
 
     void SetHandle(uint32_t handle);
 
-    uint32_t GetHandle() const {
-        return handle_;
-    }
+    uint32_t GetHandle() const { return handle_; }
 
     void Refresh();
 
@@ -97,14 +102,21 @@ public:
     uint32_t Register(BnTable* table);
 
 private:
-    BnTableRegistry() { }
+    BnTableRegistry() {}
 
 private:
     std::mutex mu_;
     std::vector<BnTable*> tables_;
 };
 
-BnTable* CreateBnTable(const std::string& name, int shard_num, int self_shard_id, int bn_size, bool sync, float moment, uint64_t max_count, bool use_pctr_dnn_bn);
+BnTable* CreateBnTable(const std::string& name,
+                       int shard_num,
+                       int self_shard_id,
+                       int bn_size,
+                       bool sync,
+                       float moment,
+                       uint64_t max_count,
+                       bool use_pctr_dnn_bn);
 
 }  // namespace tensornet
 

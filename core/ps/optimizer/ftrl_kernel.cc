@@ -21,25 +21,15 @@
 
 namespace tensornet {
 
-DenseFtrlValue::DenseFtrlValue(const Ftrl* opt, int len) {
-    return;
-}
+DenseFtrlValue::DenseFtrlValue(const Ftrl* opt, int len) { return; }
 
-void DenseFtrlValue::SetWeight(butil::IOBuf& w_buf) {
-    return;
-}
+void DenseFtrlValue::SetWeight(butil::IOBuf& w_buf) { return; }
 
-void DenseFtrlValue::Apply(const Ftrl* opt, const Eigen::ArrayXf& g, const float lr) {
-    return;
-}
+void DenseFtrlValue::Apply(const Ftrl* opt, const Eigen::ArrayXf& g, const float lr) { return; }
 
-std::ostream& operator<<(std::ostream& os, const DenseFtrlValue& value) {
-    return os;
-}
+std::ostream& operator<<(std::ostream& os, const DenseFtrlValue& value) { return os; }
 
-std::istream& operator>>(std::istream& is, DenseFtrlValue& value) {
-    return is;
-}
+std::istream& operator>>(std::istream& is, DenseFtrlValue& value) { return is; }
 
 SparseFtrlValue::SparseFtrlValue(int dim, const Ftrl* opt) {
     float* w = Weight();
@@ -131,12 +121,8 @@ void SparseFtrlValue::DeSerializeBin_(std::istream& is, int dim) {
     is.read(reinterpret_cast<char*>(&show_), sizeof(show_));
 }
 
-void SparseFtrlValue::ShowDecay(const Ftrl* opt, int /*delta_days*/) {
-    show_ *= opt->show_decay_rate;
-}
+void SparseFtrlValue::ShowDecay(const Ftrl* opt, int /*delta_days*/) { show_ *= opt->show_decay_rate; }
 
-bool SparseFtrlValue::DeleteByShow(const Ftrl* opt) {
-    return show_ < opt->show_threshold;
-}
+bool SparseFtrlValue::DeleteByShow(const Ftrl* opt) { return show_ < opt->show_threshold; }
 
-} // namespace tensornet
+}  // namespace tensornet

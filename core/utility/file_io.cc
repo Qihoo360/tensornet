@@ -17,27 +17,26 @@
 #include <string>
 #include <vector>
 
-#include "tensorflow/core/platform/env.h"
 #include "tensorflow/core/lib/io/buffered_inputstream.h"
 #include "tensorflow/core/lib/io/random_inputstream.h"
-#include "tensorflow/core/lib/io/zlib_outputbuffer.h"
-#include "tensorflow/core/lib/io/zlib_inputstream.h"
 #include "tensorflow/core/lib/io/zlib_compression_options.h"
+#include "tensorflow/core/lib/io/zlib_inputstream.h"
+#include "tensorflow/core/lib/io/zlib_outputbuffer.h"
+#include "tensorflow/core/platform/env.h"
 
-using tensorflow::io::ZlibOutputBuffer;
-using tensorflow::io::ZlibInputStream;
 using tensorflow::io::ZlibCompressionOptions;
+using tensorflow::io::ZlibInputStream;
+using tensorflow::io::ZlibOutputBuffer;
 
 namespace tensornet {
 
-#define CHECK_TF_STATUS(status)                             \
-    do {                                                    \
-        auto s = (status);                                  \
-        CHECK(s.ok()) << s;                                 \
+#define CHECK_TF_STATUS(status) \
+    do {                        \
+        auto s = (status);      \
+        CHECK(s.ok()) << s;     \
     } while (0)
 
-FileWriterSink::FileWriterSink(const std::string& file,
-            const FileCompressionType compression_type) {
+FileWriterSink::FileWriterSink(const std::string& file, const FileCompressionType compression_type) {
     size_t found = file.find_last_of("/\\");
     CHECK(found != std::string::npos);
     std::string file_dir = file.substr(0, found);
@@ -56,9 +55,8 @@ FileWriterSink::FileWriterSink(const std::string& file,
     writer_ = std::move(writer);
 
     if (FCT_ZLIB == compression_type) {
-        ZlibOutputBuffer* zlib_output_buffer = new ZlibOutputBuffer(
-                writer_.get(), zlib_options.input_buffer_size,
-                zlib_options.output_buffer_size, zlib_options);
+        ZlibOutputBuffer* zlib_output_buffer = new ZlibOutputBuffer(writer_.get(), zlib_options.input_buffer_size,
+                                                                    zlib_options.output_buffer_size, zlib_options);
         CHECK_TF_STATUS(zlib_output_buffer->Init());
 
         zlib_writer_ = std::shared_ptr<tensorflow::WritableFile>(zlib_output_buffer);
@@ -67,8 +65,7 @@ FileWriterSink::FileWriterSink(const std::string& file,
 
 FileWriterSink::FileWriterSink(const FileWriterSink& writer_sink)
     : writer_(writer_sink.writer_)
-    , zlib_writer_(writer_sink.zlib_writer_)
-{ }
+    , zlib_writer_(writer_sink.zlib_writer_) {}
 
 FileWriterSink::~FileWriterSink() {
     if (zlib_writer_ && zlib_writer_.use_count() == 1) {
@@ -91,21 +88,18 @@ std::streamsize FileWriterSink::write(const char_type* str, std::streamsize n) {
 
 class FileReaderSource::ReaderInternal {
 public:
-    ReaderInternal(tensorflow::RandomAccessFile* p_file,
-            const FileCompressionType compression_type)
+    ReaderInternal(tensorflow::RandomAccessFile* p_file, const FileCompressionType compression_type)
         : file_(p_file)
         , raw_stream(p_file)
         , buffer_input_stream(&raw_stream, 65535) {
-
         compression_type_ = compression_type;
 
         ZlibCompressionOptions zlib_options;
         zlib_options = ZlibCompressionOptions::GZIP();
 
         if (FCT_ZLIB == compression_type_) {
-            zlib_input_stream.reset(new ZlibInputStream(
-                        &buffer_input_stream, zlib_options.input_buffer_size,
-                        zlib_options.output_buffer_size, zlib_options));
+            zlib_input_stream.reset(new ZlibInputStream(&buffer_input_stream, zlib_options.input_buffer_size,
+                                                        zlib_options.output_buffer_size, zlib_options));
         }
     }
 
@@ -133,16 +127,13 @@ private:
     FileCompressionType compression_type_;
 };
 
-FileReaderSource::FileReaderSource(const std::string& file,
-            const FileCompressionType compression_type) {
+FileReaderSource::FileReaderSource(const std::string& file, const FileCompressionType compression_type) {
     std::unique_ptr<tensorflow::RandomAccessFile> reader;
     CHECK_TF_STATUS(tensorflow::Env::Default()->NewRandomAccessFile(file, &reader));
     reader_ = std::make_shared<ReaderInternal>(reader.release(), compression_type);
 }
 
-FileReaderSource::~FileReaderSource() {
-    reader_ = nullptr;
-}
+FileReaderSource::~FileReaderSource() { reader_ = nullptr; }
 
 std::streamsize FileReaderSource::read(char_type* str, std::streamsize n) {
     tensorflow::tstring buffer;
@@ -163,11 +154,11 @@ std::streamsize FileReaderSource::read(char_type* str, std::streamsize n) {
 }
 
 bool FileUtils::CheckFileExists(const std::string& filepath) {
-   return tensorflow::Env::Default()-> FileExists(filepath).ok();
+    return tensorflow::Env::Default()->FileExists(filepath).ok();
 }
 
 bool FileUtils::GetChildren(const std::string& dir, std::vector<std::string>* result) {
-   return tensorflow::Env::Default()-> GetChildren(dir, result).ok();
+    return tensorflow::Env::Default()->GetChildren(dir, result).ok();
 }
 
-} // namespace tensornet
+}  // namespace tensornet

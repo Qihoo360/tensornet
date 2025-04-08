@@ -45,25 +45,24 @@ message DatasetPullResponse {
 };
 
 message BnStatisticsPushRequest {
-	uint32 req_shard_id = 1;
-	uint32 table_handle = 2;
+    uint32 req_shard_id = 1;
+    uint32 table_handle = 2;
 };
 
 message BnStatisticsPushResponse {
-   uint32 resp_shard_id = 1;
+    uint32 resp_shard_id = 1;
     uint32 table_handle = 2;
 };
 
 message BnStatisticsPullRequest {
-        uint32 req_shard_id = 1;
-        uint32 table_handle = 2;
-};
-
-message BnStatisticsPullResponse {
-   uint32 resp_shard_id = 1;
+    uint32 req_shard_id = 1;
     uint32 table_handle = 2;
 };
 
+message BnStatisticsPullResponse {
+    uint32 resp_shard_id = 1;
+    uint32 table_handle = 2;
+};
 
 service PsService {
     rpc SparsePull(SparsePullRequest) returns (SparsePullResponse);

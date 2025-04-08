@@ -15,20 +15,20 @@
 #ifndef TENSORNET_PS_CLUSTER_H_
 #define TENSORNET_PS_CLUSTER_H_
 
-#include <string>
 #include <map>
 #include <memory>
+#include <string>
 
-#include "core/ps/ps_service_impl.h"
 #include "core/ps/ps_local_server.h"
 #include "core/ps/ps_remote_server.h"
+#include "core/ps/ps_service_impl.h"
 
 namespace brpc {
 // NOTE! do not include brpc/server.h in this header file,
 // its will cause butil LOG macro conflict with tensorflow LOG macro
 class Server;
 
-} // namespace brpc {
+}  // namespace brpc
 
 namespace tensornet {
 
@@ -38,9 +38,7 @@ public:
 
     int Init();
 
-    bool IsInitialized() const {
-        return is_initialized_;
-    }
+    bool IsInitialized() const { return is_initialized_; }
 
     size_t RankNum() const;
 
@@ -73,6 +71,6 @@ private:
     std::vector<std::string> workers_;
 };
 
-} // namespace tensornet
+}  // namespace tensornet
 
 #endif  // TENSORNET_PS_CLUSTER_H_

@@ -30,15 +30,11 @@ public:
 
     void SetWeight(butil::IOBuf& w_buf);
 
-    const Eigen::ArrayXf& GetWeight() const {
-        return w_;
-    }
+    const Eigen::ArrayXf& GetWeight() const { return w_; }
 
     void Apply(const AdaGrad* opt, const Eigen::ArrayXf& g, const float lr);
 
-    size_t DataSize() const {
-        return w_.size() * sizeof(float) * 4;
-    }
+    size_t DataSize() const { return w_.size() * sizeof(float) * 4; }
 
     friend std::ostream& operator<<(std::ostream& os, const DenseAdaGradValue& value);
     friend std::istream& operator>>(std::istream& is, DenseAdaGradValue& value);
@@ -53,24 +49,17 @@ private:
 std::ostream& operator<<(std::ostream& os, const DenseAdaGradValue& value);
 std::istream& operator>>(std::istream& is, DenseAdaGradValue& value);
 
-class alignas(4) SparseAdaGradValue
-    : public SparseOptValue {
+class alignas(4) SparseAdaGradValue : public SparseOptValue {
 public:
     SparseAdaGradValue(int dim, const AdaGrad* opt);
 
     ~SparseAdaGradValue() = default;
 
-    static constexpr int DynSizeof(int dim) {
-        return sizeof(SparseAdaGradValue) + sizeof(float) * dim;
-    }
+    static constexpr int DynSizeof(int dim) { return sizeof(SparseAdaGradValue) + sizeof(float) * dim; }
 
-    float* Weight() {
-        return data_;
-    }
+    float* Weight() { return data_; }
 
-    const float* Weight() const {
-        return data_;
-    }
+    const float* Weight() const { return data_; }
 
     void Apply(const AdaGrad* opt, SparseGradInfo& grad_info, int dim);
 

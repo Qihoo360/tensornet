@@ -14,9 +14,9 @@
 
 #include "core/utility/fix_redef.h"
 
-#include "core/utility/semaphore.h"
-#include "core/ps/table/dense_table.h"
 #include "core/ps/ps_cluster.h"
+#include "core/ps/table/dense_table.h"
+#include "core/utility/semaphore.h"
 
 #include "tensorflow/core/framework/attr_value.pb.h"
 #include "tensorflow/core/framework/op_kernel.h"
@@ -32,11 +32,10 @@ using namespace tensornet;
 
 namespace tensorflow {
 
-static void NoOpDeleter(void *) {}
+static void NoOpDeleter(void*) {}
 
 template <typename T, bool use_dynamic_cast>
-Status LookupResource(OpKernelContext* ctx, const ResourceHandle& p,
-                      T** value);
+Status LookupResource(OpKernelContext* ctx, const ResourceHandle& p, T** value);
 
 const ResourceHandle& HandleFromInput(OpKernelContext* ctx, int input);
 
@@ -51,15 +50,14 @@ public:
     ~DensePushPullCall() {}
 
     void AddRequestData(butil::IOBuf& k_buf) {
-        butil::IOBuf &buf = cntl.request_attachment();
+        butil::IOBuf& buf = cntl.request_attachment();
         buf.append(k_buf);
     }
 
     void Start(const tensornet::Callback& done) {
         cntl.http_request().set_method(brpc::HTTP_METHOD_POST);
 
-        const PsServerInterface* si =
-            PsCluster::Instance()->GetServer(shard_id_);
+        const PsServerInterface* si = PsCluster::Instance()->GetServer(shard_id_);
         si->DensePushPullAsync(&cntl, &req, &resp, done);
     }
 
@@ -85,34 +83,31 @@ public:
         int total_elements = 0;
 
         for (int i = 0; i < N_; i++) {
-            const ResourceHandle &handle = HandleFromInput(c, i);
+            const ResourceHandle& handle = HandleFromInput(c, i);
 
-            Var *variable = nullptr;
+            Var* variable = nullptr;
             const auto status = LookupResource<Var, false>(c, handle, &variable);
 
             OP_REQUIRES_OK(c, status);
             CHECK(variable);
-            Tensor *var_tensor = variable->tensor();
+            Tensor* var_tensor = variable->tensor();
 
             total_elements += var_tensor->NumElements();
 
             initial_value_buf.append_user_data(var_tensor->flat<float>().data(),
-                                 var_tensor->NumElements() * sizeof(float),
-                                  NoOpDeleter);
+                                               var_tensor->NumElements() * sizeof(float), NoOpDeleter);
         }
 
         DenseTable* table = DenseTableRegistry::Instance()->Get(table_handle_);
 
         OP_REQUIRES(c, nullptr != table,
-                errors::InvalidArgument("DenseTable have not created yet, handle:",
-                    table_handle_));
+                    errors::InvalidArgument("DenseTable have not created yet, handle:", table_handle_));
 
         OP_REQUIRES(c, 0 == table->Init(total_elements),
-                errors::InvalidArgument("DenseTable Init fail, total_element:",
-                    total_elements));
+                    errors::InvalidArgument("DenseTable Init fail, total_element:", total_elements));
 
         OP_REQUIRES(c, 0 == table->SetWeight(initial_value_buf),
-                errors::InvalidArgument("DenseTable Init SetWeight fail"));
+                    errors::InvalidArgument("DenseTable Init SetWeight fail"));
 
         return;
     }
@@ -122,8 +117,7 @@ private:
     int N_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("DenseTableInit").Device(DEVICE_CPU),
-                        DenseTableInitKernel);
+REGISTER_KERNEL_BUILDER(Name("DenseTableInit").Device(DEVICE_CPU), DenseTableInitKernel);
 
 class DenseTablePushPullKernel : public AsyncOpKernel {
 public:
@@ -139,11 +133,10 @@ public:
         const Tensor* learning_rate_tensor;
         OP_REQUIRES_OK_ASYNC(c, c->input("learning_rate", &learning_rate_tensor), done);
 
-        OP_REQUIRES_ASYNC(c, c->num_inputs() == N_ * 2 + 1,
-                          errors::InvalidArgument("DenseTable pushpull num_inputs:",
-                                                  c->num_inputs(),
-                                                  " not equal:", N_ * 2 + 1),
-                          done);
+        OP_REQUIRES_ASYNC(
+            c, c->num_inputs() == N_ * 2 + 1,
+            errors::InvalidArgument("DenseTable pushpull num_inputs:", c->num_inputs(), " not equal:", N_ * 2 + 1),
+            done);
 
         float lr_ = learning_rate_tensor->scalar<float>()();
 
@@ -152,21 +145,19 @@ public:
         int total_elements = 0;
 
         for (int i = 0; i < N_; i++) {
-            const ResourceHandle &handle = HandleFromInput(c, i);
+            const ResourceHandle& handle = HandleFromInput(c, i);
             const Tensor& grad_tensor = grads[i];
 
-            Var *variable = nullptr;
+            Var* variable = nullptr;
             const auto status = LookupResource<Var, false>(c, handle, &variable);
 
             OP_REQUIRES_OK_ASYNC(c, status, done);
             CHECK(variable);
-            Tensor *var_tensor = variable->tensor();
+            Tensor* var_tensor = variable->tensor();
 
             OP_REQUIRES_ASYNC(c, var_tensor->NumElements() == grad_tensor.NumElements(),
-                              errors::InvalidArgument("DenseTable var tensor length:",
-                                                      var_tensor->NumElements(),
-                                                      " not equal grad tensor length:",
-                                                      grad_tensor.NumElements()),
+                              errors::InvalidArgument("DenseTable var tensor length:", var_tensor->NumElements(),
+                                                      " not equal grad tensor length:", grad_tensor.NumElements()),
                               done);
 
             total_elements += grad_tensor.NumElements();
@@ -178,17 +169,12 @@ public:
         for (int i = 0; i < N_; ++i) {
             const Tensor& grad_tensor = grads[i];
             const float* grad_data = grad_tensor.flat<float>().data();
-            buf.append_user_data(const_cast<float *>(grad_data),
-                                 grad_tensor.NumElements() * sizeof(float),
-                                  NoOpDeleter);
+            buf.append_user_data(const_cast<float*>(grad_data), grad_tensor.NumElements() * sizeof(float), NoOpDeleter);
         }
 
         DenseTable* table = DenseTableRegistry::Instance()->Get(table_handle_);
 
-        OP_REQUIRES_ASYNC(c, nullptr != table,
-                          errors::InvalidArgument("DenseTable not found:",
-                                                  table_handle_),
-                          done);
+        OP_REQUIRES_ASYNC(c, nullptr != table, errors::InvalidArgument("DenseTable not found:", table_handle_), done);
 
         CHECK_EQ(total_elements, table->TotalElements());
 
@@ -220,7 +206,7 @@ public:
                 for (int i = 0, offset = 0; i < (int)variables.size(); ++i) {
                     Var* variable = variables[i];
 
-                    Tensor *var_tensor = variable->tensor();
+                    Tensor* var_tensor = variable->tensor();
                     float* var_data = var_tensor->flat<float>().data();
 
                     int num_elements = var_tensor->NumElements();
@@ -270,7 +256,6 @@ private:
     int N_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("DenseTablePushPull").Device(DEVICE_CPU),
-                        DenseTablePushPullKernel);
+REGISTER_KERNEL_BUILDER(Name("DenseTablePushPull").Device(DEVICE_CPU), DenseTablePushPullKernel);
 
 }  // namespace tensorflow
