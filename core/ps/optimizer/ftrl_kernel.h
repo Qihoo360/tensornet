@@ -30,15 +30,11 @@ public:
 
     void SetWeight(butil::IOBuf& w_buf);
 
-    const Eigen::ArrayXf& GetWeight() const {
-        return w_;
-    }
+    const Eigen::ArrayXf& GetWeight() const { return w_; }
 
     void Apply(const Ftrl* opt, const Eigen::ArrayXf& g, const float lr);
 
-    size_t DataSize() const {
-        return w_.size() * sizeof(float) * 4;
-    }
+    size_t DataSize() const { return w_.size() * sizeof(float) * 4; }
 
     friend std::ostream& operator<<(std::ostream& os, const DenseFtrlValue& value);
     friend std::istream& operator>>(std::istream& is, DenseFtrlValue& value);
@@ -52,24 +48,17 @@ private:
 std::ostream& operator<<(std::ostream& os, const DenseFtrlValue& value);
 std::istream& operator>>(std::istream& is, DenseFtrlValue& value);
 
-class alignas(4) SparseFtrlValue
-    : public SparseOptValue {
+class alignas(4) SparseFtrlValue : public SparseOptValue {
 public:
     SparseFtrlValue(int dim, const Ftrl* opt);
 
     ~SparseFtrlValue() = default;
 
-    static constexpr int DynSizeof(int dim) {
-        return sizeof(SparseFtrlValue) + sizeof(float) * dim * 3;
-    }
+    static constexpr int DynSizeof(int dim) { return sizeof(SparseFtrlValue) + sizeof(float) * dim * 3; }
 
-    float* Weight() {
-        return data_;
-    }
+    float* Weight() { return data_; }
 
-    const float* Weight() const {
-        return data_;
-    }
+    const float* Weight() const { return data_; }
 
     void Apply(const Ftrl* opt, SparseGradInfo& grad_info, int dim);
 
@@ -81,21 +70,13 @@ public:
     friend std::istream& operator>>(std::istream& is, SparseFtrlValue& value);
 
 protected:
-    float* Z(int dim) {
-        return data_ + dim * 1;
-    }
+    float* Z(int dim) { return data_ + dim * 1; }
 
-    const float* Z(int dim) const {
-        return data_ + dim * 1;
-    }
+    const float* Z(int dim) const { return data_ + dim * 1; }
 
-    float* N(int dim) {
-        return data_ + dim * 2;
-    }
+    float* N(int dim) { return data_ + dim * 2; }
 
-    const float* N(int dim) const {
-        return data_ + dim * 2;
-    }
+    const float* N(int dim) const { return data_ + dim * 2; }
 
     virtual void SerializeTxt_(std::ostream& os, int dim);
     virtual void DeSerializeTxt_(std::istream& is, int dim);

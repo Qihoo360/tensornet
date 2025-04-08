@@ -27,8 +27,8 @@
 #include <brpc/controller.h>
 #include <sstream>
 
-#include "core/ps/ps_server_interface.h"
 #include "core/ps/ps_cluster.h"
+#include "core/ps/ps_server_interface.h"
 
 using namespace tensornet;
 
@@ -59,8 +59,7 @@ public:
         if (call_sign_infos.empty()) {
             done();
         } else {
-            const PsServerInterface* si =
-                PsCluster::Instance()->GetServer(shard_id_);
+            const PsServerInterface* si = PsCluster::Instance()->GetServer(shard_id_);
             si->SparsePullAsync(&cntl, &req, &resp, done);
         }
     }
@@ -87,18 +86,17 @@ public:
     ~SparsePushCall() {}
 
     void AddRequestGrad(const SparsePushSignInfo& sign_info, const float* grad_vec, int dim) {
-        butil::IOBuf &buf = cntl.request_attachment();
+        butil::IOBuf& buf = cntl.request_attachment();
         buf.append(&sign_info, sizeof(sign_info));
         buf.append(grad_vec, dim * sizeof(float));
     }
 
     void Start(const tensornet::Callback& done) {
-        butil::IOBuf &buf = cntl.request_attachment();
+        butil::IOBuf& buf = cntl.request_attachment();
         if (buf.size() <= 0) {
             done();
         } else {
-            const PsServerInterface* si =
-                PsCluster::Instance()->GetServer(shard_id_);
+            const PsServerInterface* si = PsCluster::Instance()->GetServer(shard_id_);
             si->SparsePushAsync(&cntl, &req, &resp, done);
         }
     }
@@ -114,8 +112,7 @@ private:
 
 struct SparsePullVarInfo {
 public:
-    SparsePullVarInfo(tensorflow::Var* t_var,
-                      const tensorflow::Tensor* value, Tensor* out_tensor)
+    SparsePullVarInfo(tensorflow::Var* t_var, const tensorflow::Tensor* value, Tensor* out_tensor)
         : var(t_var)
         , sign_value(value)
         , out_tensor(out_tensor) {
@@ -171,11 +168,9 @@ public:
     }
 
     void ComputeAsync(OpKernelContext* c, DoneCallback done) override {
-        OP_REQUIRES_ASYNC(c, c->num_inputs() == N_ * 2,
-                          errors::InvalidArgument("SparseTable pull num_inputs:",
-                                                  c->num_inputs(),
-                                                  " not equal:", N_ * 2),
-                          done);
+        OP_REQUIRES_ASYNC(
+            c, c->num_inputs() == N_ * 2,
+            errors::InvalidArgument("SparseTable pull num_inputs:", c->num_inputs(), " not equal:", N_ * 2), done);
         std::vector<SparsePullVarInfo> var_infos;
 
         for (int i = 0; i < N_; i++) {
@@ -193,12 +188,10 @@ public:
 
             OP_REQUIRES_OK_ASYNC(c, c->allocate_output(i, sign_value->shape(), &out_tensor), done);
 
-            OP_REQUIRES_ASYNC(
-                c, TensorShapeUtils::IsMatrix(var_tensor->shape()),
-                errors::InvalidArgument(
-                    "sparse pull variable must Matrix(sign_id_cnt, dim), saw: ",
-                    var_tensor->shape().DebugString()),
-                done);
+            OP_REQUIRES_ASYNC(c, TensorShapeUtils::IsMatrix(var_tensor->shape()),
+                              errors::InvalidArgument("sparse pull variable must Matrix(sign_id_cnt, dim), saw: ",
+                                                      var_tensor->shape().DebugString()),
+                              done);
 
             var_infos.emplace_back(variable, sign_value, out_tensor);
         }
@@ -212,15 +205,13 @@ public:
         }
 
         PsCluster* cluster = PsCluster::Instance();
-        OP_REQUIRES_ASYNC(
-            c, true == cluster->IsInitialized(),
-            errors::InvalidArgument("cluster instance not initialized:"), done);
+        OP_REQUIRES_ASYNC(c, true == cluster->IsInitialized(),
+                          errors::InvalidArgument("cluster instance not initialized:"), done);
 
         std::vector<SparsePullCall*> calls;
 
         for (size_t shard_id = 0; shard_id < cluster->RankNum(); shard_id++) {
-            calls.emplace_back(
-                new SparsePullCall(table_handle_, shard_id, dim));
+            calls.emplace_back(new SparsePullCall(table_handle_, shard_id, dim));
         }
 
         for (size_t var_index = 0; var_index < var_infos.size(); var_index++) {
@@ -236,8 +227,7 @@ public:
 
         for (auto& call : calls) {
             call->Start([this, call, &var_infos, &semaphore]() {
-                PopulatePulledVariable_(var_infos, call->call_sign_infos,
-                    call->resp, call->cntl.response_attachment());
+                PopulatePulledVariable_(var_infos, call->call_sign_infos, call->resp, call->cntl.response_attachment());
                 semaphore.Notify();
                 delete call;
             });
@@ -252,8 +242,9 @@ public:
 
 private:
     void PopulatePulledVariable_(std::vector<SparsePullVarInfo>& var_infos,
-                                   const std::vector<std::pair<size_t, size_t>>& call_sign_infos,
-                                   const SparsePullResponse& resp, butil::IOBuf& emb_buf) {
+                                 const std::vector<std::pair<size_t, size_t>>& call_sign_infos,
+                                 const SparsePullResponse& resp,
+                                 butil::IOBuf& emb_buf) {
         int dim = resp.dim();
 
         for (size_t i = 0; i < call_sign_infos.size(); i++) {
@@ -269,7 +260,7 @@ private:
             float* w_matrix = var_tensor->matrix<float>().data();
 
             size_t emb_size = sizeof(float) * dim;
-            CHECK_EQ(emb_size, emb_buf.cutn(w_matrix + sign_index * dim , emb_size));
+            CHECK_EQ(emb_size, emb_buf.cutn(w_matrix + sign_index * dim, emb_size));
         }
     }
 
@@ -278,8 +269,7 @@ private:
     int N_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("SparseTablePull").Device(DEVICE_CPU),
-                        SparseTablePullKernel);
+REGISTER_KERNEL_BUILDER(Name("SparseTablePull").Device(DEVICE_CPU), SparseTablePullKernel);
 
 struct SparsePushVarInfo {
 public:
@@ -287,7 +277,6 @@ public:
         : value(t_value)
         , grad(t_grad)
         , labels(t_labels) {
-
         const int64* feasign_vec = value->flat<int64>().data();
         const int64* fea_label_vec = t_labels->flat<int64>().data();
 
@@ -307,9 +296,7 @@ public:
         }
     }
 
-    int GradDim() const {
-        return grad->shape().dim_size(1);
-    }
+    int GradDim() const { return grad->shape().dim_size(1); }
 
 public:
     const Tensor* value;
@@ -328,11 +315,9 @@ public:
     }
 
     void ComputeAsync(OpKernelContext* c, DoneCallback done) override {
-        OP_REQUIRES_ASYNC(c, c->num_inputs() == N_ * 3,
-                          errors::InvalidArgument("SparseTable push num_inputs:",
-                                                  c->num_inputs(),
-                                                  " not equal:", N_ * 3),
-                          done);
+        OP_REQUIRES_ASYNC(
+            c, c->num_inputs() == N_ * 3,
+            errors::InvalidArgument("SparseTable push num_inputs:", c->num_inputs(), " not equal:", N_ * 3), done);
         std::vector<SparsePushVarInfo> var_infos;
 
         for (int i = 0; i < N_; i++) {
@@ -340,12 +325,10 @@ public:
             const Tensor* grad = &c->input(N_ + i);
             const Tensor* labels = &c->input(2 * N_ + i);
 
-            OP_REQUIRES_ASYNC(
-                c, TensorShapeUtils::IsMatrix(grad->shape()),
-                errors::InvalidArgument(
-                    "sparse push grad must Matrix(sign_id_cnt, dim), saw: ",
-                    grad->shape().DebugString()),
-                done);
+            OP_REQUIRES_ASYNC(c, TensorShapeUtils::IsMatrix(grad->shape()),
+                              errors::InvalidArgument("sparse push grad must Matrix(sign_id_cnt, dim), saw: ",
+                                                      grad->shape().DebugString()),
+                              done);
 
             var_infos.emplace_back(value, grad, labels);
         }
@@ -361,8 +344,7 @@ public:
         PsCluster* cluster = PsCluster::Instance();
 
         for (size_t shard_id = 0; shard_id < cluster->RankNum(); shard_id++) {
-            calls.emplace_back(
-                new SparsePushCall(table_handle_, shard_id, dim));
+            calls.emplace_back(new SparsePushCall(table_handle_, shard_id, dim));
         }
 
         for (size_t i = 0; i < var_infos.size(); i++) {
@@ -379,9 +361,7 @@ public:
         }
 
         for (auto& call : calls) {
-            call->Start([this, call]() {
-                delete call;
-            });
+            call->Start([this, call]() { delete call; });
         }
 
         done();
@@ -392,7 +372,6 @@ private:
     int N_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("SparseTablePush").Device(DEVICE_CPU),
-                        SparseTablePushKernel);
+REGISTER_KERNEL_BUILDER(Name("SparseTablePush").Device(DEVICE_CPU), SparseTablePushKernel);
 
 }  // namespace tensorflow

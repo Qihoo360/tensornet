@@ -1,3 +1,4 @@
+---
 repos:
   - repo: meta
     hooks:
@@ -57,6 +58,14 @@ repos:
         language: system
         types: [yaml]
         stages: [pre-commit, manual]
+        exclude: ^\.clang-format$
+      - id: check-yaml-multi
+        name: Check multi-doc YAML
+        entry: ./pixiw run -e tools check-yaml --allow-multiple-documents
+        language: system
+        types: [yaml]
+        stages: [pre-commit, manual]
+        files: ^\.clang-format$
       - id: toml-format
         name: TOML format
         entry: ./pixiw run toml-format
@@ -93,6 +102,13 @@ repos:
         entry: ./pixiw run -e tools cmake-lint
         language: system
         types: [cmake]
+        stages: [pre-commit, manual]
+
+      - id: clang-format
+        name: Format C/C++/Proto files
+        entry: ./pixiw run -e tools clang-format -i
+        language: system
+        types_or: [c++, c, proto]
         stages: [pre-commit, manual]
 
       - id: ruff-lint

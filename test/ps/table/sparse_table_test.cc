@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
-#include "core/utility/random.h"
 #include "core/ps/table/sparse_table.h"
+#include "core/utility/random.h"
 
 #include <brpc/controller.h>
 #include <butil/logging.h>
@@ -16,17 +16,13 @@ public:
         float mom_decay_rate = 1.0;
         float show_decay_rate = 0.98;
 
-        //opt = new AdaGrad(0.01, 0.1, 0.1, epsilon, grad_decay_rate, mom_decay_rate, show_decay_rate);
+        // opt = new AdaGrad(0.01, 0.1, 0.1, epsilon, grad_decay_rate, mom_decay_rate, show_decay_rate);
         opt = new AdaGrad;
     }
 
-    ~SparseTableTest() {
-        delete opt;
-    }
+    ~SparseTableTest() { delete opt; }
 
-    virtual void SetUp() {
-        table = CreateSparseTable(opt, "table-name", dim, shard_num, shard_id);
-    }
+    virtual void SetUp() { table = CreateSparseTable(opt, "table-name", dim, shard_num, shard_id); }
 
     virtual void TearDown() {
         // nothing to be done, table will be delete by SparseTableRegistry deconstructor
@@ -40,7 +36,6 @@ public:
     int shard_num = 50;
     int shard_id = 0;
 };
-
 
 TEST_F(SparseTableTest, pull) {
     SparsePullRequest req;
@@ -66,5 +61,5 @@ TEST_F(SparseTableTest, pull) {
 
     LOG(INFO) << "Pull time:" << timer.u_elapsed();
 
-    //EXPECT_LT(timer.u_elapsed(), 10000);
+    // EXPECT_LT(timer.u_elapsed(), 10000);
 }

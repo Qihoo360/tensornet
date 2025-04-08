@@ -16,8 +16,8 @@
 #define TENSORNET_UTILITY_SEMAPHORE_H_
 
 #include <assert.h>
-#include <atomic>              // NOLINT
-#include <chrono>              // NOLINT
+#include <atomic>  // NOLINT
+#include <chrono>  // NOLINT
 
 #include "tensorflow/core/platform/mutex.h"
 #include "tensorflow/core/platform/types.h"
@@ -26,7 +26,8 @@ namespace tensornet {
 
 class Semaphore {
 public:
-    Semaphore(int cnt) : notified_(cnt) {}
+    Semaphore(int cnt)
+        : notified_(cnt) {}
     ~Semaphore() {
         // In case the notification is being used to synchronize its own deletion,
         // force any prior notifier to leave its critical section before the object
@@ -41,9 +42,7 @@ public:
         cv_.notify_one();
     }
 
-    bool HasBeenNotified() const {
-        return notified_.load(std::memory_order_acquire) == 0;
-    }
+    bool HasBeenNotified() const { return notified_.load(std::memory_order_acquire) == 0; }
 
     void WaitForSemaphore() {
         if (!HasBeenNotified()) {
@@ -55,28 +54,24 @@ public:
     }
 
 private:
-    friend bool WaitForSemaphoreWithTimeout(Semaphore* n,
-            tensorflow::int64 timeout_in_us);
+    friend bool WaitForSemaphoreWithTimeout(Semaphore* n, tensorflow::int64 timeout_in_us);
     bool WaitForSemaphoreWithTimeout(tensorflow::int64 timeout_in_us) {
         bool notified = HasBeenNotified();
         if (!notified) {
             tensorflow::mutex_lock l(mu_);
             do {
                 notified = HasBeenNotified();
-            } while (!notified &&
-                    cv_.wait_for(l, std::chrono::microseconds(timeout_in_us)) !=
-                    std::cv_status::timeout);
+            } while (!notified && cv_.wait_for(l, std::chrono::microseconds(timeout_in_us)) != std::cv_status::timeout);
         }
         return notified;
     }
 
-    tensorflow::mutex mu_;                    // protects mutations of notified_
-    tensorflow::condition_variable cv_;       // signaled when notified_ becomes non-zero
-    std::atomic<int> notified_;  // mutations under mu_
+    tensorflow::mutex mu_;               // protects mutations of notified_
+    tensorflow::condition_variable cv_;  // signaled when notified_ becomes non-zero
+    std::atomic<int> notified_;          // mutations under mu_
 };
 
-inline bool WaitForSemaphoreWithTimeout(Semaphore* n,
-    tensorflow::int64 timeout_in_us) {
+inline bool WaitForSemaphoreWithTimeout(Semaphore* n, tensorflow::int64 timeout_in_us) {
     return n->WaitForSemaphoreWithTimeout(timeout_in_us);
 }
 

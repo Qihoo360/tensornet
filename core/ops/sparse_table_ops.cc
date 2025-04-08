@@ -42,7 +42,6 @@ REGISTER_OP("SparseTablePull")
         return Status::OK();
     });
 
-
 REGISTER_OP("SparseTablePush")
     .Doc(R"doc(push variable from parameter server
     )doc")

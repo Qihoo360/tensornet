@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "tensorflow/core/framework/op_kernel.h"
 
 namespace tensorflow {
@@ -34,8 +33,7 @@ private:
     int table_handle_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("SparseTablePull").Device(DEVICE_CPU),
-                        SparseTablePullKernel);
+REGISTER_KERNEL_BUILDER(Name("SparseTablePull").Device(DEVICE_CPU), SparseTablePullKernel);
 
 class SparseTablePushKernel : public AsyncOpKernel {
 public:
@@ -53,7 +51,6 @@ private:
     int table_handle_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("SparseTablePush").Device(DEVICE_CPU),
-                        SparseTablePushKernel);
+REGISTER_KERNEL_BUILDER(Name("SparseTablePush").Device(DEVICE_CPU), SparseTablePushKernel);
 
 }  // namespace tensorflow

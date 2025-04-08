@@ -16,19 +16,18 @@
 #define TENSORNET_UTILITY_ALLOCATOR_H_
 
 #include <atomic>
-#include <random>
 #include <ctime>
+#include <random>
 
 #include <butil/logging.h>
 
 namespace tensornet {
 
-template<typename T>
+template <typename T>
 class Allocator {
 public:
     Allocator(int type_sizeof)
-        : Allocator(type_sizeof, 1<<16) {
-    }
+        : Allocator(type_sizeof, 1 << 16) {}
 
     Allocator(int type_sizeof, int block_len)
         : pool_(nullptr)
@@ -71,7 +70,7 @@ public:
     Allocator(const Allocator&) = delete;
     Allocator& operator=(const Allocator&) = delete;
 
-    template<class... ARGS>
+    template <class... ARGS>
     T* allocate(ARGS&&... args) {
         if (!useable_block_) {
             create_new_pool_();
@@ -129,8 +128,8 @@ private:
     Block* useable_block_ = nullptr;
 };
 
-} // namespace tensornet
+}  // namespace tensornet
 
-#endif // TENSORNET_UTILITY_ALLOCATOR_H_
+#endif  // TENSORNET_UTILITY_ALLOCATOR_H_
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

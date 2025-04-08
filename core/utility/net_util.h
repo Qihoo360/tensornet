@@ -24,8 +24,8 @@ uint16_t get_useable_port();
 
 extern std::string get_local_ip_internal();
 
-} // namespace tensornet
+}  // namespace tensornet
 
-#endif // __COMMON_NET_UTIL_H__
+#endif  // __COMMON_NET_UTIL_H__
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

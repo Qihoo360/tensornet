@@ -14,8 +14,8 @@
 
 #include "core/utility/fix_redef.h"
 
-#include "core/utility/semaphore.h"
 #include "core/ps/table/bn_table.h"
+#include "core/utility/semaphore.h"
 
 #include "tensorflow/core/framework/attr_value.pb.h"
 #include "tensorflow/core/framework/op_kernel.h"
@@ -25,21 +25,20 @@
 #include "core/kernels/resource_var_wrapper.h"
 #include "core/ps_interface/ps_raw_interface.h"
 
-
 #include <brpc/controller.h>
-#include <sstream>
 #include <Eigen/Dense>
 #include <iostream>
 #include <mutex>
+#include <sstream>
 
-#include "core/ps/ps_server_interface.h"
 #include "core/ps/ps_cluster.h"
+#include "core/ps/ps_server_interface.h"
 
 using namespace tensornet;
 
 namespace tensorflow {
 
-static void NoOpDeleter(void *) {}
+static void NoOpDeleter(void*) {}
 
 template <typename T, bool use_dynamic_cast>
 Status LookupResource(OpKernelContext* ctx, const ResourceHandle& p, T** value);
@@ -50,20 +49,19 @@ class BnStatisticsPushCall {
 public:
     BnStatisticsPushCall(int table_handle, int shard_id)
         : shard_id_(shard_id) {
-		req.set_req_shard_id(shard_id);
+        req.set_req_shard_id(shard_id);
         req.set_table_handle(table_handle);
     }
 
     ~BnStatisticsPushCall() {}
 
     void AddRequestData(butil::IOBuf& k_buf) {
-        butil::IOBuf &buf = cntl.request_attachment();
+        butil::IOBuf& buf = cntl.request_attachment();
         buf.append(k_buf);
     }
 
     void Start(const tensornet::Callback& done) {
-		const PsServerInterface* si =
-			PsCluster::Instance()->GetServer(shard_id_);
+        const PsServerInterface* si = PsCluster::Instance()->GetServer(shard_id_);
         si->BnStatisticsPushAsync(&cntl, &req, &resp, done);
     }
 
@@ -75,7 +73,6 @@ public:
 private:
     int shard_id_ = -1;
 };
-
 
 class BnStatisticsPushKernel : public AsyncOpKernel {
 public:
@@ -100,7 +97,7 @@ public:
             OP_REQUIRES_OK_ASYNC(c, status, done);
             CHECK(variable);
 
-            Tensor *var_tensor = variable->tensor();
+            Tensor* var_tensor = variable->tensor();
 
             int num_elements = var_tensor->NumElements();
             double* dynamic_double_data = new double[num_elements];
@@ -120,34 +117,34 @@ public:
         }
         allocated_pointers.clear();
 
-        if(synchronized_){
-			PsCluster* cluster = PsCluster::Instance();
-			OP_REQUIRES_ASYNC( c, true == cluster->IsInitialized(),
-            errors::InvalidArgument("cluster instance not initialized:"), done);
+        if (synchronized_) {
+            PsCluster* cluster = PsCluster::Instance();
+            OP_REQUIRES_ASYNC(c, true == cluster->IsInitialized(),
+                              errors::InvalidArgument("cluster instance not initialized:"), done);
 
-			butil::IOBuf inc_buf;
-			table->GetIncStatistics(inc_buf);
+            butil::IOBuf inc_buf;
+            table->GetIncStatistics(inc_buf);
 
-			std::vector<BnStatisticsPushCall*> calls;
+            std::vector<BnStatisticsPushCall*> calls;
 
-			for (size_t shard_id = 0; shard_id < cluster->RankNum(); shard_id++) {
-				if(shard_id != cluster->Rank()){
-				    auto* call = new BnStatisticsPushCall(table_handle_, shard_id);
-				    call->AddRequestData(inc_buf);
-				    calls.emplace_back(call);
-				}
-			}
+            for (size_t shard_id = 0; shard_id < cluster->RankNum(); shard_id++) {
+                if (shard_id != cluster->Rank()) {
+                    auto* call = new BnStatisticsPushCall(table_handle_, shard_id);
+                    call->AddRequestData(inc_buf);
+                    calls.emplace_back(call);
+                }
+            }
 
-			Semaphore semaphore(calls.size());
+            Semaphore semaphore(calls.size());
 
-			for (auto& call : calls) {
-				call->Start([this, call, &semaphore]() {
+            for (auto& call : calls) {
+                call->Start([this, call, &semaphore]() {
                     semaphore.Notify();
-					delete call;
-					});
-			}
+                    delete call;
+                });
+            }
 
-			semaphore.WaitForSemaphore();
+            semaphore.WaitForSemaphore();
         }
 
         done();
@@ -161,8 +158,7 @@ private:
     bool synchronized_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("BnStatisticsPush").Device(DEVICE_CPU),
-                        BnStatisticsPushKernel);
+REGISTER_KERNEL_BUILDER(Name("BnStatisticsPush").Device(DEVICE_CPU), BnStatisticsPushKernel);
 
 class UpdateMomentsKernel : public OpKernel {
 public:
@@ -176,9 +172,9 @@ public:
         std::vector<Var*> bn_vars;
 
         for (int i = 0; i < N_; i++) {
-            const ResourceHandle &handle = HandleFromInput(c, i);
+            const ResourceHandle& handle = HandleFromInput(c, i);
 
-            Var *variable = nullptr;
+            Var* variable = nullptr;
             const auto status = LookupResource<Var, false>(c, handle, &variable);
 
             OP_REQUIRES_OK(c, status);
@@ -192,11 +188,13 @@ public:
 
         auto& global_mean_var = bn_vars[0];
         float* global_mean_flat = global_mean_var->tensor()->flat<float>().data();
-        std::copy(std::get<0>(moments_tuple).data(), std::get<0>(moments_tuple).data() + std::get<0>(moments_tuple).size(), global_mean_flat);
+        std::copy(std::get<0>(moments_tuple).data(),
+                  std::get<0>(moments_tuple).data() + std::get<0>(moments_tuple).size(), global_mean_flat);
 
         auto& global_var_var = bn_vars[1];
         float* global_var_flat = global_var_var->tensor()->flat<float>().data();
-        std::copy(std::get<1>(moments_tuple).data(), std::get<1>(moments_tuple).data() + std::get<1>(moments_tuple).size(), global_var_flat);
+        std::copy(std::get<1>(moments_tuple).data(),
+                  std::get<1>(moments_tuple).data() + std::get<1>(moments_tuple).size(), global_var_flat);
 
         return;
     }
@@ -206,23 +204,20 @@ private:
     int N_;
 };
 
-
-REGISTER_KERNEL_BUILDER(Name("UpdateMoments").Device(DEVICE_CPU),
-                        UpdateMomentsKernel);
+REGISTER_KERNEL_BUILDER(Name("UpdateMoments").Device(DEVICE_CPU), UpdateMomentsKernel);
 
 class BnStatisticsPullCall {
 public:
     BnStatisticsPullCall(int table_handle, int shard_id)
         : shard_id_(shard_id) {
-		req.set_req_shard_id(shard_id);
+        req.set_req_shard_id(shard_id);
         req.set_table_handle(table_handle);
     }
 
     ~BnStatisticsPullCall() {}
 
     void Start(const tensornet::Callback& done) {
-		const PsServerInterface* si =
-			PsCluster::Instance()->GetServer(shard_id_);
+        const PsServerInterface* si = PsCluster::Instance()->GetServer(shard_id_);
         si->BnStatisticsPullAsync(&cntl, &req, &resp, done);
     }
 
@@ -235,7 +230,6 @@ private:
     int shard_id_ = -1;
 };
 
-
 class BnStatisticsPullKernel : public AsyncOpKernel {
 public:
     explicit BnStatisticsPullKernel(OpKernelConstruction* c)
@@ -245,13 +239,12 @@ public:
     }
 
     void ComputeAsync(OpKernelContext* c, DoneCallback done) override {
-
         std::vector<Var*> bn_vars;
 
         for (int i = 0; i < N_; i++) {
-            const ResourceHandle &handle = HandleFromInput(c, i);
+            const ResourceHandle& handle = HandleFromInput(c, i);
 
-            Var *variable = nullptr;
+            Var* variable = nullptr;
             const auto status = LookupResource<Var, false>(c, handle, &variable);
 
             OP_REQUIRES_OK(c, status);
@@ -260,17 +253,15 @@ public:
         }
 
         PsCluster* cluster = PsCluster::Instance();
-        OP_REQUIRES_ASYNC(
-            c, true == cluster->IsInitialized(),
-            errors::InvalidArgument("cluster instance not initialized:"), done);
+        OP_REQUIRES_ASYNC(c, true == cluster->IsInitialized(),
+                          errors::InvalidArgument("cluster instance not initialized:"), done);
 
-        BnTable *table = BnTableRegistry::Instance()->Get(table_handle_);
+        BnTable* table = BnTableRegistry::Instance()->Get(table_handle_);
         std::vector<BnStatisticsPullCall*> calls;
 
         for (size_t shard_id = 0; shard_id < cluster->RankNum(); shard_id++) {
-            if(shard_id != cluster->Rank()){
-            calls.emplace_back(
-                new BnStatisticsPullCall(table_handle_, shard_id));
+            if (shard_id != cluster->Rank()) {
+                calls.emplace_back(new BnStatisticsPullCall(table_handle_, shard_id));
             }
         }
 
@@ -278,7 +269,7 @@ public:
 
         for (auto& call : calls) {
             call->Start([this, call, &table, &semaphore]() {
-				table->Append(call->cntl.response_attachment(), false);
+                table->Append(call->cntl.response_attachment(), false);
                 semaphore.Notify();
                 delete call;
             });
@@ -289,11 +280,13 @@ public:
 
         auto& global_mean_var = bn_vars[0];
         float* global_mean_flat = global_mean_var->tensor()->flat<float>().data();
-        std::copy(std::get<0>(moments_tuple).data(), std::get<0>(moments_tuple).data() + std::get<0>(moments_tuple).size(), global_mean_flat);
+        std::copy(std::get<0>(moments_tuple).data(),
+                  std::get<0>(moments_tuple).data() + std::get<0>(moments_tuple).size(), global_mean_flat);
 
         auto& global_var_var = bn_vars[1];
         float* global_var_flat = global_var_var->tensor()->flat<float>().data();
-        std::copy(std::get<1>(moments_tuple).data(), std::get<1>(moments_tuple).data() + std::get<1>(moments_tuple).size(), global_var_flat);
+        std::copy(std::get<1>(moments_tuple).data(),
+                  std::get<1>(moments_tuple).data() + std::get<1>(moments_tuple).size(), global_var_flat);
 
         done();
 
@@ -305,7 +298,6 @@ private:
     int N_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("BnStatisticsPull").Device(DEVICE_CPU),
-                        BnStatisticsPullKernel);
+REGISTER_KERNEL_BUILDER(Name("BnStatisticsPull").Device(DEVICE_CPU), BnStatisticsPullKernel);
 
-};
+};  // namespace tensorflow

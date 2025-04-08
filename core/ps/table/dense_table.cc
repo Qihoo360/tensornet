@@ -21,8 +21,8 @@
 #include <cmath>
 #include <functional>
 
-#include <butil/logging.h>
 #include <butil/iobuf.h>
+#include <butil/logging.h>
 
 namespace tensornet {
 
@@ -36,10 +36,9 @@ DenseTable::DenseTable(const OptimizerBase* opt, int shard_num, int self_shard_i
 
 int DenseTable::Init(int total_elements) {
     if (is_initialized_) {
-        CHECK(total_elements == total_elements_)
-            << "dense table already init with element size:" << total_elements_
-            << " but " << total_elements << " expected,"
-            << " maybe you have loaded dense table with different model";
+        CHECK(total_elements == total_elements_) << "dense table already init with element size:" << total_elements_
+                                                 << " but " << total_elements << " expected,"
+                                                 << " maybe you have loaded dense table with different model";
 
         return 0;
     }
@@ -59,8 +58,7 @@ int DenseTable::Init(int total_elements) {
         }
 
         if (i == self_shard_id_) {
-            LOG(INFO) << "init dense table:" << GetHandle() << " rank:" << i
-                      << " elements:" << total_elements
+            LOG(INFO) << "init dense table:" << GetHandle() << " rank:" << i << " elements:" << total_elements
                       << " begin:" << offset_begin << " end:" << offset_end;
         }
 
@@ -110,8 +108,7 @@ void DenseTable::Save(std::string filepath) const {
         return;
     }
 
-    std::string file = filepath + "/dense_table/" + std::to_string(GetHandle())
-                            + "/" + std::to_string(self_shard_id_);
+    std::string file = filepath + "/dense_table/" + std::to_string(GetHandle()) + "/" + std::to_string(self_shard_id_);
 
     FileWriterSink writer_sink(file);
 
@@ -126,16 +123,14 @@ void DenseTable::Save(std::string filepath) const {
 
     timer.stop();
 
-    LOG(INFO) << "DenseTable save, rank:" << self_shard_id_
-        << " size:" << opt_kernel->DataSize()
-        << " latency:" << timer.s_elapsed() << "s";
+    LOG(INFO) << "DenseTable save, rank:" << self_shard_id_ << " size:" << opt_kernel->DataSize()
+              << " latency:" << timer.s_elapsed() << "s";
 }
 
 void DenseTable::Load(std::string filepath) {
     butil::Timer timer(butil::Timer::STARTED);
 
-    std::string file = filepath + "/dense_table/" + std::to_string(GetHandle())
-                            + "/" + std::to_string(self_shard_id_);
+    std::string file = filepath + "/dense_table/" + std::to_string(GetHandle()) + "/" + std::to_string(self_shard_id_);
 
     FileReaderSource reader_source(file);
     boost::iostreams::stream<FileReaderSource> in_stream(reader_source);
@@ -157,9 +152,8 @@ void DenseTable::Load(std::string filepath) {
 
     timer.stop();
 
-    LOG(INFO) << "DenseTable load, rank:" << self_shard_id_
-        << " size:" << opt_kernel->DataSize()
-        << " latency:" << timer.s_elapsed() << "s";
+    LOG(INFO) << "DenseTable load, rank:" << self_shard_id_ << " size:" << opt_kernel->DataSize()
+              << " latency:" << timer.s_elapsed() << "s";
 }
 
 DenseTableRegistry* DenseTableRegistry::Instance() {
@@ -178,8 +172,7 @@ uint32_t DenseTableRegistry::Register(DenseTable* table) {
 }
 
 DenseTable* DenseTableRegistry::Get(uint32_t table_handle) {
-    CHECK_LT(table_handle, tables_.size()) << " table_handle:" << table_handle
-        << " table size:" <<tables_.size();
+    CHECK_LT(table_handle, tables_.size()) << " table_handle:" << table_handle << " table size:" << tables_.size();
 
     return tables_[table_handle];
 }
@@ -192,4 +185,4 @@ DenseTable* CreateDenseTable(const OptimizerBase* opt, int shard_num, int self_s
     return table;
 }
 
-} // namespace tensornet {
+}  // namespace tensornet

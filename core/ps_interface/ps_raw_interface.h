@@ -22,22 +22,20 @@ namespace tensornet {
 struct SparsePushSignInfo {
 public:
     SparsePushSignInfo()
-        : SparsePushSignInfo(0, 0, 0)
-    { }
+        : SparsePushSignInfo(0, 0, 0) {}
 
     SparsePushSignInfo(uint64_t s, int bs, int cs)
         : sign(s)
         , batch_show(bs)
-        , batch_click(cs)
-    { }
+        , batch_click(cs) {}
 
     uint64_t sign;
     int batch_show;
     int batch_click;
 };
 
-} // namespace tensornet
+}  // namespace tensornet
 
-#endif // TENSORNET_PS_INTERFACE_RAW_INTERFACE_H_
+#endif  // TENSORNET_PS_INTERFACE_RAW_INTERFACE_H_
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

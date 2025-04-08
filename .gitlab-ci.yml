@@ -1,9 +1,13 @@
+---
 workflow:
   rules:
     # avoid duplicate pipelines for branches with opened merge requests
     - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && $CI_OPEN_MERGE_REQUESTS != ""
       when: never
     - when: always
+
+variables:
+  PIXI_LOCKED: "true"
 
 pre_commit:
   tags:

@@ -23,16 +23,13 @@ public:
         OP_REQUIRES_OK(c, c->GetAttr("table_handle", &table_handle_));
     }
 
-    void Compute(OpKernelContext* c) override {
-        return;
-    }
+    void Compute(OpKernelContext* c) override { return; }
 
 private:
     int table_handle_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("UpdateMoments").Device(DEVICE_CPU),
-                        UpdateMomentsKernel);
+REGISTER_KERNEL_BUILDER(Name("UpdateMoments").Device(DEVICE_CPU), UpdateMomentsKernel);
 
 class BnStatisticsPushKernel : public AsyncOpKernel {
 public:
@@ -50,7 +47,6 @@ private:
     int table_handle_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("BnStatisticsPush").Device(DEVICE_CPU),
-                        BnStatisticsPushKernel);
+REGISTER_KERNEL_BUILDER(Name("BnStatisticsPush").Device(DEVICE_CPU), BnStatisticsPushKernel);
 
 }  // namespace tensorflow

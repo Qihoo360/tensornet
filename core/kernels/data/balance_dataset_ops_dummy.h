@@ -29,8 +29,9 @@ public:
     explicit BalanceDatasetOp(tensorflow::OpKernelConstruction* ctx);
 
 protected:
-    void MakeDataset(tensorflow::OpKernelContext* ctx, tensorflow::DatasetBase* input,
-                    tensorflow::DatasetBase** output) override;
+    void MakeDataset(tensorflow::OpKernelContext* ctx,
+                     tensorflow::DatasetBase* input,
+                     tensorflow::DatasetBase** output) override;
 
 private:
     class Dataset;

@@ -1,0 +1,48 @@
+---
+# Common options
+BasedOnStyle: Google
+ColumnLimit: 120
+IndentWidth: 4
+LineEnding: LF
+
+#inherit from base
+#MaxEmptyLinesToKeep
+#ReflowComments
+#SpacesInLineCommentPrefix.Maximum
+#SpacesInLineCommentPrefix.Minimum
+#TabWidth
+#UseTab
+
+---
+Language: Cpp
+# Cpp options
+
+AccessModifierOffset: -4
+IncludeBlocks: Preserve
+
+#cpp options detected from code
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+BinPackParameters: OnePerLine
+BreakConstructorInitializers: BeforeComma
+PackConstructorInitializers: Never
+
+#inherit from base
+#AlignEscapedNewlines
+#AllowAllArgumentsOnNextLine
+#AllowShortFunctionsOnASingleLine
+#AllowShortLambdasOnASingleLine
+#ExperimentalAutoDetectBinPacking
+#FixNamespaceComments
+#IndentAccessModifiers
+#InsertBraces
+#KeepEmptyLines.AtStartOfBlock
+#SkipMacroDefinitionBody
+#SortIncludes
+#SortUsingDeclarations
+
+---
+Language: Proto
+# Proto options
+
+AllowShortFunctionsOnASingleLine: None

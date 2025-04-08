@@ -15,14 +15,14 @@
 #ifndef TENSORNET_CORE_UTILITY_FILE_IO_H_
 #define TENSORNET_CORE_UTILITY_FILE_IO_H_
 
+#include <boost/iostreams/categories.hpp>  // sink_tag, source_tag
+#include <iosfwd>                          // streamsize
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
-#include <iosfwd>                          // streamsize
-#include <boost/iostreams/categories.hpp>  // sink_tag, source_tag
 
 namespace tensorflow {
-    class WritableFile;
+class WritableFile;
 }
 
 namespace tensornet {
@@ -37,8 +37,7 @@ public:
     typedef char char_type;
     typedef boost::iostreams::sink_tag category;
 
-    explicit FileWriterSink(const std::string& file,
-            const FileCompressionType compression_type=FCT_NONE);
+    explicit FileWriterSink(const std::string& file, const FileCompressionType compression_type = FCT_NONE);
     ~FileWriterSink();
 
     FileWriterSink(const FileWriterSink& writer_sink);
@@ -55,8 +54,7 @@ public:
     typedef char char_type;
     typedef boost::iostreams::source_tag category;
 
-    explicit FileReaderSource(const std::string& file,
-            const FileCompressionType compression_type=FCT_NONE);
+    explicit FileReaderSource(const std::string& file, const FileCompressionType compression_type = FCT_NONE);
 
     ~FileReaderSource();
 
@@ -68,7 +66,6 @@ public:
 
 private:
     std::shared_ptr<ReaderInternal> reader_;
-
 };
 
 class FileUtils {

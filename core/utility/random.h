@@ -16,8 +16,8 @@
 #define TENSORNET_UTILITY_RANDOM_H_
 
 #include <atomic>
-#include <random>
 #include <ctime>
+#include <random>
 
 namespace tensornet {
 
@@ -41,19 +41,19 @@ inline std::default_random_engine& local_random_engine() {
     return r.engine;
 }
 
-template<class T = double>
+template <class T = double>
 std::uniform_real_distribution<T>& local_uniform_real_distribution() {
     thread_local std::uniform_real_distribution<T> distr;
     DCHECK(distr.a() == 0.0 && distr.b() == 1.0);
     return distr;
 }
 
-template<class T = double>
+template <class T = double>
 T uniform_real() {
     return local_uniform_real_distribution<T>()(local_random_engine());
 }
 
-template<class T = double>
+template <class T = double>
 T uniform_real(T a, T b) {
     if (a == b) {
         return a;
@@ -62,8 +62,8 @@ T uniform_real(T a, T b) {
     return (T)(a + uniform_real<T>() * (b - a));
 }
 
-} // namespace tensornet
+}  // namespace tensornet
 
-#endif // TENSORNET_UTILITY_RANDOM_H_
+#endif  // TENSORNET_UTILITY_RANDOM_H_
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

@@ -17,23 +17,23 @@
 
 #include "core/ps/optimizer/optimizer.h"
 
-#include <mutex>
-#include <unordered_map>
-#include <functional>
-#include <thread>
 #include <algorithm>
+#include <functional>
+#include <mutex>
+#include <thread>
+#include <unordered_map>
 
 #include <butil/iobuf.h>
 #include <butil/logging.h>
 #include <Eigen/Dense>
-#include <cstring>
 #include <cstdio>
+#include <cstring>
 #include <regex>
 
 #include <boost/iostreams/stream.hpp>
 
-#include "core/utility/file_io.h"
 #include "core/utility/allocator.h"
+#include "core/utility/file_io.h"
 
 #include "core/ps/optimizer/data_struct.h"
 
@@ -50,19 +50,13 @@ public:
         assert(off_e > off_b);
     }
 
-    virtual ~DenseOptimizerKernelBase() { }
+    virtual ~DenseOptimizerKernelBase() {}
 
-    int OffsetBegin() const {
-        return off_b_;
-    }
+    int OffsetBegin() const { return off_b_; }
 
-    int OffsetEnd() const {
-        return off_e_;
-    }
+    int OffsetEnd() const { return off_e_; }
 
-    size_t Length() const {
-        return size_t(off_e_ - off_b_);
-    }
+    size_t Length() const { return size_t(off_e_ - off_b_); }
 
     virtual void Apply(butil::IOBuf& grad, float lr) = 0;
 
@@ -106,7 +100,7 @@ public:
     DenseKernelBlock(size_t block_size, const OptimizerBase* opt)
         : block_size_(block_size)
         , opt_(dynamic_cast<const OptType*>(opt))
-        , value_(opt_, block_size){
+        , value_(opt_, block_size) {
         mu_ = std::make_unique<std::mutex>();
     }
 
@@ -116,9 +110,8 @@ public:
     DenseKernelBlock(DenseKernelBlock&& other)
         : mu_(std::move(other.mu_))
         , block_size_(other.block_size_)
-        , opt_ (other.opt_)
-        , value_(std::move(other.value_))
-    { }
+        , opt_(other.opt_)
+        , value_(std::move(other.value_)) {}
 
     DenseKernelBlock& operator=(DenseKernelBlock&& other) {
         mu_ = std::move(other.mu_);
@@ -127,27 +120,21 @@ public:
         value_ = std::move(other.value_);
     }
 
-    size_t BlockSize() const {
-        return block_size_;
-    }
+    size_t BlockSize() const { return block_size_; }
 
     void SetWeight(butil::IOBuf& w_buf) {
         const std::lock_guard<std::mutex> lock(*mu_);
         value_.SetWeight(w_buf);
     }
 
-    const Eigen::ArrayXf& GetWeight() const {
-        return value_.GetWeight();
-    }
+    const Eigen::ArrayXf& GetWeight() const { return value_.GetWeight(); }
 
     void Apply(const Eigen::ArrayXf& g, const float lr) {
         const std::lock_guard<std::mutex> lock(*mu_);
         value_.Apply(opt_, g, lr);
     }
 
-    size_t DataSize() const {
-        return value_.DataSize();
-    }
+    size_t DataSize() const { return value_.DataSize(); }
 
     friend std::ostream& operator<<(std::ostream& os, const DenseKernelBlock& block) {
         const std::lock_guard<std::mutex> lock(*block.mu_);
@@ -165,8 +152,8 @@ public:
         is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> name;
 
         CHECK_EQ(name, block.opt_->Name()) << "last trained model with optimizer is:" << name
-            << " but current model use:" << block.opt_->Name() << " instead."
-            << " you must make sure that use same optimizer when incremental training";
+                                           << " but current model use:" << block.opt_->Name() << " instead."
+                                           << " you must make sure that use same optimizer when incremental training";
 
         is >> block.value_;
 
@@ -189,8 +176,7 @@ public:
         size_t per_block_size = std::ceil(Length() * 1.0 / DENSE_KERNEL_BLOCK_NUM);
 
         // make block and execute in parallel, every block has one lock
-        for (size_t block_offset = 0; block_offset < Length();
-                block_offset += per_block_size) {
+        for (size_t block_offset = 0; block_offset < Length(); block_offset += per_block_size) {
             size_t block_size = per_block_size;
 
             if (block_offset + per_block_size > Length()) {
@@ -201,7 +187,7 @@ public:
         }
     }
 
-    virtual ~DenseOptimizerKernel() { }
+    virtual ~DenseOptimizerKernel() {}
 
     virtual void Apply(butil::IOBuf& grad, float lr) {
         assert(grad.size() == Length() * sizeof(float));
@@ -221,7 +207,7 @@ public:
         for (size_t i = 0; i < blocks_.size(); i++) {
             butil::IOBuf buf;
             int length = blocks_[i].BlockSize() * sizeof(float);
-            CHECK_EQ(length , w_buf.cutn(&buf, length));
+            CHECK_EQ(length, w_buf.cutn(&buf, length));
 
             blocks_[i].SetWeight(buf);
         }
@@ -276,7 +262,7 @@ public:
     SparseKernelBlock(const OptimizerBase* opt, int dimension)
         : values_(15485863, sparse_key_hasher)
         , dim_(dimension)
-         , alloc_(ValueType::DynSizeof(dimension + opt->ShouldUseCvm() * 2), 1 << 16) {
+        , alloc_(ValueType::DynSizeof(dimension + opt->ShouldUseCvm() * 2), 1 << 16) {
         values_.max_load_factor(0.75);
         opt_ = dynamic_cast<const OptType*>(opt);
         mutex_ = std::make_unique<std::mutex>();
@@ -290,8 +276,7 @@ public:
         , values_(std::move(other.values_))
         , mutex_(std::move(other.mutex_))
         , dim_(other.dim_)
-        , alloc_(std::move(other.alloc_))
-    { }
+        , alloc_(std::move(other.alloc_)) {}
 
     SparseKernelBlock& operator=(SparseKernelBlock&& other) {
         opt_ = other.opt_;
@@ -327,17 +312,14 @@ public:
         auto iter = values_.find(sign);
 
         // must already meet and created in pull
-        CHECK(iter != values_.end()) << " embedding of sign " << sign
-            << " not create yet, something must be wrong";
+        CHECK(iter != values_.end()) << " embedding of sign " << sign << " not create yet, something must be wrong";
 
         ValueType* value = iter->second;
 
         value->Apply(opt_, grad_info, dim_);
     }
 
-    size_t Size() const {
-        return values_.size();
-    }
+    size_t Size() const { return values_.size(); }
 
     friend std::ostream& operator<<(std::ostream& os, const SparseKernelBlock& block) {
         std::lock_guard<std::mutex> lock(*block.mutex_);
@@ -387,27 +369,28 @@ public:
             std::string opt_name;
             is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> opt_name;
 
-            CHECK_EQ(opt_name, block.opt_->Name()) << "last trained model with optimizer is:" << opt_name
+            CHECK_EQ(opt_name, block.opt_->Name())
+                << "last trained model with optimizer is:" << opt_name
                 << " but current model use:" << block.opt_->Name() << " instead."
                 << " you must make sure that use same optimizer when incremental training";
 
             is.ignore(std::numeric_limits<std::streamsize>::max(), ':') >> block.dim_;
 
-	    std::tuple<bool, std::string> tuple = block.opt_->NeedOldCompat(is, block.dim_);
+            std::tuple<bool, std::string> tuple = block.opt_->NeedOldCompat(is, block.dim_);
             bool need_old_compat = std::get<0>(tuple);
             std::string sample_line = std::get<1>(tuple);
             std::istringstream sample_is(sample_line);
 
             uint64_t sign = 0;
-	    while (sample_is >> sign) {
-		    ValueType* value = block.alloc_.allocate(block.dim_, block.opt_);
-		    value->SetOldCompat(need_old_compat);
-		    value->DeSerialize(sample_is, block.dim_);
-		    block.values_[sign] = value;
-	    }
+            while (sample_is >> sign) {
+                ValueType* value = block.alloc_.allocate(block.dim_, block.opt_);
+                value->SetOldCompat(need_old_compat);
+                value->DeSerialize(sample_is, block.dim_);
+                block.values_[sign] = value;
+            }
             while (is >> sign) {
                 ValueType* value = block.alloc_.allocate(block.dim_, block.opt_);
-		value->SetOldCompat(need_old_compat);
+                value->SetOldCompat(need_old_compat);
                 value->DeSerialize(is, block.dim_);
                 block.values_[sign] = value;
             }
@@ -499,9 +482,7 @@ public:
             }));
         }
 
-        std::for_each(threads.begin(), threads.end(), [](std::thread& t) {
-            t.join();
-        });
+        std::for_each(threads.begin(), threads.end(), [](std::thread& t) { t.join(); });
     }
 
     void DeSerialized(const std::string& filepath, const std::string& mode) {
@@ -515,28 +496,29 @@ public:
             without _[bin|txt] pattern, by default is txt mode
         */
         std::vector<std::string> child_files;
-        if(FileUtils::GetChildren(filepath, &child_files)){
-           std::string first_file_str = child_files.front();
-           size_t index = first_file_str.find_last_of("/");
-           std::string first_file_name = first_file_str.substr(index + 1);;
+        if (FileUtils::GetChildren(filepath, &child_files)) {
+            std::string first_file_str = child_files.front();
+            size_t index = first_file_str.find_last_of("/");
+            std::string first_file_name = first_file_str.substr(index + 1);
+            ;
 
-           std::regex regex_pattern(R"((.*?)(\d+)(.*)\.gz)");
-           std::smatch match;
-           if (std::regex_match(first_file_name, match, regex_pattern)) {
-               file_prefix = match[1];
-               if(match[3].matched && match[3].length() > 0){
-                   file_suffix = match[3];
-                   actual_mode = file_suffix.substr(1);
-               } else {
-                   actual_mode = "txt";
-               }
-           }
-           std::cerr << file_prefix << std::endl;
-           std::cerr << file_suffix << std::endl;
+            std::regex regex_pattern(R"((.*?)(\d+)(.*)\.gz)");
+            std::smatch match;
+            if (std::regex_match(first_file_name, match, regex_pattern)) {
+                file_prefix = match[1];
+                if (match[3].matched && match[3].length() > 0) {
+                    file_suffix = match[3];
+                    actual_mode = file_suffix.substr(1);
+                } else {
+                    actual_mode = "txt";
+                }
+            }
+            std::cerr << file_prefix << std::endl;
+            std::cerr << file_suffix << std::endl;
         }
 
         for (size_t i = 0; i < SPARSE_KERNEL_BLOCK_NUM; ++i) {
-	    threads.push_back(std::thread([this, i, &actual_mode, &filepath, &file_prefix, &file_suffix]() {
+            threads.push_back(std::thread([this, i, &actual_mode, &filepath, &file_prefix, &file_suffix]() {
                 std::string file = filepath;
                 file.append("/" + file_prefix).append(std::to_string(i)).append(file_suffix).append(".gz");
                 FileReaderSource reader_source(file, FCT_ZLIB);
@@ -552,9 +534,7 @@ public:
             }));
         }
 
-        std::for_each(threads.begin(), threads.end(), [](std::thread& t) {
-            t.join();
-        });
+        std::for_each(threads.begin(), threads.end(), [](std::thread& t) { t.join(); });
     }
 
     size_t KeyCount() const {
@@ -573,14 +553,12 @@ public:
     }
 
 private:
-    int GetBlockId_(uint64_t sign) {
-        return sparse_key_hasher(sign) % SPARSE_KERNEL_BLOCK_NUM;
-    }
+    int GetBlockId_(uint64_t sign) { return sparse_key_hasher(sign) % SPARSE_KERNEL_BLOCK_NUM; }
 
 private:
     std::vector<KernelBlockType> blocks_;
 };
 
-} // namespace tensornet {
+}  // namespace tensornet
 
-#endif // !TENSORNET_OPTIMIZER_KERNEL_H_
+#endif  // !TENSORNET_OPTIMIZER_KERNEL_H_

@@ -53,10 +53,7 @@ std::ostream& operator<<(std::ostream& os, const DenseAdaGradValue& value) {
     os << "array_size:" << array_size << std::endl;
 
     for (int i = 0; i < array_size; i++) {
-        os << value.w_[i] << "\t"
-           << value.d2sum_[i] << "\t"
-           << value.g2sum_[i] << "\t"
-           << value.m_[i] << std::endl;
+        os << value.w_[i] << "\t" << value.d2sum_[i] << "\t" << value.g2sum_[i] << "\t" << value.m_[i] << std::endl;
     }
 
     return os;
@@ -99,11 +96,10 @@ SparseAdaGradValue::SparseAdaGradValue(int dim, const AdaGrad* opt) {
     no_show_days_ = 0;
     click_ = 0;
     show_ = 0;
-    if(opt->ShouldUseCvm()){
-      w[dim] = 0;
-      w[dim+1] = 0;
+    if (opt->ShouldUseCvm()) {
+        w[dim] = 0;
+        w[dim + 1] = 0;
     }
-
 }
 
 void SparseAdaGradValue::Apply(const AdaGrad* opt, SparseGradInfo& grad_info, int dim) {
@@ -124,13 +120,12 @@ void SparseAdaGradValue::Apply(const AdaGrad* opt, SparseGradInfo& grad_info, in
     for (int i = 0; i < dim; ++i) {
         w[i] -= opt->learning_rate * grad_info.grad[i] / (opt->epsilon + sqrt(g2sum_));
     }
-    if(opt->ShouldUseCvm()){
+    if (opt->ShouldUseCvm()) {
         float log_show = log(show_ + 1);
         float log_click = log(click_ + 1);
         w[dim] = show_;
-        w[dim+1] = (log_click - log_show);
+        w[dim + 1] = (log_click - log_show);
     }
-
 }
 
 void SparseAdaGradValue::SerializeTxt_(std::ostream& os, int dim) {
@@ -142,7 +137,7 @@ void SparseAdaGradValue::SerializeTxt_(std::ostream& os, int dim) {
     os << g2sum_ << "\t";
     os << show_ << "\t";
     os << no_show_days_ << "\t";
-    if(use_cvm_){
+    if (use_cvm_) {
         os << click_;
     }
 }
@@ -155,14 +150,14 @@ void SparseAdaGradValue::DeSerializeTxt_(std::istream& is, int dim) {
 
     is >> g2sum_;
     is >> show_;
-    if(!old_compat_) {
+    if (!old_compat_) {
         is >> no_show_days_;
-        if(use_cvm_){
+        if (use_cvm_) {
             is >> click_;
             float log_show = log(show_ + 1);
             float log_click = log(click_ + 1);
             Weight()[dim] = show_;
-            Weight()[dim+1] = (log_click - log_show);
+            Weight()[dim + 1] = (log_click - log_show);
         }
     }
 }
@@ -172,7 +167,7 @@ void SparseAdaGradValue::SerializeBin_(std::ostream& os, int dim) {
     os.write(reinterpret_cast<const char*>(&g2sum_), sizeof(g2sum_));
     os.write(reinterpret_cast<const char*>(&show_), sizeof(show_));
     os.write(reinterpret_cast<const char*>(&no_show_days_), sizeof(no_show_days_));
-    if(use_cvm_){
+    if (use_cvm_) {
         os.write(reinterpret_cast<const char*>(&click_), sizeof(click_));
     }
 }
@@ -181,14 +176,14 @@ void SparseAdaGradValue::DeSerializeBin_(std::istream& is, int dim) {
     is.read(reinterpret_cast<char*>(Weight()), dim * sizeof(float));
     is.read(reinterpret_cast<char*>(&g2sum_), sizeof(g2sum_));
     is.read(reinterpret_cast<char*>(&show_), sizeof(show_));
-    if(!old_compat_) {
+    if (!old_compat_) {
         is.read(reinterpret_cast<char*>(&no_show_days_), sizeof(no_show_days_));
-        if(use_cvm_){
+        if (use_cvm_) {
             is.read(reinterpret_cast<char*>(&click_), sizeof(click_));
             float log_show = log(show_ + 1);
             float log_click = log(click_ + 1);
             Weight()[dim] = show_;
-            Weight()[dim+1] = (log_click - log_show);
+            Weight()[dim + 1] = (log_click - log_show);
         }
     }
 }
@@ -203,4 +198,4 @@ bool SparseAdaGradValue::DeleteByShow(const AdaGrad* opt) {
     return show_ < opt->show_threshold || no_show_days_ > opt->no_show_days;
 }
 
-} // namespace tensornet
+}  // namespace tensornet

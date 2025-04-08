@@ -16,11 +16,11 @@
 #define TENSORNET_PS_TABLE_SPARSE_TABLE_H_
 
 #include <memory>
+#include <mutex>
 #include <random>
 #include <set>
 #include <string>
 #include <vector>
-#include <mutex>
 
 #include <butil/iobuf.h>
 
@@ -31,8 +31,7 @@ namespace tensornet {
 
 class SparseTable {
 public:
-    SparseTable(const OptimizerBase* opt, const std::string& name,
-            int dimension, int shard_num, int self_shard_id);
+    SparseTable(const OptimizerBase* opt, const std::string& name, int dimension, int shard_num, int self_shard_id);
 
     ~SparseTable() = default;
 
@@ -42,9 +41,7 @@ public:
 
     void SetHandle(uint32_t handle);
 
-    uint32_t GetHandle() const {
-        return handle_;
-    }
+    uint32_t GetHandle() const { return handle_; }
 
     void Save(const std::string& filepath, const std::string& mode);
 
@@ -78,15 +75,15 @@ public:
     uint32_t Register(SparseTable* table);
 
 private:
-    SparseTableRegistry() { }
+    SparseTableRegistry() {}
 
 private:
     std::mutex mu_;
     std::vector<SparseTable*> tables_;
 };
 
-SparseTable* CreateSparseTable(const OptimizerBase* opt, const std::string& name,
-        int dimension, int shard_num, int self_shard_id);
+SparseTable* CreateSparseTable(
+    const OptimizerBase* opt, const std::string& name, int dimension, int shard_num, int self_shard_id);
 
 }  // namespace tensornet
 

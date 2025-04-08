@@ -15,8 +15,8 @@
 #ifndef TENSORNET_UTILITY_FIX_REDEF_H_
 #define TENSORNET_UTILITY_FIX_REDEF_H_
 
-#include <butil/logging.h>
 #include <brpc/traceprintf.h>
+#include <butil/logging.h>
 
 #undef TRACEPRINTF
 
@@ -47,6 +47,6 @@
 #include <tensorflow/core/platform/logging.h>
 #include <tensorflow/core/platform/tracing.h>
 
-#endif // TENSORNET_UTILITY_FIX_REDEF_H_
+#endif  // TENSORNET_UTILITY_FIX_REDEF_H_
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

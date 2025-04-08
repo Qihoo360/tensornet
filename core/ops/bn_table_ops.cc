@@ -23,8 +23,7 @@ REGISTER_OP("UpdateMoments")
     .Input("vars: N * resource")
     .Attr("table_handle: int")
     .Attr("N: int")
-	.SetShapeFn(shape_inference::NoOutputs);
-
+    .SetShapeFn(shape_inference::NoOutputs);
 
 REGISTER_OP("BnStatisticsPush")
     .Doc(R"doc(save local bn vars to ps)doc")
@@ -33,7 +32,6 @@ REGISTER_OP("BnStatisticsPush")
     .Attr("N: int")
     .Attr("synchronized: bool")
     .SetShapeFn(shape_inference::NoOutputs);
-
 
 REGISTER_OP("BnStatisticsPull")
     .Doc(R"doc(save local bn vars to ps)doc")

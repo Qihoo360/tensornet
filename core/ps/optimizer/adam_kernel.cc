@@ -47,8 +47,7 @@ void DenseAdamValue::Apply(const Adam* opt, const Eigen::ArrayXf& g, const float
     beta1_power_ *= opt->beta1;
     beta2_power_ *= opt->beta2;
 
-    const float alpha = lr
-        * Eigen::numext::sqrt(1.0 - beta2_power_) / (1.0 - beta1_power_);
+    const float alpha = lr * Eigen::numext::sqrt(1.0 - beta2_power_) / (1.0 - beta1_power_);
 
     m_ += (g - m_) * (1.0 - opt->beta1);
     v_ += (g.square() - v_) * (1.0 - opt->beta2);
@@ -63,9 +62,7 @@ std::ostream& operator<<(std::ostream& os, const DenseAdamValue& value) {
     os << "beta2_power:" << value.beta2_power_ << std::endl;
 
     for (int i = 0; i < array_size; i++) {
-        os << value.w_[i] << "\t"
-           << value.m_[i] << "\t"
-           << value.v_[i] << std::endl;
+        os << value.w_[i] << "\t" << value.m_[i] << "\t" << value.v_[i] << std::endl;
     }
 
     return os;
@@ -169,4 +166,4 @@ void SparseAdamValue::DeSerializeBin_(std::istream& is, int dim) {
     is.read(reinterpret_cast<char*>(&show_), sizeof(show_));
 }
 
-} // namespace tensornet {
+}  // namespace tensornet
