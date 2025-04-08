@@ -27,9 +27,10 @@ from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import sparse_ops
 
-class SequenceCategoryColumn(fc.SequenceCategoricalColumn,
-                     collections.namedtuple('SequenceCategoricalColumn',
-                                            ('categorical_column'))):
+
+class SequenceCategoryColumn(
+    fc.SequenceCategoricalColumn, collections.namedtuple("SequenceCategoricalColumn", ("categorical_column"))
+):
     def _is_v2_column(self):
         return True
 
@@ -47,12 +48,11 @@ class SequenceCategoryColumn(fc.SequenceCategoricalColumn,
         input_tensor = transformation_cache.get(self.categorical_column.key, state_manager)
 
         if not isinstance(input_tensor, sparse_tensor_lib.SparseTensor):
-            raise ValueError('CategoryColumn input must be a SparseTensor.')
+            raise ValueError("CategoryColumn input must be a SparseTensor.")
 
         sparse_id_values = state_manager.get_feature_mapping_values(self.categorical_column.name)
 
-        return sparse_tensor_lib.SparseTensor(
-            input_tensor.indices, sparse_id_values, input_tensor.dense_shape)
+        return sparse_tensor_lib.SparseTensor(input_tensor.indices, sparse_id_values, input_tensor.dense_shape)
 
     def parse_example_spec(self):
         return {self.categorical_column.key: parsing_ops.VarLenFeature(dtypes.string)}
@@ -62,26 +62,27 @@ class SequenceCategoryColumn(fc.SequenceCategoricalColumn,
         return [self.categorical_column.key]
 
     def get_sparse_tensors(self, transformation_cache, state_manager):
-        sparse_tensors = fc.CategoricalColumn.IdWeightPair(
-            transformation_cache.get(self, state_manager), None)
+        sparse_tensors = fc.CategoricalColumn.IdWeightPair(transformation_cache.get(self, state_manager), None)
         return self._get_sparse_tensors_helper(sparse_tensors)
 
     def get_config(self):
         """See 'FeatureColumn` base class."""
         from tensorflow.python.feature_column.serialization import serialize_feature_column  # pylint: disable=g-import-not-at-top
+
         config = dict(zip(self._fields, self))
-        config['categorical_column'] = serialize_feature_column(
-        self.categorical_column)
+        config["categorical_column"] = serialize_feature_column(self.categorical_column)
         return config
 
     @classmethod
     def from_config(cls, config, custom_objects=None, columns_by_name=None):
         """See 'FeatureColumn` base class."""
         from tensorflow.python.feature_column.serialization import deserialize_feature_column  # pylint: disable=g-import-not-at-top
-        _check_config_keys(config, cls._fields)
-        kwargs = _standardize_and_copy_config(config)
-        kwargs['categorical_column'] = deserialize_feature_column(
-               config['categorical_column'], custom_objects, columns_by_name)
+
+        fc._check_config_keys(config, cls._fields)
+        kwargs = fc._standardize_and_copy_config(config)
+        kwargs["categorical_column"] = deserialize_feature_column(
+            config["categorical_column"], custom_objects, columns_by_name
+        )
         return cls(**kwargs)
 
     def _get_sparse_tensors_helper(self, sparse_tensors):
@@ -99,6 +100,5 @@ class SequenceCategoryColumn(fc.SequenceCategoricalColumn,
 
 
 def sequence_category_column(categorical_column):
-    """Represents sparse feature where ids are set by hashing.
-    """
+    """Represents sparse feature where ids are set by hashing."""
     return SequenceCategoryColumn(categorical_column)

@@ -10,7 +10,8 @@ def tn_category_columns_builder(features):
         columns[slot] = tn.feature_column.category_column(key=slot)
     return columns
 
-def embedding_columns_builder(features, tn_category_columns, embedding_size = 8):
+
+def embedding_columns_builder(features, tn_category_columns, embedding_size=8):
     embedding_columns = []
     for slot in features:
         feature_column = tf.feature_column.embedding_column(tn_category_columns[slot], dimension=embedding_size)
@@ -18,7 +19,8 @@ def embedding_columns_builder(features, tn_category_columns, embedding_size = 8)
 
     return embedding_columns
 
-def create_emb_model(features, columns_group, suffix = "_input"):
+
+def create_emb_model(features, columns_group, suffix="_input"):
     model_output = []
     inputs = {}
     for slot in features:
@@ -29,9 +31,10 @@ def create_emb_model(features, columns_group, suffix = "_input"):
     sparse_opt = tn.core.AdaGrad(learning_rate=0.01, initial_g2sum=0.1, initial_scale=0.1)
 
     for column_group_name in columns_group.keys():
-        embs = tn.layers.EmbeddingFeatures(columns_group[column_group_name], sparse_opt,
-                                           name=column_group_name + suffix, target_columns=["label"])(inputs)
-                                           #name=column_group_name + suffix)(inputs)
+        embs = tn.layers.EmbeddingFeatures(
+            columns_group[column_group_name], sparse_opt, name=column_group_name + suffix, target_columns=["label"]
+        )(inputs)
+        # name=column_group_name + suffix)(inputs)
         model_output.append(embs)
 
     emb_model = tn.model.Model(inputs=inputs, outputs=model_output, name="emb_model")

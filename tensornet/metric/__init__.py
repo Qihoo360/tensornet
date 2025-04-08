@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .metrics import CTR
-from .metrics import PCTR
-from .metrics import COPC
+from .metrics import CTR as CTR
+from .metrics import PCTR as PCTR
+from .metrics import COPC as COPC

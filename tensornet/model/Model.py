@@ -23,7 +23,7 @@ from tensorflow.python.framework import ops
 
 
 def load_done_info(cp_dir):
-    done_file = os.path.join(cp_dir, '_checkpoint')
+    done_file = os.path.join(cp_dir, "_checkpoint")
     if not tf.io.gfile.exists(done_file):
         return
 
@@ -31,12 +31,12 @@ def load_done_info(cp_dir):
 
     try:
         return json.loads(last_done_info.numpy())
-    except:
+    except Exception:
         return
 
 
 def save_done_info(cp_dir, dt):
-    done_file = os.path.join(cp_dir, '_checkpoint')
+    done_file = os.path.join(cp_dir, "_checkpoint")
     done_info = {
         "dt": dt,
     }
@@ -50,10 +50,10 @@ def save_done_info(cp_dir, dt):
 def read_last_train_dt(filepath):
     done_info = load_done_info(filepath)
 
-    if not done_info or 'dt' not in done_info:
+    if not done_info or "dt" not in done_info:
         return
 
-    return done_info['dt']
+    return done_info["dt"]
 
 
 class Model(tf.keras.Model):
@@ -64,12 +64,7 @@ class Model(tf.keras.Model):
         # when model.fit() is called multiple times through multi days training
         self.is_loaded_from_checkpoint = False
 
-        self._backward_count = self.add_weight(
-            "backward_count",
-            shape=[],
-            dtype=tf.int64,
-            trainable=False
-        )
+        self._backward_count = self.add_weight("backward_count", shape=[], dtype=tf.int64, trainable=False)
 
     def train_step(self, data):
         """override parent train_step, see description in parent
@@ -91,8 +86,7 @@ class Model(tf.keras.Model):
 
         with backprop.GradientTape() as tape:
             y_pred = self(x, training=True)
-            loss = self.compiled_loss(
-                y, y_pred, sample_weight, regularization_losses=self.losses)
+            loss = self.compiled_loss(y, y_pred, sample_weight, regularization_losses=self.losses)
 
         gradients = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
@@ -103,8 +97,7 @@ class Model(tf.keras.Model):
         return {m.name: m.result() for m in self.metrics}
 
     def predict_step(self, data):
-        """override parent inference step, support return y label together
-        """
+        """override parent inference step, support return y label together"""
         data = data_adapter.expand_1d(data)
         x, y, sample_weight = data_adapter.unpack_x_y_sample_weight(data)
 
@@ -116,7 +109,7 @@ class Model(tf.keras.Model):
         backward_ops = []
 
         for layer in self.layers:
-            if not hasattr(layer, 'backwards'):
+            if not hasattr(layer, "backwards"):
                 continue
 
             op = layer.backwards(grads_and_vars)
@@ -133,7 +126,7 @@ class Model(tf.keras.Model):
         cp_dir = os.path.join(filepath, dt)
         # sparse weight
         for layer in self.layers:
-            assert type(layer) != tf.keras.Model, "not support direct use keras.Model, use tn.model.Model instead"
+            assert type(layer) is not tf.keras.Model, "not support direct use keras.Model, use tn.model.Model instead"
 
             if isinstance(layer, type(self)):
                 layer.save_weights(filepath, overwrite, save_format, dt, False, mode)
@@ -152,12 +145,11 @@ class Model(tf.keras.Model):
         # only the first node save the model, other node use the first node saved model
         # when load_weights
         if tn.core.self_shard_id() == 0 and root:
-
             # actually, we use tensorflow checkpoint only when system restart, this could be
             # done by tensornet checkpoint instead, but we need a pull operation to fetch
             # weight from remote node. TODO use tensornet checkpoint to refine code
             tf_cp_file = os.path.join(cp_dir, "tf_checkpoint")
-            super(Model, self).save_weights(tf_cp_file, overwrite, save_format='tf')
+            super(Model, self).save_weights(tf_cp_file, overwrite, save_format="tf")
 
             save_done_info(filepath, dt)
 
@@ -171,7 +163,7 @@ class Model(tf.keras.Model):
                 return
             cp_dir = os.path.join(filepath, last_train_dt)
         else:
-            model_ckpt = os.path.join(filepath, 'checkpoint')
+            model_ckpt = os.path.join(filepath, "checkpoint")
             if not tf.io.gfile.exists(model_ckpt):
                 return
             cp_dir = filepath
@@ -179,7 +171,9 @@ class Model(tf.keras.Model):
         if not self.is_loaded_from_checkpoint:
             # sparse weight
             for layer in self.layers:
-                assert type(layer) != tf.keras.Model, "not support direct use keras.Model, use tn.model.Model instead"
+                assert type(layer) is not tf.keras.Model, (
+                    "not support direct use keras.Model, use tn.model.Model instead"
+                )
 
                 if isinstance(layer, type(self)):
                     layer.load_weights(filepath, by_name, skip_mismatch, include_dt, False, mode)
@@ -200,7 +194,6 @@ class Model(tf.keras.Model):
             tf_cp_file = os.path.join(cp_dir, "tf_checkpoint")
             super(Model, self).load_weights(tf_cp_file, by_name, skip_mismatch).expect_partial()
 
-
     def load_sparse_weights(self, filepath, by_name=False, skip_mismatch=False, include_dt=False, root=True):
         if not include_dt:
             last_train_dt = read_last_train_dt(filepath)
@@ -209,7 +202,7 @@ class Model(tf.keras.Model):
                 return
             cp_dir = os.path.join(filepath, last_train_dt)
         else:
-            model_ckpt = os.path.join(filepath, 'checkpoint')
+            model_ckpt = os.path.join(filepath, "checkpoint")
             if not tf.io.gfile.exists(model_ckpt):
                 return
             cp_dir = filepath
@@ -218,7 +211,9 @@ class Model(tf.keras.Model):
         if not self.is_loaded_from_checkpoint:
             # sparse weight
             for layer in self.layers:
-                assert type(layer) != tf.keras.Model, "not support direct use keras.Model, use tn.model.Model instead"
+                assert type(layer) is not tf.keras.Model, (
+                    "not support direct use keras.Model, use tn.model.Model instead"
+                )
 
                 if isinstance(layer, type(self)):
                     layer.load_sparse_weights(filepath, by_name, skip_mismatch, include_dt, False)
@@ -231,10 +226,9 @@ class Model(tf.keras.Model):
             tf_cp_file = os.path.join(cp_dir, "tf_checkpoint")
             super(Model, self).load_weights(tf_cp_file, by_name, skip_mismatch)
 
-
     def show_decay(self, delta_days=0):
         for layer in self.layers:
-            assert type(layer) != tf.keras.Model, "not support direct use keras.Model, use tn.model.Model instead"
+            assert type(layer) is not tf.keras.Model, "not support direct use keras.Model, use tn.model.Model instead"
 
             if isinstance(layer, type(self)):
                 layer.show_decay(delta_days)
@@ -245,7 +239,6 @@ class Model(tf.keras.Model):
 
 
 class PCGradModel(Model):
-
     def train_step(self, data):
         """override parent train_step, see description in parent
         Arguments:
@@ -267,16 +260,15 @@ class PCGradModel(Model):
         with backprop.GradientTape(persistent=True) as tape:
             tape.watch(self.trainable_variables)
             y_pred = self(x, training=True)
-            loss, losses = self.compiled_loss(
-                y, y_pred, sample_weight, regularization_losses=self.losses)
+            loss, losses = self.compiled_loss(y, y_pred, sample_weight, regularization_losses=self.losses)
 
-            print('total loss: %s, sub loss:%s' % (loss, losses))
+            print("total loss: %s, sub loss:%s" % (loss, losses))
 
             grads_and_vars = self.optimizer.compute_gradients(losses, self.trainable_variables, tape)
         gradients = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(grads_and_vars)
 
-        print('grads_and_vars:%s' % grads_and_vars)
+        print("grads_and_vars:%s" % grads_and_vars)
         self.backwards(list(zip(gradients, self.trainable_variables)))
 
         self.compiled_metrics.update_state(y, y_pred, sample_weight)

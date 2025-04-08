@@ -32,21 +32,17 @@ def list_files(datapath, days, match_pattern):
         for day in days:
             file_pattern.append(os.path.join(datapath, day, match_pattern))
 
-        file_pattern = ops.convert_to_tensor(
-            file_pattern, dtype=dtypes.string, name="file_pattern")
+        file_pattern = ops.convert_to_tensor(file_pattern, dtype=dtypes.string, name="file_pattern")
         matching_files = gen_io_ops.matching_files(file_pattern)
 
-
         # Raise an exception if `file_pattern` does not match any files.
-        condition = math_ops.greater(array_ops.shape(matching_files)[0], 0,
-                                     name="match_not_empty")
+        condition = math_ops.greater(array_ops.shape(matching_files)[0], 0, name="match_not_empty")
 
         message = math_ops.add(
-            "No files matched pattern: ",
-            string_ops.reduce_join(file_pattern, separator=", "), name="message")
+            "No files matched pattern: ", string_ops.reduce_join(file_pattern, separator=", "), name="message"
+        )
 
-        assert_not_empty = control_flow_ops.Assert(
-            condition, [message], summarize=1, name="assert_not_empty")
+        assert_not_empty = control_flow_ops.Assert(condition, [message], summarize=1, name="assert_not_empty")
         with ops.control_dependencies([assert_not_empty]):
             matching_files = array_ops.identity(matching_files)
 
@@ -54,15 +50,14 @@ def list_files(datapath, days, match_pattern):
 
         return dataset
 
+
 class BalanceDataset(dataset_ops.UnaryDataset):
-    """A `Dataset` that balance input data between other cocurrent ops
-    """
+    """A `Dataset` that balance input data between other cocurrent ops"""
+
     def __init__(self, input_dataset):
         self._input_dataset = input_dataset
         self._structure = input_dataset.element_spec
-        variant_tensor = gen_balance_dataset_ops.balance_dataset(
-            input_dataset._variant_tensor,
-            **self._flat_structure)
+        variant_tensor = gen_balance_dataset_ops.balance_dataset(input_dataset._variant_tensor, **self._flat_structure)
         super(BalanceDataset, self).__init__(input_dataset, variant_tensor)
 
     @property

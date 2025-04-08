@@ -26,9 +26,7 @@ from tensorflow.python.framework import sparse_tensor as sparse_tensor_lib
 from tensorflow.python.ops import parsing_ops
 
 
-class CategoryColumn(fc.CategoricalColumn,
-                     collections.namedtuple('CategoryColumn',
-                                            ('key', 'bucket_size'))):
+class CategoryColumn(fc.CategoricalColumn, collections.namedtuple("CategoryColumn", ("key", "bucket_size"))):
     def _is_v2_column(self):
         return True
 
@@ -46,12 +44,11 @@ class CategoryColumn(fc.CategoricalColumn,
         input_tensor = transformation_cache.get(self.key, state_manager)
 
         if not isinstance(input_tensor, sparse_tensor_lib.SparseTensor):
-            raise ValueError('CategoryColumn input must be a SparseTensor.')
+            raise ValueError("CategoryColumn input must be a SparseTensor.")
 
         sparse_id_values = state_manager.get_feature_mapping_values(self.name)
 
-        return sparse_tensor_lib.SparseTensor(
-            input_tensor.indices, sparse_id_values, input_tensor.dense_shape)
+        return sparse_tensor_lib.SparseTensor(input_tensor.indices, sparse_id_values, input_tensor.dense_shape)
 
     def parse_example_spec(self):
         return {self.key: parsing_ops.VarLenFeature(dtypes.string)}
@@ -61,23 +58,21 @@ class CategoryColumn(fc.CategoricalColumn,
         return [self.key]
 
     def get_sparse_tensors(self, transformation_cache, state_manager):
-        return fc.CategoricalColumn.IdWeightPair(
-            transformation_cache.get(self, state_manager), None)
+        return fc.CategoricalColumn.IdWeightPair(transformation_cache.get(self, state_manager), None)
 
     def _get_config(self):
         config = dict(zip(self._fields, self))
-        config['dtype'] = dtypes.string.name
+        config["dtype"] = dtypes.string.name
         return config
 
     @classmethod
     def _from_config(cls, config, custom_objects=None, columns_by_name=None):
         fc._check_config_keys(config, cls._fields)
         kwargs = fc._standardize_and_copy_config(config)
-        kwargs['dtype'] = dtypes.as_dtype(config['dtype'])
+        kwargs["dtype"] = dtypes.as_dtype(config["dtype"])
         return cls(**kwargs)
 
 
 def category_column(key, bucket_size=1024):
-    """Represents sparse feature where ids are set by hashing.
-    """
+    """Represents sparse feature where ids are set by hashing."""
     return CategoryColumn(key, bucket_size)

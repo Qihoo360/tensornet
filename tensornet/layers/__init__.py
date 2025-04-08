@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .embedding_features import EmbeddingFeatures
-from .sequence_embedding_features import SequenceEmbeddingFeatures
-from .normalization_layer import TNBatchNormalizationBase
-from .normalization_layer import TNBatchNormalization
-from .normalization_layer import PCTRDNNBatchNormalization
+from .embedding_features import EmbeddingFeatures as EmbeddingFeatures
+from .sequence_embedding_features import SequenceEmbeddingFeatures as SequenceEmbeddingFeatures
+from .normalization_layer import TNBatchNormalizationBase as TNBatchNormalizationBase
+from .normalization_layer import TNBatchNormalization as TNBatchNormalization
+from .normalization_layer import PCTRDNNBatchNormalization as PCTRDNNBatchNormalization

@@ -1,12 +1,9 @@
 #!/usr/bin/python3.6
-#coding=utf-8
-import sys
+# coding=utf-8
 import argparse
-import os
-from pyspark import SparkContext, SparkConf
-from pyspark.sql import *
-from pyspark.sql.functions import *
-from utils import *
+from pyspark.sql import SparkSession
+from utils import output_line
+from utils import load_sparse_table_to_df
 
 
 def parse_args():
@@ -21,17 +18,15 @@ def parse_args():
 
 
 def main(args):
-    spark = SparkSession.builder \
-        .appName("[spark][merge sparse table]") \
-        .master('yarn') \
-        .enableHiveSupport() \
-        .getOrCreate()
+    spark = SparkSession.builder.appName("[spark][merge sparse table]").master("yarn").enableHiveSupport().getOrCreate()
 
     sc = spark.sparkContext
     dims_df = load_sparse_table_to_df(sc, args.input, args.format)
-    dims_df.select("sign", "weights", "handle").dropDuplicates(['sign','handle']).drop('handle').rdd.map(lambda x: output_line(x, args.bracket)).repartition(args.number).saveAsTextFile(args.output)
+    dims_df.select("sign", "weights", "handle").dropDuplicates(["sign", "handle"]).drop("handle").rdd.map(
+        lambda x: output_line(x, args.bracket)
+    ).repartition(args.number).saveAsTextFile(args.output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     args = parse_args()
     main(args)

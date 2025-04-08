@@ -12,5 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .category_column import *
-from .sequence_category_column import *
+from .category_column import CategoryColumn as CategoryColumn
+from .category_column import category_column as category_column
+from .sequence_category_column import SequenceCategoryColumn as SequenceCategoryColumn
+from .sequence_category_column import sequence_category_column as sequence_category_column

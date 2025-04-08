@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import core
-from . import feature_column
-from . import layers
-from . import distribute
-from . import callbacks
-from . import metric
-from . import optimizer
-from . import model
-from . import data
+from . import core as core
+from . import feature_column as feature_column
+from . import layers as layers
+from . import distribute as distribute
+from . import callbacks as callbacks
+from . import metric as metric
+from . import optimizer as optimizer
+from . import model as model
+from . import data as data
 
 from . import version as _version
 

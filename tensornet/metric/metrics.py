@@ -29,8 +29,7 @@ from tensorflow.python.ops.losses import util as tf_losses_utils
 
 
 class CTR(metrics.Mean):
-    """calculate average of label
-    """
+    """calculate average of label"""
 
     def __init__(self, name="CTR", dtype=None):
         """Creates a `CTR` instance.
@@ -44,19 +43,16 @@ class CTR(metrics.Mean):
     def update_state(self, y_true, y_pred, sample_weight=None):
         y_true = math_ops.cast(y_true, self._dtype)
         y_pred = math_ops.cast(y_pred, self._dtype)
-        [y_true, y_pred], sample_weight = \
-            metrics_utils.ragged_assert_compatible_and_get_flat_values(
-                [y_true, y_pred], sample_weight)
-        y_pred, y_true = tf_losses_utils.squeeze_or_expand_dimensions(
-            y_pred, y_true)
+        [y_true, y_pred], sample_weight = metrics_utils.ragged_assert_compatible_and_get_flat_values(
+            [y_true, y_pred], sample_weight
+        )
+        y_pred, y_true = tf_losses_utils.squeeze_or_expand_dimensions(y_pred, y_true)
 
-        return super(CTR, self).update_state(
-            y_true, sample_weight=sample_weight)
+        return super(CTR, self).update_state(y_true, sample_weight=sample_weight)
 
 
 class PCTR(metrics.Mean):
-    """calculate average of label
-    """
+    """calculate average of label"""
 
     def __init__(self, name="PCTR", dtype=None):
         """Creates a `CTR` instance.
@@ -70,14 +66,12 @@ class PCTR(metrics.Mean):
     def update_state(self, y_true, y_pred, sample_weight=None):
         y_true = math_ops.cast(y_true, self._dtype)
         y_pred = math_ops.cast(y_pred, self._dtype)
-        [y_true, y_pred], sample_weight = \
-            metrics_utils.ragged_assert_compatible_and_get_flat_values(
-                [y_true, y_pred], sample_weight)
-        y_pred, y_true = tf_losses_utils.squeeze_or_expand_dimensions(
-            y_pred, y_true)
+        [y_true, y_pred], sample_weight = metrics_utils.ragged_assert_compatible_and_get_flat_values(
+            [y_true, y_pred], sample_weight
+        )
+        y_pred, y_true = tf_losses_utils.squeeze_or_expand_dimensions(y_pred, y_true)
 
-        return super(PCTR, self).update_state(
-            y_pred, sample_weight=sample_weight)
+        return super(PCTR, self).update_state(y_pred, sample_weight=sample_weight)
 
 
 class COPC(metrics.Metric):
@@ -85,19 +79,16 @@ class COPC(metrics.Metric):
         super(COPC, self).__init__(name=name, dtype=dtype)
 
         with ops.init_scope():
-            self.ctr_total = self.add_weight(
-                'ctr_total', initializer=init_ops.zeros_initializer)
-            self.pctr_total = self.add_weight(
-                'pctr_total', initializer=init_ops.zeros_initializer)
+            self.ctr_total = self.add_weight("ctr_total", initializer=init_ops.zeros_initializer)
+            self.pctr_total = self.add_weight("pctr_total", initializer=init_ops.zeros_initializer)
 
     def update_state(self, y_true, y_pred, sample_weight=None):
         y_true = math_ops.cast(y_true, self._dtype)
         y_pred = math_ops.cast(y_pred, self._dtype)
-        [y_true, y_pred], sample_weight = \
-            metrics_utils.ragged_assert_compatible_and_get_flat_values(
-                [y_true, y_pred], sample_weight)
-        y_pred, y_true = tf_losses_utils.squeeze_or_expand_dimensions(
-            y_pred, y_true)
+        [y_true, y_pred], sample_weight = metrics_utils.ragged_assert_compatible_and_get_flat_values(
+            [y_true, y_pred], sample_weight
+        )
+        y_pred, y_true = tf_losses_utils.squeeze_or_expand_dimensions(y_pred, y_true)
 
         ctr_sum = math_ops.reduce_sum(y_true)
         with ops.control_dependencies([ctr_sum]):
