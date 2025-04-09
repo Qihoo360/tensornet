@@ -123,7 +123,7 @@ pre-commit-install = "pre-commit install --install-hooks -t=pre-commit"
 pre-commit-run = "pre-commit run --all-files"
 ruff-format = "ruff format --force-exclude"
 ruff-lint = "ruff check --fix --exit-non-zero-on-fix --force-exclude"
-shell-format = "shfmt -w -i=2 -s -bn"
+shell-format = "shfmt --write --indent=2 --simplify --binary-next-line"
 toml-format = { cmd = "taplo fmt", env = { RUST_LOG = "warn" } }
 
 [tool.pixi.environments]
