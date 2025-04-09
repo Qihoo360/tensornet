@@ -17,5 +17,5 @@ if [ -d "${PIXI_PROJECT_ROOT:=.}/.pixi/activate.d" ]; then
   done <<-END
 	$(find "$PIXI_PROJECT_ROOT/.pixi/activate.d" -name '*.sh')
 	END
-  ( exit $__f_err )
+  (exit $__f_err)
 fi

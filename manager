@@ -17,133 +17,137 @@ export MAMBA_ROOT_PREFIX=${HOME}/micromamba
 
 die() {
   local err=$? err_fmt=
-  (( err )) && err_fmt=" (err=$err)" || err=1
+  ((err)) && err_fmt=" (err=$err)" || err=1
   printf >&2 "[ERROR]$err_fmt %s\n" "$*"
   exit $err
 }
 
-
-_prepare_mamba_env(){
-   if ! type micromamba >/dev/null 2>&1;then
-       if [ -n "${URL_MIRROR_github_com-}" ]; then
-           "${SHELL}" <(curl -L "${MAMBA_INSTALLER_URL-}" | sed "s|https://github.com/|$URL_MIRROR_github_com|g")
-       else
-           "${SHELL}" <(curl -L "${MAMBA_INSTALLER_URL-}")
-       fi
-   fi
-   _mamba_source
-   [[ -z ${NEXUS3_HEADER} ]] || {
-       ${MAMBA_EXE} config set --file "${MAMBA_ROOT_PREFIX}/.mambarc" channel_alias "${NEXUS3_HEADER}/conda"
-   }
-   micromamba create -y -f "${WORKSPACE_DIR}/config/${TN_BUILD_ENV_NAME}.yaml"
-   micromamba activate "${TN_BUILD_ENV_NAME}"
+_prepare_mamba_env() {
+  if ! type micromamba >/dev/null 2>&1; then
+    if [ -n "${URL_MIRROR_github_com-}" ]; then
+      "${SHELL}" <(curl -L "${MAMBA_INSTALLER_URL-}" | sed "s|https://github.com/|$URL_MIRROR_github_com|g")
+    else
+      "${SHELL}" <(curl -L "${MAMBA_INSTALLER_URL-}")
+    fi
+  fi
+  _mamba_source
+  [[ -z ${NEXUS3_HEADER} ]] || {
+    ${MAMBA_EXE} config set --file "${MAMBA_ROOT_PREFIX}/.mambarc" channel_alias "${NEXUS3_HEADER}/conda"
+  }
+  micromamba create -y -f "${WORKSPACE_DIR}/config/${TN_BUILD_ENV_NAME}.yaml"
+  micromamba activate "${TN_BUILD_ENV_NAME}"
 }
 
 _mamba_source() {
-    [[ -e ${MAMBA_EXE} ]] || { echo "no micromamba exe found, run ./manager prepare_build_env to create env"; exit 1;}
-    local __mamba_setup=''
-    if __mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"; then
-        eval "$__mamba_setup"
-    else
-        alias micromamba='$MAMBA_EXE'  # Fallback on help from mamba activate
-    fi
-    unset __mamba_setup
+  [[ -e ${MAMBA_EXE} ]] || {
+    echo "no micromamba exe found, run ./manager prepare_build_env to create env"
+    exit 1
+  }
+  local __mamba_setup=''
+  if __mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX" 2>/dev/null)"; then
+    eval "$__mamba_setup"
+  else
+    alias micromamba='$MAMBA_EXE' # Fallback on help from mamba activate
+  fi
+  unset __mamba_setup
 }
 
 _activate_env() {
-    _mamba_source
-    micromamba activate ${TN_BUILD_ENV_NAME}
+  _mamba_source
+  micromamba activate ${TN_BUILD_ENV_NAME}
 }
 
 _prepare_compile_env() {
-    CUR_ENV_PATH=$(ompi_info --parsable --path prefix 2>/dev/null | awk -F":" '{print $NF}')
-    export C_INCLUDE_PATH=${CUR_ENV_PATH}/include
-    export CPLUS_INCLUDE_PATH=${CUR_ENV_PATH}/include
+  CUR_ENV_PATH=$(ompi_info --parsable --path prefix 2>/dev/null | awk -F":" '{print $NF}')
+  export C_INCLUDE_PATH=${CUR_ENV_PATH}/include
+  export CPLUS_INCLUDE_PATH=${CUR_ENV_PATH}/include
 }
 
-_build_config(){
-    CUR_ENV_PATH=$(ompi_info --parsable --path prefix 2>/dev/null | awk -F":" '{print $NF}')
-    cd -- "${WORKSPACE_DIR}"; ./configure.sh --openmpi_path "${CUR_ENV_PATH}"
-    _prepare_compile_env
+_build_config() {
+  CUR_ENV_PATH=$(ompi_info --parsable --path prefix 2>/dev/null | awk -F":" '{print $NF}')
+  cd -- "${WORKSPACE_DIR}"
+  ./configure.sh --openmpi_path "${CUR_ENV_PATH}"
+  _prepare_compile_env
 }
 
-start_build(){
-    [[ ${NEED_PREPARE_ENV} == true ]] && _prepare_mamba_env
-    [[ ${NEED_ACTIVATE_ENV} == true ]] && _activate_env
-    _build_config
-    extra_opts=("$@")
-    [[ ${DEBUG-} != true ]] || extra_opts+=(--sandbox_debug)
-    bazel build "${extra_opts[@]}" -c opt //core:_pywrap_tn.so
+start_build() {
+  [[ ${NEED_PREPARE_ENV} == true ]] && _prepare_mamba_env
+  [[ ${NEED_ACTIVATE_ENV} == true ]] && _activate_env
+  _build_config
+  extra_opts=("$@")
+  [[ ${DEBUG-} != true ]] || extra_opts+=(--sandbox_debug)
+  bazel build "${extra_opts[@]}" -c opt //core:_pywrap_tn.so
 }
 
-only_build(){
-    [[ ${NEED_ACTIVATE_ENV} == true ]] && _activate_env
-    _prepare_compile_env
-    extra_opts=("$@")
-    [[ ${DEBUG-} != true ]] || extra_opts+=(--sandbox_debug)
-    bazel build "${extra_opts[@]}" -c opt //core:_pywrap_tn.so
+only_build() {
+  [[ ${NEED_ACTIVATE_ENV} == true ]] && _activate_env
+  _prepare_compile_env
+  extra_opts=("$@")
+  [[ ${DEBUG-} != true ]] || extra_opts+=(--sandbox_debug)
+  bazel build "${extra_opts[@]}" -c opt //core:_pywrap_tn.so
 }
 
-
-start_copy_libs(){
-    rm -f tensornet/core/_pywrap_tn.so || true
-    cp bazel-bin/core/_pywrap_tn.so tensornet/core/_pywrap_tn.so
+start_copy_libs() {
+  rm -f tensornet/core/_pywrap_tn.so || true
+  cp bazel-bin/core/_pywrap_tn.so tensornet/core/_pywrap_tn.so
 }
 
-start_test(){
-    [[ ${NEED_ACTIVATE_ENV} == true ]] && _activate_env
-    export PYTHONPATH=${WORKSPACE_DIR}:${PYTHONPATH}
-    MPI_LIB_PATH=$(ompi_info --parsable --path prefix 2>/dev/null | awk -F":" '{print $NF}')
-    export LD_LIBRARY_PATH=${MPI_LIB_PATH}/lib:${LD_LIBRARY_PATH}
-    cd examples
-    rm -rf data model || true
-    python gen_example_data.py
-    python main.py
+start_test() {
+  [[ ${NEED_ACTIVATE_ENV} == true ]] && _activate_env
+  export PYTHONPATH=${WORKSPACE_DIR}:${PYTHONPATH}
+  MPI_LIB_PATH=$(ompi_info --parsable --path prefix 2>/dev/null | awk -F":" '{print $NF}')
+  export LD_LIBRARY_PATH=${MPI_LIB_PATH}/lib:${LD_LIBRARY_PATH}
+  cd examples
+  rm -rf data model || true
+  python gen_example_data.py
+  python main.py
 }
 
-
-start_only_upload(){
-    [[ ${NEED_ACTIVATE_ENV} == true ]] && _activate_env
-    export TWINE_USERNAME=${TWINE_USERNAME:=${NEXUS3_USERNAME}}
-    export TWINE_PASSWORD=${TWINE_PASSWORD:=${NEXUS3_PASSWORD}}
-    if [[ -z "$TWINE_USERNAME" || -z "$TWINE_PASSWORD" ]];then
-        echo "need username/password auth, no env "
-        echo "export NEXUS3_USERNAME=xxxx"
-        echo "export NEXUS3_PASSWORD=xxxx"
-        exit 0
-    fi
-    [[ -z ${NEXUS3_PYPI_HOST} ]] && { echo "need pypi host address, export NEXUS3_PYPI_HOST=xxx"; exit 0; }
-    twine upload --verbose --repository-url "${NEXUS3_PYPI_HOST}" dist/*
+start_only_upload() {
+  [[ ${NEED_ACTIVATE_ENV} == true ]] && _activate_env
+  export TWINE_USERNAME=${TWINE_USERNAME:=${NEXUS3_USERNAME}}
+  export TWINE_PASSWORD=${TWINE_PASSWORD:=${NEXUS3_PASSWORD}}
+  if [[ -z $TWINE_USERNAME || -z $TWINE_PASSWORD ]]; then
+    echo "need username/password auth, no env "
+    echo "export NEXUS3_USERNAME=xxxx"
+    echo "export NEXUS3_PASSWORD=xxxx"
+    exit 0
+  fi
+  [[ -z ${NEXUS3_PYPI_HOST} ]] && {
+    echo "need pypi host address, export NEXUS3_PYPI_HOST=xxx"
+    exit 0
+  }
+  twine upload --verbose --repository-url "${NEXUS3_PYPI_HOST}" dist/*
 }
 
-start_create_dist(){
-    [[ ${NEED_PREPARE_ENV} == true ]] && _prepare_mamba_env
-    [[ ${NEED_ACTIVATE_ENV} == true ]] && _activate_env
-    rm -rf dist/* || true
-    PY_VERSION=$(python -c "import sys; print('cp' + ''.join(map(str, sys.version_info[:2])))")
-    cat >setup.cfg <<-END
+start_create_dist() {
+  [[ ${NEED_PREPARE_ENV} == true ]] && _prepare_mamba_env
+  [[ ${NEED_ACTIVATE_ENV} == true ]] && _activate_env
+  rm -rf dist/* || true
+  PY_VERSION=$(python -c "import sys; print('cp' + ''.join(map(str, sys.version_info[:2])))")
+  cat >setup.cfg <<-END
 	[bdist_wheel]
 	python_tag = $PY_VERSION
 	END
-    python3 -m build -w -n
-    twine check dist/*
+  python3 -m build -w -n
+  twine check dist/*
 }
 
-start_upload(){
-    start_copy_libs
-    start_create_dist
-    start_only_upload
+start_upload() {
+  start_copy_libs
+  start_create_dist
+  start_only_upload
 }
 
 bump_dev_version() {
   hash bump-my-version >/dev/null || die "cannot find bump-my-version command"
   local tf_minor='' new_version='' mode=${1:-patch}
   case "$mode" in
-  (major)
+  major)
     tf_minor=$(sed -n '/tensorflow-cpu/ s/.*>=2\.\([0-9]*\)[^0-9].*/\1/ p' pyproject.toml)
-    (( tf_minor > 0 )) || die "failed to parse tensorflow-cpu version!"
+    ((tf_minor > 0)) || die "failed to parse tensorflow-cpu version!"
 
-    new_version=$( bump-my-version show current_version | awk -vFS=. -vOFS=. -vtf_minor="$tf_minor" '{
+    new_version=$(bump-my-version show current_version | awk -vFS=. -vOFS=. -vtf_minor="$tf_minor" '{
         $1=$1+1
         $2=tf_minor;
         $3=0;
@@ -155,11 +159,11 @@ bump_dev_version() {
 
     bump-my-version bump --commit --new-version "$new_version"
     ;;
-  (minor)
+  minor)
     tf_minor=$(sed -n '/tensorflow-cpu/ s/.*>=2\.\([0-9]*\)[^0-9].*/\1/ p' pyproject.toml)
-    (( tf_minor > 0 )) || die "failed to parse tensorflow-cpu version!"
+    ((tf_minor > 0)) || die "failed to parse tensorflow-cpu version!"
 
-    new_version=$( bump-my-version show current_version | awk -vFS=. -vOFS=. -vtf_minor="$tf_minor" '{
+    new_version=$(bump-my-version show current_version | awk -vFS=. -vOFS=. -vtf_minor="$tf_minor" '{
         curr=$2;
         tn_minor=int(curr/100);
         new=tn_minor * 100 + tf_minor;
@@ -174,83 +178,83 @@ bump_dev_version() {
 
     bump-my-version bump --commit --new-version "$new_version"
     ;;
-  (patch) bump-my-version bump --commit "$mode" ;;
-  (build)
+  patch) bump-my-version bump --commit "$mode" ;;
+  build)
     local release_part=''
     release_part=$(bump-my-version show current_version | awk -vFS=. '$NF ~ "^[a-z]" { print $NF }')
     case "${release_part-}" in
-    (dev*) bump-my-version bump --commit "$mode" ;;
-    (*) die "use '$0 release ...' to bump the build number of a release version." ;;
+    dev*) bump-my-version bump --commit "$mode" ;;
+    *) die "use '$0 release ...' to bump the build number of a release version." ;;
     esac
     ;;
-  (*) die "Unknown mode ($mode) for bump_dev_version, should be one of 'major', 'minor', 'patch' or 'build'." ;;
+  *) die "Unknown mode ($mode) for bump_dev_version, should be one of 'major', 'minor', 'patch' or 'build'." ;;
   esac
 }
 
 bump_release_version() {
   hash bump-my-version >/dev/null || die "cannot find bump-my-version command"
   local mode=${1:-prod} release_part='' tag_name_option=()
-  [[ $# -gt 1 && $2 == 'tool' ]] && tag_name_option=( --tag-name 'v{new_version}-tool' )
+  [[ $# -gt 1 && $2 == 'tool' ]] && tag_name_option=(--tag-name 'v{new_version}-tool')
   release_part=$(bump-my-version show current_version | awk -vFS=. '$NF ~ "^[a-z]" { print $NF }')
 
   case "$mode" in
-  (rc)
+  rc)
     case "${release_part-}" in
-    (dev*) bump-my-version bump --commit --tag release ;;
-    (rc*) bump-my-version bump --commit --tag build ;;
-    (''|post*) die "An production version cannot do a pre-release" ;;
-    (*) die "Unknown release part ($release_part) for bump_release_version" ;;
+    dev*) bump-my-version bump --commit --tag release ;;
+    rc*) bump-my-version bump --commit --tag build ;;
+    '' | post*) die "An production version cannot do a pre-release" ;;
+    *) die "Unknown release part ($release_part) for bump_release_version" ;;
     esac
     ;;
-  (prod)
+  prod)
     case "${release_part-}" in
     # def->prod release, skip rc
-    (dev*) bump-my-version bump --commit --tag "${tag_name_option[@]}" --serialize '{major}.{minor}.{patch}' release ;;
-    (rc*) bump-my-version bump --commit --tag "${tag_name_option[@]}" release ;;
-    (''|post*) bump-my-version bump --commit --tag "${tag_name_option[@]}" build ;;
-    (*) die "Unknown release part ($release_part) for bump_release_version" ;;
+    dev*) bump-my-version bump --commit --tag "${tag_name_option[@]}" --serialize '{major}.{minor}.{patch}' release ;;
+    rc*) bump-my-version bump --commit --tag "${tag_name_option[@]}" release ;;
+    '' | post*) bump-my-version bump --commit --tag "${tag_name_option[@]}" build ;;
+    *) die "Unknown release part ($release_part) for bump_release_version" ;;
     esac
     ;;
-  (*) die "Unknown mode ($mode) for bump_release_version, should either 'prod' or 'rc'." ;;
+  *) die "Unknown mode ($mode) for bump_release_version, should either 'prod' or 'rc'." ;;
   esac
 }
 
 case "${1-}" in
-(prepare_build_env)
+prepare_build_env)
   _prepare_mamba_env
   ;;
-(build)
+build)
   shift 1
   start_build "$@"
   ;;
-(only-build)
+only-build)
   shift 1
   only_build "$@"
   ;;
-(deploy)
+deploy)
   shift 1
   start_upload
   ;;
-(copy-libs)
+copy-libs)
   start_copy_libs
   ;;
-(create_dist)
+create_dist)
   shift 1
   start_create_dist
   ;;
-(test)
+test)
   shift 1
   start_test "$@"
   ;;
-(bump-version)
+bump-version)
   shift 1
   bump_dev_version "$@"
   ;;
-(release)
+release)
   shift 1
   bump_release_version "$@"
   ;;
-(''|help)
+'' | help)
   cmd=$(basename -- "$0")
   cat <<-END
 	Usage:
@@ -271,5 +275,5 @@ case "${1-}" in
 	  $cmd release <rc|[prod]> - generate a new (rc) release, and tag the new commit.
 	END
   ;;
-(*) die Unknown command "$1" ;;
+*) die Unknown command "$1" ;;
 esac

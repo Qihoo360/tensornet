@@ -20,8 +20,8 @@ __check_pixi() {
     case $? in
     # 2: less than 0.44.0
     # 4: verify fail
-    (2|4) return 1 ;;
-    (*) exit $? ;; # unknown error
+    2 | 4) return 1 ;;
+    *) exit $? ;; # unknown error
     esac
   fi
 }

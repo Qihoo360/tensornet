@@ -107,6 +107,7 @@ bump-my-version = "*"
 check-wheel-contents = "*"
 clang-format = "*"
 cmakelang = '*'
+go-shfmt = "*"
 pre-commit = "*"
 pre-commit-hooks = "*"
 ruff = "*"
@@ -116,13 +117,14 @@ typos = "*"
 yamlfmt = "*"
 
 [tool.pixi.feature.tools.tasks]
-bump-version = "./manager bump-version"
 bump-release = "./manager release"
+bump-version = "./manager bump-version"
 pre-commit-install = "pre-commit install --install-hooks -t=pre-commit"
 pre-commit-run = "pre-commit run --all-files"
-toml-format = { cmd = "taplo fmt", env = { RUST_LOG = "warn" } }
 ruff-format = "ruff format --force-exclude"
 ruff-lint = "ruff check --fix --exit-non-zero-on-fix --force-exclude"
+shell-format = "shfmt -w -i=2 -s -bn"
+toml-format = { cmd = "taplo fmt", env = { RUST_LOG = "warn" } }
 
 [tool.pixi.environments]
 default = { features = ["build"], solve-group = "default" }

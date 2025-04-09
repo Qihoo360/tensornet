@@ -85,6 +85,12 @@ repos:
         types: [json]
         stages: [pre-commit, manual]
         exclude: "^doc/"
+      - id: shfmt
+        name: Format shell scripts
+        entry: ./pixiw run shell-format
+        language: system
+        types: [shell]
+        stages: [pre-commit, manual]
       - id: shellcheck
         name: Check shell scripts
         entry: ./pixiw run -e tools shellcheck

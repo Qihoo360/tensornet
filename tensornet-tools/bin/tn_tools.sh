@@ -11,67 +11,67 @@ TN_TOOL_TGZ="${TMP_PACKAGE_DIR}/${TN_TOOL_ENV_NAME}.tar.gz"
 _die() {
   local err=$?
   local err_fmt=''
-  (( err )) && err_fmt=" (err=$err)" || err=1
+  ((err)) && err_fmt=" (err=$err)" || err=1
   printf >&2 "[ERROR]$err_fmt %s\n" "$*"
   exit $err
 }
 
-_check_spark_env(){
+_check_spark_env() {
 
-if [[ ! -d ${SPARK_HOME} ]] || [[ ! -e ${SPARK_HOME}/bin/spark-submit ]];then
+  if [[ ! -d ${SPARK_HOME} ]] || [[ ! -e ${SPARK_HOME}/bin/spark-submit ]]; then
     _die "no valid spark path, should export valid SPARK_HOME"
-fi
+  fi
 
-spark_major_version=$("$SPARK_HOME"/bin/spark-submit --version 2>&1 | grep version | awk -F"version" '{print $2}' | head -1 | sed 's/ //g' | awk -F. '{print $1}')
+  spark_major_version=$("$SPARK_HOME"/bin/spark-submit --version 2>&1 | grep version | awk -F"version" '{print $2}' | head -1 | sed 's/ //g' | awk -F. '{print $1}')
 
-if [[ -z ${spark_major_version-} ]] || [[ $spark_major_version -lt 3 ]];then
+  if [[ -z ${spark_major_version-} ]] || [[ $spark_major_version -lt 3 ]]; then
     _die "invalid spark version. should be >= 3"
-fi
+  fi
 
 }
 
-_prepare_mamba_env(){
-   if ! type micromamba >/dev/null 2>&1;then
-     HTTPS_PROXY=${PROXY_URL:=${HTTPS_PROXY}} "${SHELL}" <(curl -L micro.mamba.pm/install.sh)
-   fi
-   _mamba_source
-   [[ -z ${NEXUS3_HEADER} ]] || {
-       ${MAMBA_EXE} config set --file "${MAMBA_ROOT_PREFIX}/.mambarc" channel_alias "${NEXUS3_HEADER}/conda"
-   }
-   micromamba create -y -f "${WORKSPACE_DIR}/config/tn_tool_env.yaml"
-   micromamba activate ${TN_TOOL_ENV_NAME}
-   TN_TOOL_ENV_DIR=$(micromamba env list | grep "${TN_TOOL_ENV_NAME}" | awk '{print $NF}')
-   conda-pack --prefix "${TN_TOOL_ENV_DIR}" -o "${TN_TOOL_TGZ}"
+_prepare_mamba_env() {
+  if ! type micromamba >/dev/null 2>&1; then
+    HTTPS_PROXY=${PROXY_URL:=${HTTPS_PROXY}} "${SHELL}" <(curl -L micro.mamba.pm/install.sh)
+  fi
+  _mamba_source
+  [[ -z ${NEXUS3_HEADER} ]] || {
+    ${MAMBA_EXE} config set --file "${MAMBA_ROOT_PREFIX}/.mambarc" channel_alias "${NEXUS3_HEADER}/conda"
+  }
+  micromamba create -y -f "${WORKSPACE_DIR}/config/tn_tool_env.yaml"
+  micromamba activate ${TN_TOOL_ENV_NAME}
+  TN_TOOL_ENV_DIR=$(micromamba env list | grep "${TN_TOOL_ENV_NAME}" | awk '{print $NF}')
+  conda-pack --prefix "${TN_TOOL_ENV_DIR}" -o "${TN_TOOL_TGZ}"
 }
 
-start_merge_sparse(){
+start_merge_sparse() {
 
-"${SPARK_HOME}"/bin/spark-submit --executor-memory 8g --driver-memory 10g --py-files "${PYTHON_DIR}"/utils.py "${PYTHON_DIR}"/merge_sparse.py "$@"
+  "${SPARK_HOME}"/bin/spark-submit --executor-memory 8g --driver-memory 10g --py-files "${PYTHON_DIR}"/utils.py "${PYTHON_DIR}"/merge_sparse.py "$@"
 
 }
 
-start_resize_sparse(){
-_prepare_mamba_env
+start_resize_sparse() {
+  _prepare_mamba_env
 
-"${SPARK_HOME}/bin/spark-submit" --conf spark.executor.memory=10g --conf "spark.archives=file://${TN_TOOL_TGZ}#envs" --conf "spark.pyspark.driver.python=${TN_TOOL_ENV_DIR}/bin/python" --conf spark.pyspark.python=envs/bin/python  --py-files "${PYTHON_DIR}/utils.py" "${PYTHON_DIR}/resize_dense.py" "$@"
+  "${SPARK_HOME}/bin/spark-submit" --conf spark.executor.memory=10g --conf "spark.archives=file://${TN_TOOL_TGZ}#envs" --conf "spark.pyspark.driver.python=${TN_TOOL_ENV_DIR}/bin/python" --conf spark.pyspark.python=envs/bin/python --py-files "${PYTHON_DIR}/utils.py" "${PYTHON_DIR}/resize_dense.py" "$@"
 }
 
 _check_spark_env
 
 case "${1-}" in
-(merge-sparse)
+merge-sparse)
   shift 1
   start_merge_sparse "$@"
   ;;
-(resize-sparse)
+resize-sparse)
   shift 1
   start_resize_sparse "$@"
   ;;
-(resize-dense)
+resize-dense)
   shift 1
   start_resize_dense "$@"
   ;;
-(''|help)
+'' | help)
   cmd=$(basename -- "$0")
   cat <<-END
         Usage:
@@ -84,5 +84,5 @@ case "${1-}" in
           $cmd resize-dense [-i/--input input_path] [-o/--output output_path] [-n/--number number] - change current dense parallelism to another size.
 END
   ;;
-(*) _die Unknown command "$1" ;;
+*) _die Unknown command "$1" ;;
 esac
