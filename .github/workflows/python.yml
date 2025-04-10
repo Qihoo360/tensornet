@@ -12,7 +12,24 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+.[a-z0-9]+'
   pull_request:
 
+env:
+  PIXI_LOCKED: "true"
+
 jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@v0.8.5
+        with:
+          pixi-version: v0.45.0
+          environments: tools
+
+      - name: pre-commit
+        run: pixi run pre-commit-run --color=always --show-diff-on-failure
+
   tn_build:
     runs-on: ubuntu-latest
     env:
