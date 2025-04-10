@@ -89,3 +89,7 @@ class PsWeightCheckpoint(Callback):
 
     def on_test_end(self, logs=None):
         tn.core.barrier()
+
+    def on_epoch_end(self, epoch, logs=None):
+        tn.core.barrier()
+        super().on_epoch_end(epoch, logs)
