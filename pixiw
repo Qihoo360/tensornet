@@ -14,7 +14,7 @@ __check_pixi() {
   __pixi="${1-}"
   command -v -- "${__pixi-}" >/dev/null || return 1 # check runnable
 
-  if "$__pixi" workspace requires-pixi verify; then
+  if "$__pixi" workspace requires-pixi verify 2>/dev/null; then
     return 0
   else
     case $? in
