@@ -1,0 +1,32 @@
+[project]
+name = "qihoo-tensornet-tools"
+version = "0.102.0.dev"
+description = "multi tools for tensornet. E.g. merge/resize sparse or dense table, include external embeddings"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.6"
+authors = [{ name = "jiangxinglei", email = "jiangxinglei@360.cn" }]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3.6",
+]
+dependencies = ["pyarrow==12.0.1"]
+
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = { "" = ".." }
+packages = [
+  "tensornet_tools",
+  "tensornet_tools.bin",
+  "tensornet_tools.config",
+  "tensornet_tools.python",
+]
+
+[tool.setuptools.package-data]
+"tensornet_tools.bin" = ["*.sh"]
+"tensornet_tools.config" = ["*.yaml"]
