@@ -95,3 +95,24 @@ cmake_build:
       paths:
         - .cache/pixi
       when: always
+
+create_tools_wheel:
+  tags:
+    - python
+  interruptible: true
+  before_script:
+    - mkdir -p .cache ~/.pixi/bin
+    - test ! -x .cache/pixi || cp .cache/pixi ~/.pixi/bin/
+    - ./pixiw --version
+    - diff -q ~/.pixi/bin/pixi .cache/pixi >/dev/null 2>/dev/null || cp ~/.pixi/bin/pixi .cache/
+
+  script:
+    - cd tensornet_tools
+    - ../pixiw run python3 -m build -w -n
+    - ../pixiw run -e tools check-wheel-contents dist
+    - ls -alh dist
+  cache:
+    - key: cache-pixi-$CI_COMMIT_REF_NAME
+      paths:
+        - .cache/pixi
+      when: always

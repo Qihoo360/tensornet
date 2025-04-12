@@ -25,7 +25,7 @@ classifiers = [
 build = ["tensorflow-cpu >=2.2,<2.3"]
 
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=61.0.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.pixi.workspace]
@@ -157,6 +157,8 @@ values = ["dev", "rc", "prod"]
 optional_value = "prod"
 [[tool.bumpversion.files]]
 filename = "tensornet/version.py"
+[[tool.bumpversion.files]]
+filename = "tensornet_tools/pyproject.toml"
 
 [tool.ruff]
 line-length = 120

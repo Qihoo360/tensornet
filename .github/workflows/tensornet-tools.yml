@@ -7,6 +7,9 @@ on:
       - '*tool'
   pull_request:
 
+env:
+  PIXI_LOCKED: "true"
+
 jobs:
   tn_tools_build:
     runs-on: ubuntu-latest
@@ -14,17 +17,21 @@ jobs:
       - name: checkout repository
         uses: actions/checkout@v4
 
-      - uses: mamba-org/setup-micromamba@v1
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@v0.8.5
         with:
-          micromamba-version: '1.5.8-0'
-          environment-file: config/tn_build.yaml
-          init-shell: bash
-          cache-downloads: true
-          post-cleanup: 'none'
-      - name: Run custom command in micromamba environment
+          pixi-version: v0.45.0
+          environments: default tools
+
+      - name: Create wheel
         run: |
-          python setup-tn-tools.py bdist_wheel
-          twine check dist/*
+          cd tensornet_tools
+          ../pixiw run python3 -m build -w -n
+          ../pixiw run -e tools check-wheel-contents dist
+          ls -alh dist
+          cd ..
+          mkdir dist/
+          mv tensornet_tools/dist/*.whl dist/
         shell: micromamba-shell {0}
 
       - name: Store wheels
