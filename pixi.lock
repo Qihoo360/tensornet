@@ -251,7 +251,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/anyio-4.9.0-pyh29332c3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/attrs-25.3.0-pyh71513ae_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/bracex-2.2.1-pyhd8ed1ab_0.tar.bz2
-      - conda: https://conda.anaconda.org/conda-forge/noarch/bump-my-version-1.1.1-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/bump-my-version-1.1.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-h4bc722e_7.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/ca-certificates-2025.1.31-hbcca054_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/certifi-2025.1.31-pyhd8ed1ab_0.conda
@@ -347,7 +347,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/anyio-4.9.0-pyh29332c3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/attrs-25.3.0-pyh71513ae_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/bracex-2.2.1-pyhd8ed1ab_0.tar.bz2
-      - conda: https://conda.anaconda.org/conda-forge/noarch/bump-my-version-1.1.1-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/bump-my-version-1.1.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/bzip2-1.0.8-h99b78c6_7.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ca-certificates-2025.1.31-hf0a4a13_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/certifi-2025.1.31-pyhd8ed1ab_0.conda
@@ -611,9 +611,9 @@ packages:
   - pkg:pypi/brotli?source=hash-mapping
   size: 350830
   timestamp: 1695990250755
-- conda: https://conda.anaconda.org/conda-forge/noarch/bump-my-version-1.1.1-pyhd8ed1ab_0.conda
-  sha256: 5b80ac701be4e69423dc430a2581a36b284e4b317ae1d4ab7fde6d0e8b2b2748
-  md5: cf3f8f7b0edc6b42e4fdbb7d17637f80
+- conda: https://conda.anaconda.org/conda-forge/noarch/bump-my-version-1.1.2-pyhd8ed1ab_0.conda
+  sha256: 584361282480722d4b64710cf6f497583a84e45c49ce2bccd138ea772950d1d5
+  md5: f0e770ac15e31b7e3e0bd6a4190a025e
   depends:
   - click
   - httpx
@@ -626,9 +626,8 @@ packages:
   - tomlkit
   - wcmatch >=8.5.1
   license: MIT
-  license_family: MIT
-  size: 50021
-  timestamp: 1742690674134
+  size: 50004
+  timestamp: 1744545595209
 - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-h4bc722e_7.conda
   sha256: 5ced96500d945fb286c9c838e54fa759aa04a7129c59800f0846b4335cee770d
   md5: 62ee74e96c5ebb0af99386de58cf9553
@@ -3383,6 +3382,7 @@ packages:
   depends:
   - typing_extensions ==4.13.2 pyh29332c3_0
   license: PSF-2.0
+  license_family: PSF
   size: 89900
   timestamp: 1744302253997
 - conda: https://conda.anaconda.org/conda-forge/noarch/typing-inspection-0.4.0-pyhd8ed1ab_0.conda
@@ -3413,6 +3413,7 @@ packages:
   - python >=3.9
   - python
   license: PSF-2.0
+  license_family: PSF
   size: 52189
   timestamp: 1744302253997
 - conda: https://conda.anaconda.org/conda-forge/linux-64/typos-1.31.1-h8fae777_0.conda

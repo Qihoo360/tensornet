@@ -2,14 +2,10 @@ import os
 import subprocess
 import sys
 
-from importlib.machinery import SourceFileLoader
-
-# use importlib to avoid import so file
-_version = SourceFileLoader("version", "tensornet/version.py").load_module()
+from setuptools import setup
 
 
 class DistCfg:
-    VER = _version.VERSION
     EXT_NAME = "tensornet.core._pywrap_tn"
     PLAT = "manylinux2010_x86_64"
     BUILD_PRESET = "release"
@@ -17,7 +13,7 @@ class DistCfg:
 
 
 if "PIXI_IN_SHELL" in os.environ:
-    from setuptools import setup, Extension
+    from setuptools import Extension
     from setuptools.command.bdist_wheel import bdist_wheel
     from setuptools.command.build_ext import build_ext
     from setuptools.command.egg_info import egg_info
@@ -69,26 +65,6 @@ if "PIXI_IN_SHELL" in os.environ:
             check([os.path.join(self.dist_dir, whl_file)], strict=True)
 
     setup(
-        name="qihoo-tensornet",
-        version=DistCfg.VER,
-        description="tensornet",
-        long_description=open("README.md").read(),
-        long_description_content_type="text/markdown",
-        author="jiangxinglei",
-        author_email="jiangxinglei@360.cn",
-        url="https://github.com/Qihoo360/tensornet",
-        python_requires=">=3.6, <3.9",
-        classifiers=[
-            "Development Status :: 5 - Production/Stable",
-            "Intended Audience :: Developers",
-            "License :: OSI Approved :: Apache Software License",
-            "Programming Language :: Python :: 3 :: Only",
-            "Programming Language :: Python :: 3.5",
-            "Programming Language :: Python :: 3.6",
-            "Programming Language :: Python :: 3.7",
-            "Programming Language :: Python :: 3.8",
-        ],
-        platforms=[DistCfg.PLAT],
         cmdclass={
             "bdist_wheel": BdistWheelWithCheck,
             "build_ext": CMakeBuild,
@@ -98,8 +74,6 @@ if "PIXI_IN_SHELL" in os.environ:
         },
         # build ext with cmake, so sources are not listed here
         ext_modules=[Extension(DistCfg.EXT_NAME, [])],
-        # force skip the build-py step
-        packages=[],
         options={
             # set build_lib for checking the existence of built modules
             "build_ext": {"build_lib": DistCfg.BUILD_DIR},
@@ -108,17 +82,9 @@ if "PIXI_IN_SHELL" in os.environ:
     )
 
 else:
-    from setuptools import setup, find_packages
+    from setuptools import find_packages
 
     setup(
-        name="qihoo-tensornet",
-        version=DistCfg.VER,
-        description="tensornet",
-        long_description=open("README.md").read(),
-        long_description_content_type="text/markdown",
-        author="jiangxinglei",
-        author_email="jiangxinglei@360.cn",
-        url="https://github.com/Qihoo360/tensornet",
         packages=find_packages(),
         package_data={
             "tensornet.core": ["_pywrap_tn.so"],
@@ -128,7 +94,7 @@ else:
             "Development Status :: 5 - Production/Stable",
             "Intended Audience :: Developers",
             "License :: OSI Approved :: Apache Software License",
+            "Programming Language :: Python :: 3 :: Only",
             "Programming Language :: Python :: 3.7",
         ],
-        platforms=[DistCfg.PLAT],
     )

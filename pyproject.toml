@@ -1,7 +1,7 @@
 [project]
 name = "qihoo-tensornet"
 version = "0.102.0.dev"
-description = "build tensornet"
+description = "a TensorFlow-based distributed training framework optimized for large-scale sparse data"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.5"
@@ -19,14 +19,23 @@ classifiers = [
   'Programming Language :: Python :: 3.7',
   'Programming Language :: Python :: 3.8',
 ]
+dependencies = [
+  # use tensorflow from pypi, with cxx11 abi = 0
+  "tensorflow-cpu >=2.2,<2.3",
+]
 
-[project.optional-dependencies]
-# use tensorflow from pypi, with cxx11 abi = 0
-build = ["tensorflow-cpu >=2.2,<2.3"]
+[project.urls]
+homepage = "https://github.com/Qihoo360/tensornet"
+issues = "https://github.com/Qihoo360/tensornet/issues"
+releasenotes = "https://github.com/Qihoo360/tensornet/releases"
 
 [build-system]
 requires = ["setuptools>=61.0.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = []                        # force skip the build-py step
+platforms = ["manylinux2010_x86_64"]
 
 [tool.pixi.workspace]
 channels = ["conda-forge"]
@@ -83,6 +92,7 @@ ut = "./cmake-build --preset default -t test"
 ut-only = "cmake-build --test"
 workflow = "cmake --workflow --preset default"
 create-wheel = "python3 -m build -w -n"
+create-tools-wheel = { cmd = "python3 -m build -w -n", cwd = "tensornet_tools" }
 
 bazel-build = "NEED_ACTIVATE_ENV=false \"$PIXI_PROJECT_ROOT\"/manager build --subcommands --verbose_failures"
 copy-libs = "NEED_ACTIVATE_ENV=false \"$PIXI_PROJECT_ROOT\"/manager copy-libs"
@@ -127,11 +137,23 @@ shell-format = "shfmt --write --indent=2 --simplify --binary-next-line"
 toml-format = { cmd = "taplo fmt", env = { RUST_LOG = "warn" } }
 
 [tool.pixi.environments]
-default = { features = ["build"], solve-group = "default" }
-py37 = { features = ["py37", "centos7"], solve-group = "py37" }
-py36 = { features = ["py36", "centos7"], solve-group = "py36" }
-py35 = { features = ["py35", "centos7"], solve-group = "py35" }
-tools = { features = ["tools", "centos7"], solve-group = "tools" }
+default = { features = ["build"] }
+py37 = { features = [
+  "py37",
+  "centos7",
+], solve-group = "py37", no-default-feature = true }
+py36 = { features = [
+  "py36",
+  "centos7",
+], solve-group = "py36", no-default-feature = true }
+py35 = { features = [
+  "py35",
+  "centos7",
+], solve-group = "py35", no-default-feature = true }
+tools = { features = [
+  "tools",
+  "centos7",
+], solve-group = "tools", no-default-feature = true }
 
 [tool.bumpversion]
 commit = false

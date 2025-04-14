@@ -25,13 +25,11 @@ jobs:
 
       - name: Create wheel
         run: |
-          cd tensornet_tools
-          ../pixiw run python3 -m build -w -n
-          ../pixiw run -e tools check-wheel-contents dist
+          ./pixiw run create-tools-wheel
+          test ! -e dist
+          mv tensornet_tools/dist ./
+          ./pixiw run -e tools check-wheel-contents dist
           ls -alh dist
-          cd ..
-          mkdir dist/
-          mv tensornet_tools/dist/*.whl dist/
         shell: micromamba-shell {0}
 
       - name: Store wheels
