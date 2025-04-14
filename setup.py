@@ -65,6 +65,7 @@ if "PIXI_IN_SHELL" in os.environ:
             check([os.path.join(self.dist_dir, whl_file)], strict=True)
 
     setup(
+        packages=[],  # force skip the build-py step
         cmdclass={
             "bdist_wheel": BdistWheelWithCheck,
             "build_ext": CMakeBuild,

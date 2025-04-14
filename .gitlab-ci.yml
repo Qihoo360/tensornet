@@ -45,6 +45,7 @@ bazel_create_wheel:
     - ./manager copy-libs
     - ./manager test
     - ./manager create_dist
+    - grep -q '^tensornet$' qihoo_tensornet.egg-info/top_level.txt
     - ls -alh dist
   cache:
     - key: cache-micromamba-$CI_COMMIT_REF_NAME
@@ -68,6 +69,7 @@ cmake_create_wheel:
   script:
     - ./pixiw run create-wheel
     - ./pixiw run -e tools check-wheel-contents dist
+    - grep -q '^tensornet$' qihoo_tensornet.egg-info/top_level.txt
     - ls -alh dist
   cache:
     - key: cache-pixi-$CI_COMMIT_REF_NAME
@@ -109,6 +111,7 @@ create_tools_wheel:
   script:
     - ./pixiw run create-tools-wheel
     - ./pixiw run -e tools check-wheel-contents tensornet_tools/dist
+    - grep -q '^tensornet_tools$' qihoo_tensornet_tools.egg-info/top_level.txt
     - ls -alh tensornet_tools/dist
   cache:
     - key: cache-pixi-$CI_COMMIT_REF_NAME

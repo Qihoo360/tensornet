@@ -56,6 +56,7 @@ jobs:
         run: |
           ./pixiw run create-wheel
           ./pixiw run -e tools check-wheel-contents dist
+          grep -q '^tensornet$' qihoo_tensornet.egg-info/top_level.txt
           ls -alh dist
 
       - name: Store wheels
@@ -90,6 +91,7 @@ jobs:
       - name: Create wheel
         run: |
           ./manager create_dist
+          grep -q '^tensornet$' qihoo_tensornet.egg-info/top_level.txt
           ls -alh dist
         shell: micromamba-shell {0}
 
