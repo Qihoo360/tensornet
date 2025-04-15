@@ -2,9 +2,7 @@
 
 ## clone代码
 
-    ```bash
     git clone git@github.com:Qihoo360/tensornet.git
-    ```
 
 ## 准备环境 ( 使用 bazel 编译 )
 
@@ -14,35 +12,24 @@
 
 内网环境开发时, 可以在第一次拉代码后或者.pixi目录被删掉重建时执行下面命令设置镜像和代理
 
-   ```bash
-   (set p.qihoo.net/pixi setup-project-rc; sh -c "$(curl -s $1)" "$@")
-   ```
+    (set p.qihoo.net/pixi setup-project-rc; sh -c "$(curl -s $1)" "$@")
 
 ## 编译
 
 cmake 编译:
 
-   ```bash
-   ./pixiw run build
-   ```
+    ./pixiw run build
 
 或者使用 bazel 编译:
 
-
-   ```bash
-   ./manager build
-   ```
+    ./manager build
 
 ## 打包
 
-   ```bash
     ./pixiw run create-wheel
-   ```
 
 或者使用 bazel 编译好的后, 执行:
 
-   ```bash
     ./manager copy-libs
     ./manager test
     ./manager create_dist
-   ```
