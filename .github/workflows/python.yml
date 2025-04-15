@@ -41,6 +41,14 @@ jobs:
           environments: default py35 py36 py37
       - name: Build with debug profile
         run: ./pixiw run build
+      - name: Verify that the dynamic libraries only requires glibc <= 2.12
+        run: |
+          err=0
+          objdump -T build/debug/libtensornet.so | grep GLIBC_ | grep -v '0000000000000000\s*w\s*DF' | grep -v 'GLIBC_\([01]\|2\.[0-9]\|2\.1[012]\)[^0-9]' || err=$?
+          test $err = 1
+          err=0
+          objdump -T build/debug/_pywrap_tn.cpython-38-x86_64-linux-gnu.so | grep GLIBC_ | grep -v '0000000000000000\s*w\s*DF' | grep -v 'GLIBC_\([01]\|2\.[0-9]\|2\.1[012]\)[^0-9]' || err=$?
+          test $err = 1
 
   create-wheel-cmake:
     name: create wheel / cmake
