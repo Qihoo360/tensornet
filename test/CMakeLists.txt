@@ -27,7 +27,7 @@ add_test(
 # add local mpi test
 add_test(
   NAME mpi-integration-test
-  COMMAND mpirun -n 2 -x PYTHONPATH=. "${PROJECT_SOURCE_DIR}/examples/integration-test.py"
+  COMMAND mpiexec -n 2 -x PYTHONPATH=. "${PROJECT_SOURCE_DIR}/examples/integration-test.py"
   WORKING_DIRECTORY "${PROJECT_BINARY_DIR}" COMMAND_EXPAND_LISTS)
 
 if(CMAKE_GENERATOR MATCHES "Makefiles")
