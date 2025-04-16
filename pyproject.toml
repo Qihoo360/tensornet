@@ -73,8 +73,8 @@ boost = "*"
 
 # build and runtime dependencies
 nomkl = "*"
-openmpi = "==4.1.3"
-numpy = "<1.19.0"   # required by tensorflow 2.2.3
+openmpi = ">=3,<5"
+numpy = "<1.19.0"  # required by tensorflow 2.2.3
 
 # test-only dependencies
 gtest = { version = "<1.10", build = "*_0" } # build with cxx_abi=0
