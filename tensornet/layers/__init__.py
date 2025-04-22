@@ -17,3 +17,4 @@ from .sequence_embedding_features import SequenceEmbeddingFeatures as SequenceEm
 from .normalization_layer import TNBatchNormalizationBase as TNBatchNormalizationBase
 from .normalization_layer import TNBatchNormalization as TNBatchNormalization
 from .normalization_layer import PCTRDNNBatchNormalization as PCTRDNNBatchNormalization
+from .position_mapping import PositionMappingLayer as PositionMappingLayer
