@@ -6,7 +6,6 @@ set -euf
 # requires at least pixi 0.44.0
 # environment parameters:
 #   PIXI_INSTALLER_URL - custom pixi installer
-#   URL_MIRROR_github_com - custom mirror for github.com
 # run directly if already under pixi environment
 [ -z "${PIXI_EXE-}" ] || exec "${PIXI_EXE-}" "$@"
 
@@ -38,18 +37,9 @@ __download_to_stdin() {
 }
 
 __install_pixi() (
-  # require curl, posix sh and sed commands
-  if [ -n "${URL_MIRROR_github_com-}" ] && ! hash sed 2>/dev/null; then
-    echo "[WARN] you do not have 'sed' installed to use URL_MIRROR_github_com, ignore the mirror." >&2
-    unset URL_MIRROR_github_com
-  fi
-
-  : "${PIXI_INSTALLER_URL:=https://raw.githubusercontent.com/prefix-dev/pixi/main/install/install.sh}"
-  if [ -n "${URL_MIRROR_github_com-}" ]; then
-    __download_to_stdin "${PIXI_INSTALLER_URL-}" | sed "s|https://github.com/|$URL_MIRROR_github_com|g"
-  else
-    __download_to_stdin "${PIXI_INSTALLER_URL-}"
-  fi | PIXI_VERSION='' PIXI_HOME='' PIXI_NO_PATH_UPDATE=true /bin/sh -s
+  # required commands: posix sh, one of wget and curl
+  __download_to_stdin "${PIXI_INSTALLER_URL:-https://raw.githubusercontent.com/prefix-dev/pixi/main/install/install.sh}" \
+    | PIXI_VERSION='' PIXI_HOME='' PIXI_NO_PATH_UPDATE=true /bin/sh -s
 )
 
 pixi_prj_rc="${0%/*}/.pixi/rc.sh"
