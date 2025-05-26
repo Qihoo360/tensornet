@@ -20,7 +20,7 @@ __check_pixi() {
     # 2: less than 0.44.0
     # 4: verify fail
     2 | 4) return 1 ;;
-    *) exit $? ;; # unknown error
+    *) exec "$__pixi" workspace requires-pixi verify ;; # unknown error
     esac
   fi
 }

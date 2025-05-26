@@ -39,7 +39,7 @@ platforms = ["manylinux2010_x86_64"]
 [tool.pixi.workspace]
 channels = ["conda-forge"]
 platforms = ["linux-64", "osx-arm64"]
-requires-pixi = ">=0.44"
+requires-pixi = ">=0.46"
 
 [tool.pixi.activation]
 scripts = [".pixi/rc.sh"]
@@ -124,6 +124,7 @@ shellcheck = '*'
 taplo = "*"
 typos = "*"
 yamlfmt = "*"
+insert-license-header = "*"
 
 [tool.pixi.feature.tools.tasks]
 bump-release = "./manager release"
@@ -134,6 +135,13 @@ ruff-format = "ruff format --force-exclude"
 ruff-lint = "ruff check --fix --exit-non-zero-on-fix --force-exclude"
 shell-format = "shfmt --write --indent=2 --simplify --binary-next-line"
 toml-format = { cmd = "taplo fmt", env = { RUST_LOG = "warn" } }
+license-header-python = "insert-license --license-filepath LICENSE-HEADER --allow-past-years"
+license-header-cc = "insert-license --license-filepath LICENSE-HEADER --comment-style //  --allow-past-years"
+update-license-header-year = "insert-license --license-filepath LICENSE-HEADER --comment-style '' --no-space-in-comment-prefix --use-current-year LICENSE-HEADER || true"
+update-license-year = [
+  { task = "update-license-header-year" },
+  { task = "pre-commit-run" },
+]
 
 [tool.pixi.environments]
 default = { features = ["build"] }

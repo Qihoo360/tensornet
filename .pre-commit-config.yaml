@@ -46,6 +46,20 @@ repos:
         types: [text]
         stages: [pre-commit, manual]
 
+      - id: license-header-python
+        name: Check license header for python files
+        language: system
+        entry: ./pixiw run -e tools license-header-python
+        types_or: [python, pyi]
+        stages: [pre-commit, manual]
+        exclude: "gen_.*_ops\\.py$"
+      - id: license-header-cc
+        name: Check license header for C/C++ files
+        language: system
+        entry: ./pixiw run -e tools license-header-cc
+        types_or: [c++, c]
+        stages: [pre-commit, manual]
+
       - id: format-yaml
         name: Format YAML
         entry: ./pixiw run -e tools yamlfmt
