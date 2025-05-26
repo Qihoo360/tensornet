@@ -20,6 +20,11 @@ pre_commit:
     - diff -q ~/.pixi/bin/pixi .cache/pixi >/dev/null 2>/dev/null || cp ~/.pixi/bin/pixi .cache/
   script:
     - ./pixiw run pre-commit-run --color=always --show-diff-on-failure
+  cache:
+    - key: cache-pixi-0.46-$CI_COMMIT_REF_NAME
+      paths:
+        - .cache/pixi
+      when: always
 
 bazel_create_wheel:
   tags:
@@ -72,7 +77,7 @@ cmake_create_wheel:
     - grep -q '^tensornet$' qihoo_tensornet.egg-info/top_level.txt
     - ls -alh dist
   cache:
-    - key: cache-pixi-$CI_COMMIT_REF_NAME
+    - key: cache-pixi-0.46-$CI_COMMIT_REF_NAME
       paths:
         - .cache/pixi
       when: always
@@ -101,7 +106,7 @@ cmake_build:
       | grep -v 'GLIBC_\([01]\|2\.[0-9]\|2\.1[012]\)[^0-9]' || err=$?
     - test $err = 1
   cache:
-    - key: cache-pixi-$CI_COMMIT_REF_NAME
+    - key: cache-pixi-0.46-$CI_COMMIT_REF_NAME
       paths:
         - .cache/pixi
       when: always
@@ -122,7 +127,7 @@ create_tools_wheel:
     - grep -q '^tensornet_tools$' qihoo_tensornet_tools.egg-info/top_level.txt
     - ls -alh tensornet_tools/dist
   cache:
-    - key: cache-pixi-$CI_COMMIT_REF_NAME
+    - key: cache-pixi-0.46-$CI_COMMIT_REF_NAME
       paths:
         - .cache/pixi
       when: always
