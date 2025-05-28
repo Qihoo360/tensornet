@@ -20,6 +20,7 @@ import tensorflow as tf
 from tensorflow.python.eager import backprop
 from tensorflow.python.keras.engine import data_adapter
 from tensorflow.python.framework import ops
+from tensornet import _opentelemetry as otel
 
 
 def load_done_info(cp_dir):
@@ -65,6 +66,22 @@ class Model(tf.keras.Model):
         self.is_loaded_from_checkpoint = False
 
         self._backward_count = self.add_weight("backward_count", shape=[], dtype=tf.int64, trainable=False)
+
+    def fit(*args, **kwargs):
+        with otel.start_as_current_span("tensornet-fit"):
+            return super().fit(*args, **kwargs)
+
+    def train_on_batch(*args, **kwargs):
+        with otel.start_as_current_span("tensornet-train-on-batch"):
+            return super().train_on_batch(*args, **kwargs)
+
+    def predict(*args, **kwargs):
+        with otel.start_as_current_span("tensornet-predict"):
+            return super().predict(*args, **kwargs)
+
+    def predict_on_batch(*args, **kwargs):
+        with otel.start_as_current_span("tensornet-predict-on-batch"):
+            return super().predict_on_batch(*args, **kwargs)
 
     def train_step(self, data):
         """override parent train_step, see description in parent
