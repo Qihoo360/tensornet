@@ -18,6 +18,8 @@ dependencies:
   - pip
   - pip:
       - tensorflow-cpu >=2.2,<2.3
+      - opentelemetry-api
+      - opentelemetry-sdk
       - protobuf<3.21
       - grpcio<1.47  # Only for CentOS 6
       - h5py<3.8  # Only for CentOS 6

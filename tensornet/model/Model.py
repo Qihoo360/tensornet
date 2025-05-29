@@ -67,19 +67,19 @@ class Model(tf.keras.Model):
 
         self._backward_count = self.add_weight("backward_count", shape=[], dtype=tf.int64, trainable=False)
 
-    def fit(*args, **kwargs):
+    def fit(self, *args, **kwargs):
         with otel.start_as_current_span("tensornet-fit"):
             return super().fit(*args, **kwargs)
 
-    def train_on_batch(*args, **kwargs):
+    def train_on_batch(self, *args, **kwargs):
         with otel.start_as_current_span("tensornet-train-on-batch"):
             return super().train_on_batch(*args, **kwargs)
 
-    def predict(*args, **kwargs):
+    def predict(self, *args, **kwargs):
         with otel.start_as_current_span("tensornet-predict"):
             return super().predict(*args, **kwargs)
 
-    def predict_on_batch(*args, **kwargs):
+    def predict_on_batch(self, *args, **kwargs):
         with otel.start_as_current_span("tensornet-predict-on-batch"):
             return super().predict_on_batch(*args, **kwargs)
 
