@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import logging
 from typing import Iterator
 from opentelemetry import context
 from opentelemetry import trace
@@ -25,18 +26,24 @@ from opentelemetry.util.types import Attributes
 from . import version as _version
 
 _RESK_TN_VER = "tensornet.version"
+logger = logging.getLogger(__name__)
 
 if os.getenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT") or os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT"):
     # initialize opentelemetry
     os.environ["OTEL_TRACES_EXPORTER"] = "otlp"
     os.environ["OTEL_SERVICE_NAME"] = "tensornet"
-    _OTelSDKConfigurator().configure(
-        auto_instrumentation_version="tensornet-otel-auto-config",  # set telemetry.auto.version
-        resource_attributes={_RESK_TN_VER, (_version.VERSION)},
-    )
-    provider = trace.get_tracer_provider()
-    append_resource = get_aggregated_resources([ProcessResourceDetector()], Resource({_RESK_TN_VER: _version.VERSION}))
-    provider._resource = provider.resource.merge(append_resource)
+    try:
+        _OTelSDKConfigurator().configure(
+            auto_instrumentation_version="tensornet-otel-auto-config",  # set telemetry.auto.version
+            resource_attributes={_RESK_TN_VER, (_version.VERSION)},
+        )
+        provider = trace.get_tracer_provider()
+        append_resource = get_aggregated_resources(
+            [ProcessResourceDetector()], Resource({_RESK_TN_VER: _version.VERSION})
+        )
+        provider._resource = provider.resource.merge(append_resource)
+    except RuntimeError:
+        logger.warning("No opentelemetry trace exporter implementations")
 
 
 def start_as_current_span(name: str, attributes: Attributes = None) -> Iterator[trace.Span]:
