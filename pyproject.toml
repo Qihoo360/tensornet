@@ -22,6 +22,9 @@ classifiers = [
 dependencies = [
   # use tensorflow from pypi, with cxx11 abi = 0
   "tensorflow-cpu >=2.2,<2.3",
+
+  "opentelemetry-api",
+  "opentelemetry-sdk",
 ]
 
 [project.urls]
