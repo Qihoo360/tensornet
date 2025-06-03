@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-VERSION = "0.102.0.dev"
+VERSION = "0.102.0"
