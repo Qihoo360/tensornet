@@ -70,8 +70,8 @@ patch = "*"
 protobuf = ">=3.8,<3.9"    # tf 2.2 use pb 3.8
 
 # build dependencies
-gflags = { version = "*", build = "*_0" }      # brpc static dep, build with cxx_abi=0
-leveldb = { version = "<1.20", build = "*_1" } # brpc static dep, build with cxx_abi=0
+gflags = { version = "*", build = "*_0" }      # build with cxx_abi=0
+leveldb = { version = "<1.20", build = "*_1" } # build with cxx_abi=0
 boost = "*"
 
 # build and runtime dependencies
