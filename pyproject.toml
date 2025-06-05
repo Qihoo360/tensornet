@@ -51,12 +51,12 @@ scripts = [".pixi/rc.sh"]
 no-build = true # required no-build for selecting grpcio<1.47 and h5py<3.8 on CentOS 6
 
 [tool.pixi.system-requirements]
-linux = "2.6"                                 # at least centos 6
-libc = { family = "glibc", version = "2.12" } # at least centos 6
+linux = "2.6"                                 # run on centos 6
+libc = { family = "glibc", version = "2.12" } # run on centos 6
 
 [tool.pixi.feature.centos7.system-requirements]
-linux = "3.10"                                # at least centos 7
-libc = { family = "glibc", version = "2.17" } # at least centos 7
+linux = "3.10"                                # run on centos 7
+libc = { family = "glibc", version = "2.17" } # run on centos 7
 
 [tool.pixi.feature.build]
 platforms = ["linux-64"]

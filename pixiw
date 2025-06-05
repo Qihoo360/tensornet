@@ -39,7 +39,7 @@ __download_to_stdin() {
 __install_pixi() (
   # required commands: posix sh, one of wget and curl
   __download_to_stdin "${PIXI_INSTALLER_URL:-https://raw.githubusercontent.com/prefix-dev/pixi/main/install/install.sh}" \
-    | PIXI_VERSION='' PIXI_HOME='' PIXI_NO_PATH_UPDATE=true /bin/sh -s
+    | PIXI_VERSION='' PIXI_REPOURL="${PIXI_REPOURL-}" PIXI_HOME='' PIXI_NO_PATH_UPDATE=true /bin/sh -s
 )
 
 pixi_prj_rc="${0%/*}/.pixi/rc.sh"

@@ -208,7 +208,7 @@ bump_release_version() {
     ;;
   prod)
     case "${release_part-}" in
-    # def->prod release, skip rc
+    # dev->prod release, skip rc
     dev*) bump-my-version bump --commit --tag "${tag_name_option[@]}" --serialize '{major}.{minor}.{patch}' release ;;
     rc*) bump-my-version bump --commit --tag "${tag_name_option[@]}" release ;;
     '' | post*) bump-my-version bump --commit --tag "${tag_name_option[@]}" build ;;
