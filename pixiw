@@ -3,13 +3,13 @@
 set -euf
 [ "${DEBUG-}" != true ] || set -x
 
-# requires at least pixi 0.44.0
-# environment parameters:
-#   PIXI_REPOURL - the repo mirror for downloading the installer and the binary
+# Download base url for the installer and the pixi binary is set in order:
+#   - environment PIXI_REPOURL
+#   - mirrors of "https://github.com/prefix-dev/pixi" in pixi config files
 
 [ -z "${PIXI_EXE-}" ] || exec "${PIXI_EXE-}" "$@" # run directly if already under pixi environment
 
-__check_pixi() {
+__check_pixi() { # requires at least pixi 0.44.0
   __pixi="${1-}"
   command -v -- "${__pixi-}" >/dev/null || return 1 # check runnable
 
@@ -36,17 +36,65 @@ __download_to_stdin() {
   fi
 }
 
-__install_pixi() (
-  # required commands: posix sh, one of wget and curl
-  export PIXI_REPOURL="${PIXI_REPOURL:-https://github.com/prefix-dev/pixi}"
-  __download_to_stdin "${PIXI_REPOURL%/}/releases/latest/download/install.sh" \
-    | PIXI_VERSION='' PIXI_HOME='' PIXI_NO_PATH_UPDATE=true /bin/sh -s
+__repo_mirrors() {
+  if [ -n "${PIXI_REPOURL-}" ]; then
+    printf "%s\n" "$PIXI_REPOURL"
+    return
+  fi
+
+  __mirrors=''
+  for __f in "${0%/*}/.pixi/config.toml" "${PIXI_HOME:-${HOME-}/.pixi}/config.toml" "${XDG_CONFIG_HOME:-${HOME-}/.config}/pixi/config.toml"; do
+    [ -r "$__f" ] || continue
+    while IFS='#' read -r line _; do
+      if [ -z "${__mirrors-}" ]; then
+        case "${line-}" in
+        *"\"$1\""*=*'['*']'*)
+          __mirrors="$line"
+          break
+          ;;
+        *"\"$1\""*=*'['*)
+          __mirrors="$line"
+          continue
+          ;;
+        *) continue ;;
+        esac
+      else
+        __mirrors="${__mirrors-} ${line-}"
+        case "${line-}" in
+        *']'*) break ;;
+        esac
+      fi
+    done <"$__f"
+    [ -z "${__mirrors}" ] || break
+  done
+
+  while [ -n "${__mirrors-}" ]; do
+    IFS='"' read -r __m __mirrors <<-END
+	$__mirrors
+	END
+    case "${__m-}" in
+    "$1") continue ;;
+    *"://"*) printf "%s\n" "$__m" ;;
+    esac
+  done
+  printf "%s\n" "$1"
+}
+
+__install_pixi() ( # required commands: posix sh, one of wget and curl
+  __err=0
+  while IFS='' read -r PIXI_REPOURL; do
+    if __download_to_stdin "${PIXI_REPOURL%/}/releases/latest/download/install.sh" \
+      | PIXI_VERSION='' PIXI_HOME='' PIXI_NO_PATH_UPDATE=true PIXI_REPOURL="${PIXI_REPOURL:-}" /bin/sh -s; then
+      return 0
+    else
+      __err=$?
+      echo "[WARN] fail to install from PIXI_REPOURL=${PIXI_REPOURL-}" >&2
+    fi
+  done <<-END
+	$(__repo_mirrors https://github.com/prefix-dev/pixi)
+	END
+  return $__err
 )
-
-pixi_prj_rc="${0%/*}/.pixi/rc.sh"
-
-# shellcheck source=/dev/null
-[ ! -r "$pixi_prj_rc" ] || PIXIW_INSTALL=1 PIXI_PROJECT_ROOT="${0%/*}" . "$pixi_prj_rc"
 
 # search pixi from $PATH
 ! __check_pixi pixi || exec pixi "$@"
