@@ -13,18 +13,9 @@ pre_commit:
   tags:
     - python
   interruptible: true
-  before_script:
-    - mkdir -p .cache ~/.pixi/bin
-    - test ! -x .cache/pixi || cp .cache/pixi ~/.pixi/bin/
-    - ./pixiw --version
-    - diff -q ~/.pixi/bin/pixi .cache/pixi >/dev/null 2>/dev/null || cp ~/.pixi/bin/pixi .cache/
   script:
+    - ./pixiw --version
     - ./pixiw run pre-commit-run --color=always --show-diff-on-failure
-  cache:
-    - key: cache-pixi-0.46-$CI_COMMIT_REF_NAME
-      paths:
-        - .cache/pixi
-      when: always
 
 bazel_create_wheel:
   tags:
@@ -65,22 +56,12 @@ cmake_create_wheel:
   variables:
     OMPI_ALLOW_RUN_AS_ROOT: 1
     OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
-  before_script:
-    - mkdir -p .cache ~/.pixi/bin
-    - test ! -x .cache/pixi || cp .cache/pixi ~/.pixi/bin/
-    - ./pixiw --version
-    - diff -q ~/.pixi/bin/pixi .cache/pixi >/dev/null 2>/dev/null || cp ~/.pixi/bin/pixi .cache/
-
   script:
+    - ./pixiw --version
     - ./pixiw run create-wheel
     - ./pixiw run -e tools check-wheel-contents dist
     - grep -q '^tensornet$' qihoo_tensornet.egg-info/top_level.txt
     - ls -alh dist
-  cache:
-    - key: cache-pixi-0.46-$CI_COMMIT_REF_NAME
-      paths:
-        - .cache/pixi
-      when: always
 
 cmake_build:
   tags:
@@ -89,13 +70,9 @@ cmake_build:
   variables:
     OMPI_ALLOW_RUN_AS_ROOT: 1
     OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
-  before_script:
-    - mkdir -p .cache ~/.pixi/bin
-    - test ! -x .cache/pixi || cp .cache/pixi ~/.pixi/bin/
-    - ./pixiw --version
-    - diff -q ~/.pixi/bin/pixi .cache/pixi >/dev/null 2>/dev/null || cp ~/.pixi/bin/pixi .cache/
 
   script:
+    - ./pixiw --version
     - ./pixiw run build
     - err=0
     - objdump -T build/debug/libtensornet.so | grep GLIBC_ | grep -v '0000000000000000\s*w\s*DF' | grep -v 'GLIBC_\([01]\|2\.[0-9]\|2\.1[012]\)[^0-9]'
@@ -105,29 +82,15 @@ cmake_build:
     - objdump -T build/debug/_pywrap_tn.cpython-38-x86_64-linux-gnu.so | grep GLIBC_ | grep -v '0000000000000000\s*w\s*DF'
       | grep -v 'GLIBC_\([01]\|2\.[0-9]\|2\.1[012]\)[^0-9]' || err=$?
     - test $err = 1
-  cache:
-    - key: cache-pixi-0.46-$CI_COMMIT_REF_NAME
-      paths:
-        - .cache/pixi
-      when: always
 
 create_tools_wheel:
   tags:
     - python
   interruptible: true
-  before_script:
-    - mkdir -p .cache ~/.pixi/bin
-    - test ! -x .cache/pixi || cp .cache/pixi ~/.pixi/bin/
-    - ./pixiw --version
-    - diff -q ~/.pixi/bin/pixi .cache/pixi >/dev/null 2>/dev/null || cp ~/.pixi/bin/pixi .cache/
 
   script:
+    - ./pixiw --version
     - ./pixiw run create-tools-wheel
     - ./pixiw run -e tools check-wheel-contents tensornet_tools/dist
     - grep -q '^tensornet_tools$' qihoo_tensornet_tools.egg-info/top_level.txt
     - ls -alh tensornet_tools/dist
-  cache:
-    - key: cache-pixi-0.46-$CI_COMMIT_REF_NAME
-      paths:
-        - .cache/pixi
-      when: always
