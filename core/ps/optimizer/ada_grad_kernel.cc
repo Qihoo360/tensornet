@@ -195,7 +195,12 @@ void SparseAdaGradValue::ShowDecay(const AdaGrad* opt, int delta_days) {
 }
 
 bool SparseAdaGradValue::DeleteByShow(const AdaGrad* opt) {
-    return show_ < opt->show_threshold || no_show_days_ > opt->no_show_days;
+    switch (opt->elimination_logic) {
+        case 1:
+            return show_ < opt->show_threshold && no_show_days_ > opt->no_show_days;
+        default:
+            return show_ < opt->show_threshold || no_show_days_ > opt->no_show_days;
+    }
 }
 
 }  // namespace tensornet

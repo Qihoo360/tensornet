@@ -123,6 +123,7 @@ public:
     float show_decay_rate = 1.0;
     float show_threshold = 0.0;
     int no_show_days = 1000;
+    int elimination_logic = 0;
 };
 
 class Ftrl : public OptimizerBase {

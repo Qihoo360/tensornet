@@ -81,6 +81,14 @@ PYBIND11_MODULE(_pywrap_tn, m) {
           })
         .def("AdaGrad",
              [](py::kwargs kwargs) {
+                 /* define elimination logic for sparse feature
+                     0: show_number < show_threshold || no_show_days
+                     1: show_number < show_threshold && no_show_days
+
+                     code detailed implementation at ../ps/optimizer/ada_grad_kernel.cc
+                 */
+                 const std::set<int> validEliminationLogicValues = {0, 1};
+
                  auto opt = new AdaGrad();
 
                  PYDICT_PARSE_LEARNING_RATE(kwargs);
@@ -93,6 +101,13 @@ PYBIND11_MODULE(_pywrap_tn, m) {
                  PYDICT_PARSE_KWARGS(kwargs, grad_decay_rate, 1.0);
                  PYDICT_PARSE_KWARGS(kwargs, mom_decay_rate, 1.0);
                  PYDICT_PARSE_KWARGS(kwargs, no_show_days, 1000);
+                 PYDICT_PARSE_KWARGS(kwargs, elimination_logic, 0);
+
+                 if (validEliminationLogicValues.find(opt->elimination_logic) == validEliminationLogicValues.end()) {
+                     throw std::invalid_argument(
+                         "elimination_logic must be in the set of valid values {0, 1}, but got: " +
+                         std::to_string(opt->elimination_logic));
+                 }
 
                  // NOTICE! opt will not delete until system exist
                  PyObject* obj = PyCapsule_New(opt, nullptr, nullptr);
@@ -152,14 +167,15 @@ PYBIND11_MODULE(_pywrap_tn, m) {
                  opt->SetSparseZeroInit(!is_training);
              })
         .def("create_sparse_table",
-             [](py::object obj, std::string name, int dimension, bool use_cvm) {
+             [](py::object obj, std::string name, int dimension, bool use_cvm, std::string embedding_group) {
                  OptimizerBase* opt = static_cast<OptimizerBase*>(PyCapsule_GetPointer(obj.ptr(), nullptr));
 
                  opt->SetUseCvm(use_cvm);
 
                  PsCluster* cluster = PsCluster::Instance();
 
-                 SparseTable* table = CreateSparseTable(opt, name, dimension, cluster->RankNum(), cluster->Rank());
+                 SparseTable* table =
+                     CreateSparseTable(opt, name, dimension, cluster->RankNum(), cluster->Rank(), embedding_group);
 
                  return table->GetHandle();
              })

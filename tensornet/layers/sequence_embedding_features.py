@@ -29,12 +29,22 @@ from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import check_ops
 from tensorflow.python.util import serialization
 from .embedding_features import StateManagerImpl
+import tensorflow as tf
 
 
 class SequenceEmbeddingFeatures(Layer):
     """ """
 
-    def __init__(self, feature_columns, sparse_opt, trainable=True, name=None, **kwargs):
+    def __init__(
+        self,
+        feature_columns,
+        sparse_opt,
+        trainable=True,
+        name=None,
+        embedding_share=None,
+        need_stop_gradient=False,
+        **kwargs,
+    ):
         """create a embedding feature layer.
         when this layer is been called, all the embedding data of `feature_columns` will be
         pulled from ps server and return as a tensor list.
@@ -62,8 +72,13 @@ class SequenceEmbeddingFeatures(Layer):
             )
 
         self._feature_columns = feature_columns
-        self._state_manager = StateManagerImpl(self, name if name else "", sparse_opt, dim, self.trainable)  # pylint: disable=protected-access
+        self._state_manager = StateManagerImpl(
+            self, name if name else "", sparse_opt, dim, self.trainable, embedding_share=embedding_share
+        )  # pylint: disable=protected-access
         self.sparse_pulling_features = None
+        self.feature_clicks = {}
+        self._need_stop_gradient = need_stop_gradient
+        self._embedding_share = embedding_share
 
         for column in self._feature_columns:
             if not isinstance(column, fc.EmbeddingColumn):
@@ -71,6 +86,11 @@ class SequenceEmbeddingFeatures(Layer):
 
     def build(self, input_shapes):
         for column in self._feature_columns:
+            initial_value = tf.zeros([0, 1], dtype=tf.int64)
+            var = tf.Variable(
+                initial_value, shape=[None, 1], name="label_count" + column.categorical_column.name, trainable=False
+            )
+            self.feature_clicks[column.categorical_column.name] = var
             with ops.name_scope(column.name):
                 column.create_state(self._state_manager)
 
@@ -84,6 +104,13 @@ class SequenceEmbeddingFeatures(Layer):
         transformation_cache = fc.FeatureTransformationCache(using_features)
 
         self.sparse_pulling_features = self.get_sparse_pulling_feature(using_features)
+
+        for tensor_index, sparse_tensor_key in enumerate(self.sparse_pulling_features):
+            sparse_tensor = features[sparse_tensor_key]
+            indices_for_gather = tf.expand_dims(sparse_tensor.indices[:, 0], axis=-1)
+            num_elements = tf.shape(indices_for_gather)[0]
+            zeros_tensor = tf.zeros((num_elements, 1), dtype=tf.int64)
+            self.feature_clicks[str(sparse_tensor_key)].assign(zeros_tensor)
 
         pulled_mapping_values = self._state_manager.pull(self.sparse_pulling_features)
 
@@ -110,6 +137,9 @@ class SequenceEmbeddingFeatures(Layer):
         return self._verify_and_concat_tensors(output_tensors), sequence_length
 
     def backwards(self, grads_and_vars):
+        if self._need_stop_gradient:
+            return
+
         assert self.sparse_pulling_features
 
         return self._state_manager.push(grads_and_vars, self.sparse_pulling_features)
@@ -132,9 +162,13 @@ class SequenceEmbeddingFeatures(Layer):
         return new_features
 
     def save_sparse_table(self, filepath, mode):
+        if self._embedding_share:
+            return
         return self._state_manager.save_sparse_table(filepath, mode)
 
     def load_sparse_table(self, filepath, mode):
+        if self._embedding_share:
+            return
         return self._state_manager.load_sparse_table(filepath, mode)
 
     def show_decay(self, delta_days):

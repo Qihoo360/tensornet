@@ -31,7 +31,12 @@ namespace tensornet {
 
 class SparseTable {
 public:
-    SparseTable(const OptimizerBase* opt, const std::string& name, int dimension, int shard_num, int self_shard_id);
+    SparseTable(const OptimizerBase* opt,
+                const std::string& name,
+                int dimension,
+                int shard_num,
+                int self_shard_id,
+                const std::string& embedding_group);
 
     ~SparseTable() = default;
 
@@ -41,11 +46,15 @@ public:
 
     void SetHandle(uint32_t handle);
 
-    uint32_t GetHandle() const { return handle_; }
+    size_t GetHandle() const { return handle_; }
 
     void Save(const std::string& filepath, const std::string& mode);
 
     void Load(const std::string& filepath, const std::string& mode);
+
+    std::string GetName() const { return name_; }
+
+    std::string GetEmbeddingGroup() const { return embedding_group_; }
 
     void ShowDecay(int delta_days) const;
 
@@ -58,6 +67,7 @@ private:
     int dim_;
     int saved_key_count_ = 0;
     std::string name_;
+    std::string embedding_group_;
 };
 
 class SparseTableRegistry {
@@ -72,6 +82,8 @@ public:
 
     SparseTable* Get(uint32_t table_handle);
 
+    SparseTable* GetTableByName(std::string table_name);
+
     uint32_t Register(SparseTable* table);
 
 private:
@@ -82,8 +94,12 @@ private:
     std::vector<SparseTable*> tables_;
 };
 
-SparseTable* CreateSparseTable(
-    const OptimizerBase* opt, const std::string& name, int dimension, int shard_num, int self_shard_id);
+SparseTable* CreateSparseTable(const OptimizerBase* opt,
+                               const std::string& name,
+                               int dimension,
+                               int shard_num,
+                               int self_shard_id,
+                               const std::string& embedding_group);
 
 }  // namespace tensornet
 

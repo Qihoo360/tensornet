@@ -37,7 +37,9 @@ from tensorflow.python.util import serialization
 class StateManagerImpl(fc.StateManager):
     """ """
 
-    def __init__(self, layer, name, sparse_opt, dimension, trainable, target_columns=None, use_cvm=False):
+    def __init__(
+        self, layer, name, sparse_opt, dimension, trainable, target_columns=None, use_cvm=False, embedding_share=None
+    ):
         self._trainable = trainable
         self._layer = layer
         self.use_cvm = use_cvm
@@ -45,7 +47,7 @@ class StateManagerImpl(fc.StateManager):
             self.use_cvm = True
 
         self.sparse_table_handle = tn.core.create_sparse_table(
-            sparse_opt, name if name else "", dimension, self.use_cvm
+            sparse_opt, name if name else "", dimension, self.use_cvm, embedding_share if embedding_share else ""
         )
         self.pulled_mapping_values = {}
 
@@ -180,7 +182,15 @@ class EmbeddingFeatures(Layer):
     """ """
 
     def __init__(
-        self, feature_columns, sparse_opt, trainable=True, name=None, is_concat=False, target_columns=None, **kwargs
+        self,
+        feature_columns,
+        sparse_opt,
+        trainable=True,
+        name=None,
+        is_concat=False,
+        target_columns=None,
+        embedding_share=None,
+        **kwargs,
     ):
         """create a embedding feature layer.
         when this layer is been called, all the embedding data of `feature_columns` will be
@@ -218,7 +228,9 @@ class EmbeddingFeatures(Layer):
         self._target_columns = target_columns
         if target_columns and len(target_columns) > 1:
             raise ValueError("For now cvm plugin only support one column, Given: {}".format(target_columns))
-        self._state_manager = StateManagerImpl(self, name, sparse_opt, dim, self.trainable, target_columns)  # pylint: disable=protected-access
+        self._state_manager = StateManagerImpl(
+            self, name, sparse_opt, dim, self.trainable, target_columns, embedding_share=embedding_share
+        )  # pylint: disable=protected-access
         self.sparse_target_features = None
         self.feature_clicks = {}
 
