@@ -36,7 +36,7 @@ public:
 
     ~SparseTableTest() { delete opt; }
 
-    virtual void SetUp() { table = CreateSparseTable(opt, "table-name", dim, shard_num, shard_id); }
+    virtual void SetUp() { table = CreateSparseTable(opt, "table-name", dim, shard_num, shard_id, ""); }
 
     virtual void TearDown() {
         // nothing to be done, table will be delete by SparseTableRegistry deconstructor
