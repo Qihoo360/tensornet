@@ -56,8 +56,8 @@ function check_tf_version() {
   tf_version=$(python -c "import tensorflow as tf; print(tf.version.VERSION)")
   tf_major_version=$(echo "${tf_version}" | awk -F'.' 'BEGIN{OFS="."}{print $1 OFS $2}')
 
-  if [[ "x${tf_major_version}" != "x2.2" ]] && [[ "x${tf_major_version}" != "x2.3" ]]; then
-    echo "tensorflow version is ${tf_version}, please use 2.2.0 ~ 2.3.0 instead"
+  if [[ "x${tf_major_version}" != "x2.8" ]]; then
+    echo "tensorflow version is ${tf_version}, please use 2.8 instead"
     exit 1
   fi
 

@@ -72,7 +72,7 @@ class TNBatchNormalizationBase(Layer):
         self.gamma_constraint = constraints.get(None)
         self.synchronized = synchronized
         self.sync_freq = sync_freq
-        self.batch_counter = tf.Variable(0, name="batch_counter")
+        self.batch_counter = tf.Variable(0, name="batch_counter", trainable=False)
         self.max_count = max_count
 
     def build(self, input_shape):
@@ -181,6 +181,19 @@ class TNBatchNormalizationBase(Layer):
 
     def load_bn_table(self, filepath):
         return tn.core.load_bn_table(self.bn_table_handle, filepath)
+
+    def get_config(self):
+        config = super(TNBatchNormalizationBase, self).get_config()
+        config.update({
+            "center": self.center,
+            "scale": self.scale,
+            "epsilon": self.epsilon,
+            "momentum": self.momentum,
+            "synchronized": self.synchronized,
+            "sync_freq": self.sync_freq,
+            "max_count": self.max_count,
+        })
+        return config
 
 
 class TNBatchNormalization(TNBatchNormalizationBase):

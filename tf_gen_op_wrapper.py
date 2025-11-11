@@ -15,7 +15,7 @@
 # limitations under the License.
 
 import sys
-from tensorflow.python import _pywrap_python_op_gen
+from tensorflow.python.framework import _pywrap_python_op_gen
 from tensorflow.python.client import pywrap_tf_session as py_tf
 
 lib_file = sys.argv[1]

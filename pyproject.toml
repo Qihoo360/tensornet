@@ -3,8 +3,9 @@ name = "qihoo-tensornet"
 version = "0.102.1"
 description = "a TensorFlow-based distributed training framework optimized for large-scale sparse data"
 readme = "README.md"
-license = { file = "LICENSE" }
-requires-python = ">=3.5"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.7,<3.10"
 authors = [
   { name = "jiangxinglei", email = "jiangxinglei@360.cn" },
   { name = "gaozhiming", email = "gaozhiming@360.cn" },
@@ -12,17 +13,16 @@ authors = [
 classifiers = [
   'Development Status :: 5 - Production/Stable',
   'Intended Audience :: Developers',
-  'License :: OSI Approved :: Apache Software License',
   'Programming Language :: Python :: 3 :: Only',
-  'Programming Language :: Python :: 3.5',
-  'Programming Language :: Python :: 3.6',
   'Programming Language :: Python :: 3.7',
   'Programming Language :: Python :: 3.8',
+  'Programming Language :: Python :: 3.9',
 ]
 dependencies = [
   # use tensorflow from pypi, with cxx11 abi = 0
-  "tensorflow-cpu >=2.2,<2.3",
-
+  "protobuf==3.9.2",
+  "tensorflow-cpu>=2.8,<2.9",
+  "tensorflow-io<0.25",
   "opentelemetry-api",
   "opentelemetry-sdk",
 ]
@@ -67,7 +67,6 @@ cmake = ">=3.29"
 gxx = "*"
 sysroot_linux-64 = "<2.13" # for running on CentOS 6
 patch = "*"
-protobuf = ">=3.8,<3.9"    # tf 2.2 use pb 3.8
 
 # build dependencies
 gflags = { version = "*", build = "*_0" }      # build with cxx_abi=0
@@ -77,7 +76,7 @@ boost = "*"
 # build and runtime dependencies
 nomkl = "*"
 openmpi = ">=3,<5"
-numpy = "<1.19.0"  # required by tensorflow 2.2.3
+numpy = "<1.21.0"
 
 # test-only dependencies
 gtest = { version = "<1.10", build = "*_0" } # build with cxx_abi=0
@@ -91,7 +90,7 @@ make = ">=4.3,<5"
 configure = "cmake --preset default -S ."
 build = "./cmake-build"
 ut = "./cmake-build --preset default -t test"
-ut-only = "cmake-build --test"
+ut-only = "./cmake-build --test"
 workflow = "cmake --workflow --preset default"
 create-wheel = "python3 -m build -w -n"
 create-tools-wheel = { cmd = "python3 -m build -w -n", cwd = "tensornet_tools" }
@@ -100,15 +99,21 @@ bazel-build = "NEED_ACTIVATE_ENV=false \"$PIXI_PROJECT_ROOT\"/manager build --su
 copy-libs = "NEED_ACTIVATE_ENV=false \"$PIXI_PROJECT_ROOT\"/manager copy-libs"
 dist = "NEED_ACTIVATE_ENV=false \"$PIXI_PROJECT_ROOT\"/manager create_dist"
 
+[tool.pixi.feature.protoc]
+platforms = ["linux-64"]
+dependencies = { protobuf = ">=3.9,<3.10"}
+
 [tool.pixi.feature.py37]
 platforms = ["linux-64"]
 dependencies = { python = ">=3.7,<3.8" } # to build wrapper for py37
-[tool.pixi.feature.py36]
+
+[tool.pixi.feature.py38]
 platforms = ["linux-64"]
-dependencies = { python = ">=3.6,<3.7" } # to build wrapper for py36
-[tool.pixi.feature.py35]
+dependencies = { python = ">=3.8,<3.9" } # to build wrapper for py38
+
+[tool.pixi.feature.py39]
 platforms = ["linux-64"]
-dependencies = { python = ">=3.5,<3.6a1" } # to build wrapper for py35
+dependencies = { python = ">=3.9,<3.10" } # to build wrapper for py39
 
 [tool.pixi.feature.tools]
 platforms = ["linux-64", "osx-arm64"]
@@ -148,18 +153,19 @@ update-license-year = [
 
 [tool.pixi.environments]
 default = { features = ["build"] }
+protoc = { features = ["protoc"], no-default-feature = true }
 py37 = { features = [
   "py37",
   "centos7",
 ], solve-group = "py37", no-default-feature = true }
-py36 = { features = [
-  "py36",
+py38 = { features = [
+  "py38",
   "centos7",
-], solve-group = "py36", no-default-feature = true }
-py35 = { features = [
-  "py35",
+], solve-group = "py38", no-default-feature = true }
+py39 = { features = [
+  "py39",
   "centos7",
-], solve-group = "py35", no-default-feature = true }
+], solve-group = "py39", no-default-feature = true }
 tools = { features = [
   "tools",
   "centos7",

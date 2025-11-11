@@ -88,7 +88,22 @@ find_package(
   COMPONENTS Interpreter Development.Module
   REQUIRED)
 find_package(Tensorflow REQUIRED)
-find_package(Protobuf REQUIRED) # for compiling .proto files
+
+# # Use TensorFlow's protobuf library for brpc to avoid version conflicts
+# # But use protoc from protoc environment for compilation
+set(Protobuf_INCLUDE_DIR ${Tensorflow_INCLUDE_DIRS})
+set(Protobuf_LIBRARY ${Tensorflow_LIBRARIES})
+
+# Set additional protobuf variables for brpc compatibility
+set(PROTOBUF_INCLUDE_DIRS ${Tensorflow_INCLUDE_DIRS} CACHE PATH "Protobuf include directories")
+set(PROTOBUF_LIBRARIES ${Tensorflow_LIBRARIES} CACHE FILEPATH "Protobuf libraries")
+
+# Set protobuf include paths for brpc
+include_directories(${Tensorflow_INCLUDE_DIRS})
+
+# Find Protobuf using protoc pixi environment (only for protoc executable)
+find_package(Protobuf REQUIRED)
+
 find_package(
   Boost
   COMPONENTS iostreams
@@ -307,7 +322,7 @@ if(DEFINED ENV{PIXI_EXE})
     add_dependencies(targets_to_install _pywrap_tn_${ver})
   endfunction()
 
-  foreach(ver IN ITEMS 3.5 3.6 3.7)
+  foreach(ver IN ITEMS 3.7 3.8 3.9)
     build_pywrap(${ver})
   endforeach()
 endif()
@@ -340,6 +355,13 @@ foreach(op IN ITEMS balance_dataset_ops bn_table_ops dense_table_ops sparse_tabl
   target_link_options(tfkernel-${op} PRIVATE LINKER:--no-undefined)
 
   set(_wrapper "${PROJECT_BINARY_DIR}/tensornet/core/gen_${op}.py")
+  
+  # Set up library path for Python execution
+  set(_python_env)
+  if(DEFINED ENV{CONDA_PREFIX})
+    set(_python_env "LD_LIBRARY_PATH=$ENV{CONDA_PREFIX}/lib:$ENV{LD_LIBRARY_PATH}")
+  endif()
+  
   add_custom_command(
     OUTPUT ${_wrapper}
     COMMENT "Generating python wrapper for ${op} op ..."

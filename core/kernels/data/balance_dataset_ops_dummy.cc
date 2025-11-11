@@ -19,7 +19,7 @@
 #include "tensorflow/core/framework/op_kernel.h"
 #include "tensorflow/core/framework/partial_tensor_shape.h"
 #include "tensorflow/core/framework/tensor.h"
-#include "tensorflow/core/kernels/data/name_utils.h"
+#include "tensorflow/core/data/name_utils.h"
 #include "tensorflow/core/lib/core/blocking_counter.h"
 #include "tensorflow/core/lib/gtl/cleanup.h"
 #include "tensorflow/core/platform/macros.h"
@@ -27,6 +27,15 @@
 #include "tensorflow/core/util/batch_util.h"
 
 namespace tensorflow {
+
+using data::DatasetBase;
+using data::DatasetContext;
+using data::DatasetIterator;
+using data::IteratorBase;
+using data::IteratorContext;
+using data::IteratorStateWriter;
+using data::IteratorStateReader;
+using data::SerializationContext;
 
 // See documentation in ../../ops/dataset_ops.cc for a high-level
 // description of the following op.
@@ -61,7 +70,7 @@ public:
 
     string DebugString() const override { return data::name_utils::DatasetDebugString(kDatasetType); }
 
-    int64 Cardinality() const override { return input_->Cardinality(); }
+    int64_t Cardinality() const { return input_->Cardinality(); }
 
     Status CheckExternalState() const override { return input_->CheckExternalState(); }
 

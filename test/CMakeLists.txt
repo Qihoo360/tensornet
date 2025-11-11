@@ -18,16 +18,22 @@ target_link_options(tn_test PRIVATE ${Python3_LINK_OPTIONS} LINKER:-no-as-needed
 # add ut
 gtest_discover_tests(tn_test)
 
+# Set up library path for Python execution
+set(_test_python_env)
+if(DEFINED ENV{CONDA_PREFIX})
+  set(_test_python_env "LD_LIBRARY_PATH=$ENV{CONDA_PREFIX}/lib:$ENV{LD_LIBRARY_PATH}")
+endif()
+
 # add local integration test
 add_test(
   NAME integration-test
-  COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=. "${PROJECT_SOURCE_DIR}/examples/integration-test.py"
+  COMMAND ${CMAKE_COMMAND} -E env ${_test_python_env} PYTHONPATH=. "${PROJECT_SOURCE_DIR}/examples/integration-test.py"
   WORKING_DIRECTORY "${PROJECT_BINARY_DIR}" COMMAND_EXPAND_LISTS)
 
 # add local mpi test
 add_test(
   NAME mpi-integration-test
-  COMMAND mpiexec -n 2 -x PYTHONPATH=. "${PROJECT_SOURCE_DIR}/examples/integration-test.py"
+  COMMAND ${CMAKE_COMMAND} -E env ${_test_python_env} mpiexec -n 2 -x PYTHONPATH=. -x LD_LIBRARY_PATH "${PROJECT_SOURCE_DIR}/examples/integration-test.py"
   WORKING_DIRECTORY "${PROJECT_BINARY_DIR}" COMMAND_EXPAND_LISTS)
 
 if(CMAKE_GENERATOR MATCHES "Makefiles")
