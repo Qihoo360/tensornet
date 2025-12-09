@@ -17,7 +17,7 @@ import tensornet as tn
 
 from tensornet.core import gen_dense_table_ops
 
-from tensorflow.python.keras.optimizer_v2 import learning_rate_schedule
+from keras.optimizer_v2 import learning_rate_schedule
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import control_flow_ops
 import numpy as np
