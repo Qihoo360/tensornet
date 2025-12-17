@@ -366,7 +366,7 @@ foreach(op IN ITEMS balance_dataset_ops bn_table_ops dense_table_ops sparse_tabl
     OUTPUT ${_wrapper}
     COMMENT "Generating python wrapper for ${op} op ..."
     COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/tensornet/core/"
-    COMMAND ${CMAKE_COMMAND} -E env ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/tf_gen_op_wrapper.py"
+    COMMAND ${CMAKE_COMMAND} -E env ${_python_env} ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/tf_gen_op_wrapper.py"
             $<TARGET_FILE:tfkernel-${op}> $<TARGET_PROPERTY:tfkernel-${op},SOURCES> > ${_wrapper}
     DEPENDS tf_gen_op_wrapper.py
     VERBATIM COMMAND_EXPAND_LISTS)
