@@ -17,7 +17,6 @@ import json
 
 import tensornet as tn
 import tensorflow as tf
-import tensorflow_io as tfio
 from tensorflow.python.eager import backprop
 from tensorflow.python.keras.engine import data_adapter
 from tensorflow.python.framework import ops

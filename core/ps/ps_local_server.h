@@ -25,34 +25,34 @@ public:
 
     ~PsLocalServer() {}
 
-    virtual void SparsePullAsync(brpc::Controller *cntl,
-                                 const SparsePullRequest *request,
-                                 SparsePullResponse *response,
+    virtual void SparsePullAsync(brpc::Controller* cntl,
+                                 const SparsePullRequest* request,
+                                 SparsePullResponse* response,
                                  Callback done) const override;
 
-    virtual void SparsePushAsync(brpc::Controller *cntl,
-                                 const SparsePushRequest *request,
-                                 SparsePushResponse *response,
+    virtual void SparsePushAsync(brpc::Controller* cntl,
+                                 const SparsePushRequest* request,
+                                 SparsePushResponse* response,
                                  Callback done) const override;
 
-    virtual void DensePushPullAsync(brpc::Controller *cntl,
-                                    const DensePushPullRequest *request,
-                                    DensePushPullResponse *response,
+    virtual void DensePushPullAsync(brpc::Controller* cntl,
+                                    const DensePushPullRequest* request,
+                                    DensePushPullResponse* response,
                                     Callback done) const override;
 
-    virtual void DatasetPullAsync(brpc::Controller *cntl,
-                                  const DatasetPullRequest *request,
-                                  DatasetPullResponse *response,
+    virtual void DatasetPullAsync(brpc::Controller* cntl,
+                                  const DatasetPullRequest* request,
+                                  DatasetPullResponse* response,
                                   Callback done) const override;
 
-    virtual void BnStatisticsPushAsync(brpc::Controller *cntl,
-                                       const BnStatisticsPushRequest *request,
-                                       BnStatisticsPushResponse *response,
+    virtual void BnStatisticsPushAsync(brpc::Controller* cntl,
+                                       const BnStatisticsPushRequest* request,
+                                       BnStatisticsPushResponse* response,
                                        Callback done) const override;
 
-    virtual void BnStatisticsPullAsync(brpc::Controller *cntl,
-                                       const BnStatisticsPullRequest *request,
-                                       BnStatisticsPullResponse *response,
+    virtual void BnStatisticsPullAsync(brpc::Controller* cntl,
+                                       const BnStatisticsPullRequest* request,
+                                       BnStatisticsPullResponse* response,
                                        Callback done) const override;
 };
 

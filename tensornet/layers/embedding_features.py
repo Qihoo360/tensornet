@@ -27,7 +27,6 @@ from tensornet.core import gen_sparse_table_ops
 
 from tensorflow.python.feature_column import feature_column_v2 as fc
 from tensorflow.python.framework import sparse_tensor as sparse_tensor_lib
-from keras.engine import keras_tensor 
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.util import serialization

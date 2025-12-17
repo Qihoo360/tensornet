@@ -26,12 +26,12 @@
 
 namespace tensornet {
 
-SparseTable::SparseTable(const OptimizerBase *opt,
-                         const std::string &name,
+SparseTable::SparseTable(const OptimizerBase* opt,
+                         const std::string& name,
                          int dimension,
                          int shard_num,
                          int self_shard_id,
-                         const std::string &embedding_group)
+                         const std::string& embedding_group)
     : shard_num_(shard_num)
     , self_shard_id_(self_shard_id)
     , opt_(opt)
@@ -49,7 +49,7 @@ void SparseTable::SetHandle(uint32_t handle) {
     handle_ = handle;
 }
 
-void SparseTable::Pull(const SparsePullRequest *req, butil::IOBuf &out_emb_buf, SparsePullResponse *resp) {
+void SparseTable::Pull(const SparsePullRequest* req, butil::IOBuf& out_emb_buf, SparsePullResponse* resp) {
     resp->set_table_handle(req->table_handle());
 
     resp->set_dim(req->dim());
@@ -58,14 +58,14 @@ void SparseTable::Pull(const SparsePullRequest *req, butil::IOBuf &out_emb_buf, 
         uint64_t sign = req->signs(i);
 
         // w.size() is guaranteed by op_kernel_ same with dim_
-        float *w = op_kernel_->GetWeight(sign);
+        float* w = op_kernel_->GetWeight(sign);
         CHECK(nullptr != w);
 
         out_emb_buf.append(w, sizeof(float) * (req->dim()));
     }
 }
 
-void SparseTable::Push(const SparsePushRequest *req, butil::IOBuf &grad_buf, SparsePushResponse *resp) {
+void SparseTable::Push(const SparsePushRequest* req, butil::IOBuf& grad_buf, SparsePushResponse* resp) {
     float grad[req->dim()];
     SparsePushSignInfo sign_info;
 
@@ -82,7 +82,7 @@ void SparseTable::Push(const SparsePushRequest *req, butil::IOBuf &grad_buf, Spa
     }
 }
 
-void SparseTable::Save(const std::string &filepath, const std::string &mode) {
+void SparseTable::Save(const std::string& filepath, const std::string& mode) {
     butil::Timer timer(butil::Timer::STARTED);
 
     std::string file = filepath + "/sparse_table/";
@@ -108,7 +108,7 @@ void SparseTable::Save(const std::string &filepath, const std::string &mode) {
     saved_key_count_ = new_key_count;
 }
 
-void SparseTable::Load(const std::string &filepath, const std::string &mode) {
+void SparseTable::Load(const std::string& filepath, const std::string& mode) {
     butil::Timer timer(butil::Timer::STARTED);
 
     std::string file = filepath + "/sparse_table/";
@@ -138,17 +138,17 @@ void SparseTable::Load(const std::string &filepath, const std::string &mode) {
 
 void SparseTable::ShowDecay(int delta_days) const { op_kernel_->ShowDecay(delta_days); }
 
-SparseTableRegistry *SparseTableRegistry::Instance() {
+SparseTableRegistry* SparseTableRegistry::Instance() {
     static SparseTableRegistry instance;
     return &instance;
 }
 
-SparseTable *SparseTableRegistry::Get(uint32_t table_handle) {
+SparseTable* SparseTableRegistry::Get(uint32_t table_handle) {
     CHECK(table_handle < tables_.size()) << " table_handle:" << table_handle << " table size:" << tables_.size();
     return tables_[table_handle];
 }
 
-uint32_t SparseTableRegistry::Register(SparseTable *table) {
+uint32_t SparseTableRegistry::Register(SparseTable* table) {
     const std::lock_guard<std::mutex> lock(mu_);
 
     uint32_t table_handle = tables_.size();
@@ -157,7 +157,7 @@ uint32_t SparseTableRegistry::Register(SparseTable *table) {
     return table_handle;
 }
 
-SparseTable *SparseTableRegistry::GetTableByName(std::string embedding_group_name) {
+SparseTable* SparseTableRegistry::GetTableByName(std::string embedding_group_name) {
     for (auto table : tables_) {
         if (table->GetEmbeddingGroup() == embedding_group_name) {
             return table;
@@ -166,20 +166,20 @@ SparseTable *SparseTableRegistry::GetTableByName(std::string embedding_group_nam
     return nullptr;
 }
 
-SparseTable *CreateSparseTable(const OptimizerBase *opt,
-                               const std::string &name,
+SparseTable* CreateSparseTable(const OptimizerBase* opt,
+                               const std::string& name,
                                int dimension,
                                int shard_num,
                                int self_shard_id,
-                               const std::string &embedding_group) {
+                               const std::string& embedding_group) {
     if (embedding_group != "") {
-        SparseTable *table = SparseTableRegistry::Instance()->GetTableByName(embedding_group);
+        SparseTable* table = SparseTableRegistry::Instance()->GetTableByName(embedding_group);
         if (table != nullptr) {
             return table;
         }
     }
 
-    SparseTable *table = new SparseTable(opt, name, dimension, shard_num, self_shard_id, embedding_group);
+    SparseTable* table = new SparseTable(opt, name, dimension, shard_num, self_shard_id, embedding_group);
 
     table->SetHandle(SparseTableRegistry::Instance()->Register(table));
     return table;

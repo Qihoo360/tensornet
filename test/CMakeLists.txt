@@ -33,7 +33,8 @@ add_test(
 # add local mpi test
 add_test(
   NAME mpi-integration-test
-  COMMAND ${CMAKE_COMMAND} -E env ${_test_python_env} mpiexec -n 2 -x PYTHONPATH=. -x LD_LIBRARY_PATH "${PROJECT_SOURCE_DIR}/examples/integration-test.py"
+  COMMAND ${CMAKE_COMMAND} -E env ${_test_python_env} mpiexec -n 2 -x PYTHONPATH=. -x LD_LIBRARY_PATH
+          "${PROJECT_SOURCE_DIR}/examples/integration-test.py"
   WORKING_DIRECTORY "${PROJECT_BINARY_DIR}" COMMAND_EXPAND_LISTS)
 
 if(CMAKE_GENERATOR MATCHES "Makefiles")

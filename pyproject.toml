@@ -101,7 +101,7 @@ dist = "NEED_ACTIVATE_ENV=false \"$PIXI_PROJECT_ROOT\"/manager create_dist"
 
 [tool.pixi.feature.protoc]
 platforms = ["linux-64"]
-dependencies = { protobuf = ">=3.9,<3.10"}
+dependencies = { protobuf = ">=3.9,<3.10" }
 
 [tool.pixi.feature.py37]
 platforms = ["linux-64"]

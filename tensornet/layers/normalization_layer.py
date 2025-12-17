@@ -184,15 +184,17 @@ class TNBatchNormalizationBase(Layer):
 
     def get_config(self):
         config = super(TNBatchNormalizationBase, self).get_config()
-        config.update({
-            "center": self.center,
-            "scale": self.scale,
-            "epsilon": self.epsilon,
-            "momentum": self.momentum,
-            "synchronized": self.synchronized,
-            "sync_freq": self.sync_freq,
-            "max_count": self.max_count,
-        })
+        config.update(
+            {
+                "center": self.center,
+                "scale": self.scale,
+                "epsilon": self.epsilon,
+                "momentum": self.momentum,
+                "synchronized": self.synchronized,
+                "sync_freq": self.sync_freq,
+                "max_count": self.max_count,
+            }
+        )
         return config
 
 

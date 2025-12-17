@@ -17,7 +17,7 @@ pre_commit:
     - ./pixiw --version
     - ./pixiw run pre-commit-run --color=always --show-diff-on-failure
 
-bazel_create_wheel:
+.bazel_create_wheel:
   tags:
     - python
   interruptible: true

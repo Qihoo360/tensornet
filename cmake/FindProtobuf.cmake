@@ -50,23 +50,20 @@ if(DEFINED ENV{PIXI_EXE})
   if(NOT Protobuf_FIND_QUIETLY)
     message(STATUS "Using pixi protoc environment to find Protobuf...")
   endif()
-  
+
   # Get protobuf information from pixi protoc environment
-  execute_process(
-    COMMAND "$ENV{PIXI_EXE}" run -e protoc python3 "${CMAKE_CURRENT_LIST_DIR}/find-protobuf.py"
-    OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/protobuf-parameters.cmake" 
-    COMMAND_ERROR_IS_FATAL ANY
-  )
-  
+  execute_process(COMMAND "$ENV{PIXI_EXE}" run -e protoc python3 "${CMAKE_CURRENT_LIST_DIR}/find-protobuf.py"
+                  OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/protobuf-parameters.cmake" COMMAND_ERROR_IS_FATAL ANY)
+
   watch_for_configuring_if_needed("${CMAKE_CURRENT_LIST_DIR}/find-protobuf.py")
   include_watch("${CMAKE_CURRENT_BINARY_DIR}/protobuf-parameters.cmake")
-  
+
 else()
   # Fallback to standard find_package if pixi is not available
   if(NOT Protobuf_FIND_QUIETLY)
     message(STATUS "Pixi not available, using standard find_package for Protobuf...")
   endif()
-  
+
   # Use the standard FindProtobuf module
   find_package(Protobuf REQUIRED)
   return()
@@ -78,16 +75,16 @@ target_include_directories(protobuf::libprotobuf INTERFACE ${Protobuf_INCLUDE_DI
 target_link_libraries(protobuf::libprotobuf INTERFACE ${Protobuf_LIBRARIES})
 
 add_executable(protobuf::protoc IMPORTED GLOBAL)
-set_target_properties(protobuf::protoc PROPERTIES
-  IMPORTED_LOCATION ${Protobuf_PROTOC_EXECUTABLE}
-)
+set_target_properties(protobuf::protoc PROPERTIES IMPORTED_LOCATION ${Protobuf_PROTOC_EXECUTABLE})
 
 # Add alias for backward compatibility
 add_executable(Protobuf::protoc ALIAS protobuf::protoc)
 
 # Set PROTOC_LIB for brpc compatibility
 if(DEFINED Protobuf_PROTOC_LIBRARY)
-  set(PROTOC_LIB ${Protobuf_PROTOC_LIBRARY} CACHE FILEPATH "Protoc library")
+  set(PROTOC_LIB
+      ${Protobuf_PROTOC_LIBRARY}
+      CACHE FILEPATH "Protoc library")
   message(STATUS "Found Protobuf_PROTOC_LIBRARY: ${Protobuf_PROTOC_LIBRARY}")
 else()
   message(WARNING "Protobuf_PROTOC_LIBRARY is not defined")
@@ -97,10 +94,7 @@ include_watch(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
   Protobuf
   FOUND_VAR Protobuf_FOUND
-  REQUIRED_VARS
-    Protobuf_INCLUDE_DIRS
-    Protobuf_LIBRARIES
-    Protobuf_PROTOC_EXECUTABLE
+  REQUIRED_VARS Protobuf_INCLUDE_DIRS Protobuf_LIBRARIES Protobuf_PROTOC_EXECUTABLE
   VERSION_VAR Protobuf_VERSION)
 
 mark_as_advanced(Protobuf_INCLUDE_DIRS Protobuf_LIBRARIES Protobuf_PROTOC_EXECUTABLE)

@@ -66,14 +66,9 @@ if(NOT Python3_EXECUTABLE)
   endif()
 endif()
 
-# # Set LD_LIBRARY_PATH to ensure TensorFlow can find the correct libstdc++
-# if(DEFINED ENV{CONDA_PREFIX})
-#   if(DEFINED ENV{LD_LIBRARY_PATH})
-#     set(ENV{LD_LIBRARY_PATH} "$ENV{CONDA_PREFIX}/lib:$ENV{LD_LIBRARY_PATH}")
-#   else()
-#     set(ENV{LD_LIBRARY_PATH} "$ENV{CONDA_PREFIX}/lib")
-#   endif()
-# endif()
+# # Set LD_LIBRARY_PATH to ensure TensorFlow can find the correct libstdc++ if(DEFINED ENV{CONDA_PREFIX}) if(DEFINED
+# ENV{LD_LIBRARY_PATH}) set(ENV{LD_LIBRARY_PATH} "$ENV{CONDA_PREFIX}/lib:$ENV{LD_LIBRARY_PATH}") else()
+# set(ENV{LD_LIBRARY_PATH} "$ENV{CONDA_PREFIX}/lib") endif() endif()
 
 execute_process(COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_LIST_DIR}/find-tensorflow.py"
                 OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/tensorflow-parameters.cmake" COMMAND_ERROR_IS_FATAL ANY)

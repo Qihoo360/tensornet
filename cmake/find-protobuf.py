@@ -20,11 +20,13 @@ import sysconfig
 from distutils.sysconfig import get_python_lib
 import google.protobuf
 
+
 def escape_cmake_str(s):
     s = s.replace("\\", "\\\\")
     s = s.replace('"', '\\"')
     s = s.replace("$", "\\$")
     return f'"{s}"'
+
 
 # Get protobuf version
 proto_version = google.protobuf.__version__
@@ -32,16 +34,18 @@ proto_version = google.protobuf.__version__
 # Get protobuf include and lib paths
 python_lib = get_python_lib()
 # Use the standard include path that contains google/protobuf
-proto_include = os.path.join(sys.prefix, 'include')
+proto_include = os.path.join(sys.prefix, "include")
 
 proto_lib_dir = python_lib
 
 # Find protoc executable
 # Try multiple common locations
 protoc_candidates = [
-    os.path.join(os.path.dirname(sysconfig.get_config_var('BINDIR')), 'protoc') if sysconfig.get_config_var('BINDIR') else None,
-    os.path.join(sysconfig.get_config_var('BINDIR') or '', 'protoc'),
-    'protoc'  # fallback to PATH
+    os.path.join(os.path.dirname(sysconfig.get_config_var("BINDIR")), "protoc")
+    if sysconfig.get_config_var("BINDIR")
+    else None,
+    os.path.join(sysconfig.get_config_var("BINDIR") or "", "protoc"),
+    "protoc",  # fallback to PATH
 ]
 
 protoc_exe = None
@@ -53,19 +57,20 @@ for candidate in protoc_candidates:
         # Check if it's in PATH
         try:
             import shutil
+
             if shutil.which(candidate):
                 protoc_exe = candidate
                 break
-        except:
+        except:  # noqa: E722
             pass
 
 if not protoc_exe:
     # Last resort: try to find it in common locations
     common_paths = [
-        os.path.join(sys.prefix, 'bin', 'protoc'),
-        os.path.join(sys.base_prefix, 'bin', 'protoc'),
-        '/usr/bin/protoc',
-        '/usr/local/bin/protoc'
+        os.path.join(sys.prefix, "bin", "protoc"),
+        os.path.join(sys.base_prefix, "bin", "protoc"),
+        "/usr/bin/protoc",
+        "/usr/local/bin/protoc",
     ]
     for path in common_paths:
         if os.path.exists(path):
@@ -77,14 +82,14 @@ if not protoc_exe:
 
 # Find protobuf library files
 proto_libs = []
-proto_lib_names = ['libprotobuf.so', 'libprotobuf.a', 'protobuf.lib']
+proto_lib_names = ["libprotobuf.so", "libprotobuf.a", "protobuf.lib"]
 
 # Search for protobuf library in the lib directory
 lib_dirs = [
     proto_lib_dir,
-    os.path.join(python_lib, '..', 'lib'),
-    os.path.join(sys.prefix, 'lib'),
-    os.path.join(sys.base_prefix, 'lib')
+    os.path.join(python_lib, "..", "lib"),
+    os.path.join(sys.prefix, "lib"),
+    os.path.join(sys.base_prefix, "lib"),
 ]
 
 for lib_dir in lib_dirs:
@@ -96,13 +101,13 @@ for lib_dir in lib_dirs:
 
 # If no library found, use the standard library name
 if not proto_libs:
-    proto_libs = ['protobuf']
+    proto_libs = ["protobuf"]
 
 # Find protoc library specifically
 protoc_lib = None
 for lib_dir in lib_dirs:
     if os.path.exists(lib_dir):
-        for lib_name in ['libprotoc.so', 'libprotoc.a']:
+        for lib_name in ["libprotoc.so", "libprotoc.a"]:
             lib_path = os.path.join(lib_dir, lib_name)
             if os.path.exists(lib_path):
                 protoc_lib = lib_path
@@ -117,4 +122,4 @@ print(f"set(Protobuf_LIBRARIES {escape_cmake_str(proto_libs[0])})")  # Use the f
 print(f"set(Protobuf_PROTOC_EXECUTABLE {escape_cmake_str(protoc_exe)})")
 if protoc_lib:
     print(f"set(Protobuf_PROTOC_LIBRARY {escape_cmake_str(protoc_lib)})")
-print(f"set(Protobuf_FOUND TRUE)")
+print("set(Protobuf_FOUND TRUE)")

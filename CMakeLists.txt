@@ -89,14 +89,18 @@ find_package(
   REQUIRED)
 find_package(Tensorflow REQUIRED)
 
-# # Use TensorFlow's protobuf library for brpc to avoid version conflicts
-# # But use protoc from protoc environment for compilation
-set(Protobuf_INCLUDE_DIR ${Tensorflow_INCLUDE_DIRS})
-set(Protobuf_LIBRARY ${Tensorflow_LIBRARIES})
+# # Use TensorFlow's protobuf library for brpc to avoid version conflicts # But use protoc from protoc environment for
+# compilation
+set(Protobuf_INCLUDE_DIR ${Tensorflow_INCLUDE_DIRS}) # cmake-lint: disable=C0103
+set(Protobuf_LIBRARY ${Tensorflow_LIBRARIES}) # cmake-lint: disable=C0103
 
 # Set additional protobuf variables for brpc compatibility
-set(PROTOBUF_INCLUDE_DIRS ${Tensorflow_INCLUDE_DIRS} CACHE PATH "Protobuf include directories")
-set(PROTOBUF_LIBRARIES ${Tensorflow_LIBRARIES} CACHE FILEPATH "Protobuf libraries")
+set(PROTOBUF_INCLUDE_DIRS
+    ${Tensorflow_INCLUDE_DIRS}
+    CACHE PATH "Protobuf include directories")
+set(PROTOBUF_LIBRARIES
+    ${Tensorflow_LIBRARIES}
+    CACHE FILEPATH "Protobuf libraries")
 
 # Set protobuf include paths for brpc
 include_directories(${Tensorflow_INCLUDE_DIRS})
@@ -355,19 +359,20 @@ foreach(op IN ITEMS balance_dataset_ops bn_table_ops dense_table_ops sparse_tabl
   target_link_options(tfkernel-${op} PRIVATE LINKER:--no-undefined)
 
   set(_wrapper "${PROJECT_BINARY_DIR}/tensornet/core/gen_${op}.py")
-  
+
   # Set up library path for Python execution
   set(_python_env)
   if(DEFINED ENV{CONDA_PREFIX})
     set(_python_env "LD_LIBRARY_PATH=$ENV{CONDA_PREFIX}/lib:$ENV{LD_LIBRARY_PATH}")
   endif()
-  
+
   add_custom_command(
     OUTPUT ${_wrapper}
     COMMENT "Generating python wrapper for ${op} op ..."
     COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/tensornet/core/"
-    COMMAND ${CMAKE_COMMAND} -E env ${_python_env} ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/tf_gen_op_wrapper.py"
-            $<TARGET_FILE:tfkernel-${op}> $<TARGET_PROPERTY:tfkernel-${op},SOURCES> > ${_wrapper}
+    COMMAND
+      ${CMAKE_COMMAND} -E env ${_python_env} ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/tf_gen_op_wrapper.py"
+      $<TARGET_FILE:tfkernel-${op}> $<TARGET_PROPERTY:tfkernel-${op},SOURCES> > ${_wrapper}
     DEPENDS tf_gen_op_wrapper.py
     VERBATIM COMMAND_EXPAND_LISTS)
   list(APPEND TN_OP_WRAPPERS ${_wrapper})
