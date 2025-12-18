@@ -73,36 +73,6 @@ jobs:
           path: dist/
           retention-days: 7
 
-  create-wheel-bazel:
-    name: create wheel / bazel
-    runs-on: ubuntu-latest
-    env:
-      NEED_ACTIVATE_ENV: "false"
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: mamba-org/setup-micromamba@v1
-        with:
-          micromamba-version: '1.5.8-0'
-          environment-file: config/tn_build.yaml
-          init-shell: bash
-          cache-downloads: true
-          post-cleanup: 'none'
-      - name: Build the core library
-        run: |
-          set -e
-          ./manager build
-          ./manager copy-libs
-          rm -rf /home/runner/.cache/bazel # remove bazel cache to avoid job hang
-        shell: micromamba-shell {0}
-
-      - name: Create wheel
-        run: |
-          ./manager create_dist
-          grep -q '^tensornet$' qihoo_tensornet.egg-info/top_level.txt
-          ls -alh dist
-        shell: micromamba-shell {0}
-
   publish-to-pypi:
     name: Upload to pypi
     if: github.repository == 'Qihoo360/tensornet' && startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
