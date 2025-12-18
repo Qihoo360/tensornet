@@ -3,10 +3,10 @@ name: tn_build
 channels:
   - conda-forge
 dependencies:
-  - python=3.7
+  - python=3.8
   - nomkl
   - bazel==3.1.0
-  - openmpi==4.1.3
+  - openmpi==4.1.6
   - openssl==1.1.1t
   - libxcrypt==4.4.28
   - sysroot_linux-64 <2.13  # for running on CentOS 6
@@ -17,7 +17,7 @@ dependencies:
   - patch
   - pip
   - pip:
-      - tensorflow-cpu >=2.2,<2.3
+      - tensorflow-cpu >=2.8,<2.9
       - opentelemetry-api
       - opentelemetry-sdk
       - protobuf<3.21

@@ -27,6 +27,9 @@
 
 namespace tensorflow {
 
+using data::DatasetBase;
+using data::UnaryDatasetOpKernel;
+
 class BalanceDatasetOp : public UnaryDatasetOpKernel {
 public:
     static constexpr const char* const kDatasetType = "Balance";

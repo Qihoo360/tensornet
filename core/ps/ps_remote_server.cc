@@ -27,12 +27,12 @@ namespace {
 template <typename TypeRequest, typename TypeResponse>
 class Call : public Closure {
 public:
-    explicit Call(const MethodDescriptor *method_dp,
+    explicit Call(const MethodDescriptor* method_dp,
                   std::shared_ptr<brpc::Channel> channel,
-                  brpc::Controller *cntl,
-                  const TypeRequest *req,
-                  TypeResponse *resp,
-                  Callback &&done,
+                  brpc::Controller* cntl,
+                  const TypeRequest* req,
+                  TypeResponse* resp,
+                  Callback&& done,
                   int req_cnt = 1)
         : method_dp_(method_dp)
         , channel_(channel)
@@ -86,19 +86,19 @@ protected:
     void Process_() { channel_->CallMethod(method_dp_, cntl_, req_, resp_, this); }
 
 private:
-    const MethodDescriptor *method_dp_ = nullptr;
+    const MethodDescriptor* method_dp_ = nullptr;
 
     std::shared_ptr<brpc::Channel> channel_;
-    brpc::Controller *cntl_ = nullptr;
-    const TypeRequest *req_ = nullptr;
-    TypeResponse *resp_ = nullptr;
+    brpc::Controller* cntl_ = nullptr;
+    const TypeRequest* req_ = nullptr;
+    TypeResponse* resp_ = nullptr;
     Callback done_;
     int req_cnt_ = 0;
 };
 
 }  // namespace
 
-PsRemoteServer::PsRemoteServer(std::shared_ptr<brpc::Channel> &channel)
+PsRemoteServer::PsRemoteServer(std::shared_ptr<brpc::Channel>& channel)
     : channel_(channel) {
     sparse_pull_dp_ = PsService::descriptor()->FindMethodByName("SparsePull");
     sparse_push_dp_ = PsService::descriptor()->FindMethodByName("SparsePush");
@@ -110,49 +110,49 @@ PsRemoteServer::PsRemoteServer(std::shared_ptr<brpc::Channel> &channel)
 
 PsRemoteServer::~PsRemoteServer() {}
 
-void PsRemoteServer::SparsePullAsync(brpc::Controller *cntl,
-                                     const SparsePullRequest *request,
-                                     SparsePullResponse *response,
+void PsRemoteServer::SparsePullAsync(brpc::Controller* cntl,
+                                     const SparsePullRequest* request,
+                                     SparsePullResponse* response,
                                      Callback done) const {
     new Call<SparsePullRequest, SparsePullResponse>(sparse_pull_dp_, channel_, cntl, request, response,
                                                     std::move(done));
 }
 
-void PsRemoteServer::SparsePushAsync(brpc::Controller *cntl,
-                                     const SparsePushRequest *request,
-                                     SparsePushResponse *response,
+void PsRemoteServer::SparsePushAsync(brpc::Controller* cntl,
+                                     const SparsePushRequest* request,
+                                     SparsePushResponse* response,
                                      Callback done) const {
     new Call<SparsePushRequest, SparsePushResponse>(sparse_push_dp_, channel_, cntl, request, response,
                                                     std::move(done));
 }
 
-void PsRemoteServer::DensePushPullAsync(brpc::Controller *cntl,
-                                        const DensePushPullRequest *request,
-                                        DensePushPullResponse *response,
+void PsRemoteServer::DensePushPullAsync(brpc::Controller* cntl,
+                                        const DensePushPullRequest* request,
+                                        DensePushPullResponse* response,
                                         Callback done) const {
     new Call<DensePushPullRequest, DensePushPullResponse>(dense_push_pull_dp_, channel_, cntl, request, response,
                                                           std::move(done));
 }
 
-void PsRemoteServer::DatasetPullAsync(brpc::Controller *cntl,
-                                      const DatasetPullRequest *request,
-                                      DatasetPullResponse *response,
+void PsRemoteServer::DatasetPullAsync(brpc::Controller* cntl,
+                                      const DatasetPullRequest* request,
+                                      DatasetPullResponse* response,
                                       Callback done) const {
     new Call<DatasetPullRequest, DatasetPullResponse>(dataset_pull_dp_, channel_, cntl, request, response,
                                                       std::move(done));
 }
 
-void PsRemoteServer::BnStatisticsPushAsync(brpc::Controller *cntl,
-                                           const BnStatisticsPushRequest *request,
-                                           BnStatisticsPushResponse *response,
+void PsRemoteServer::BnStatisticsPushAsync(brpc::Controller* cntl,
+                                           const BnStatisticsPushRequest* request,
+                                           BnStatisticsPushResponse* response,
                                            Callback done) const {
     new Call<BnStatisticsPushRequest, BnStatisticsPushResponse>(bn_statistics_push_dp_, channel_, cntl, request,
                                                                 response, std::move(done));
 }
 
-void PsRemoteServer::BnStatisticsPullAsync(brpc::Controller *cntl,
-                                           const BnStatisticsPullRequest *request,
-                                           BnStatisticsPullResponse *response,
+void PsRemoteServer::BnStatisticsPullAsync(brpc::Controller* cntl,
+                                           const BnStatisticsPullRequest* request,
+                                           BnStatisticsPullResponse* response,
                                            Callback done) const {
     new Call<BnStatisticsPullRequest, BnStatisticsPullResponse>(bn_statistics_pull_dp_, channel_, cntl, request,
                                                                 response, std::move(done));

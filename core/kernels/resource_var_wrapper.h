@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "tensorflow/core/public/version.h"
+
 #ifndef TENSORNET_KERNEL_RESOURCE_VAR_WRAPPER_H_
 #define TENSORNET_KERNEL_RESOURCE_VAR_WRAPPER_H_
 
@@ -23,6 +25,14 @@
 // 2.7: https://github.com/tensorflow/tensorflow/commit/69fc036bb636ea7f76d4b4d879e27f7e4cf0ad33
 // 2.8: https://github.com/tensorflow/tensorflow/commit/efd91a1709b033c50210649a008b71f3882ce3b5
 
+#if (TF_MAJOR_VERSION > 2) || (TF_MAJOR_VERSION == 2 && TF_MINOR_VERSION >= 8)
+
+#elif (TF_MAJOR_VERSION == 2 && TF_MINOR_VERSION == 7)
+// TF == 2.7: include resource_base.h and use current implementation
+#include "tensorflow/core/framework/resource_base.h"
+
+#else
+// TF < 2.7: use current implementation
 // copy from tensorflow source code, those code must be same as its define in resource_mgr.h
 namespace tensorflow {
 class ResourceBase : public core::RefCounted {
@@ -34,6 +44,8 @@ public:
     virtual int64 MemoryUsed() const { return 0; }
 };
 }  // namespace tensorflow
+
+#endif
 
 #include "tensorflow/core/framework/resource_var.h"
 

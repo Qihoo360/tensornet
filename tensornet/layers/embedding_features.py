@@ -25,8 +25,6 @@ import tensorflow as tf
 import tensornet as tn
 from tensornet.core import gen_sparse_table_ops
 
-from tensorflow.python.keras.utils import tf_utils
-from tensorflow.python.keras.engine.base_layer import Layer
 from tensorflow.python.feature_column import feature_column_v2 as fc
 from tensorflow.python.framework import sparse_tensor as sparse_tensor_lib
 from tensorflow.python.framework import ops
@@ -178,7 +176,7 @@ class StateManagerImpl(fc.StateManager):
         return tn.core.show_decay(self.sparse_table_handle, delta_days)
 
 
-class EmbeddingFeatures(Layer):
+class EmbeddingFeatures(tf.keras.layers.Layer):
     """ """
 
     def __init__(
@@ -253,7 +251,7 @@ class EmbeddingFeatures(Layer):
     def call(self, features, cols_to_output_tensors=None, training=None):
         if not isinstance(features, dict):
             raise ValueError("We expected a dictionary here. Instead we got: ", features)
-        tn.core.set_sparse_init_mode(self._sparse_opt, tf_utils.constant_value(training))
+        tn.core.set_sparse_init_mode(self._sparse_opt, tf.get_static_value(training))
         using_features = self.filter_not_used_features(features)
         transformation_cache = fc.FeatureTransformationCache(using_features)
 

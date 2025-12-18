@@ -52,7 +52,7 @@ def list_files(datapath, days, match_pattern):
 
 
 class BalanceDataset(dataset_ops.UnaryDataset):
-    """A `Dataset` that balance input data between other cocurrent ops"""
+    """A `Dataset` that balance input data between other concurrent ops"""
 
     def __init__(self, input_dataset):
         self._input_dataset = input_dataset

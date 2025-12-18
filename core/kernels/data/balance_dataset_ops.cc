@@ -22,11 +22,11 @@
 #include <brpc/server.h>
 #include <butil/rand_util.h>
 
+#include "tensorflow/core/data/name_utils.h"
 #include "tensorflow/core/framework/op_kernel.h"
 #include "tensorflow/core/framework/partial_tensor_shape.h"
 #include "tensorflow/core/framework/tensor.h"
 #include "tensorflow/core/framework/variant_tensor_data.h"
-#include "tensorflow/core/kernels/data/name_utils.h"
 #include "tensorflow/core/lib/core/blocking_counter.h"
 #include "tensorflow/core/lib/gtl/cleanup.h"
 #include "tensorflow/core/platform/macros.h"
@@ -35,6 +35,15 @@
 using namespace tensornet;
 
 namespace tensorflow {
+
+using data::DatasetBase;
+using data::DatasetContext;
+using data::DatasetIterator;
+using data::IteratorBase;
+using data::IteratorContext;
+using data::IteratorStateReader;
+using data::IteratorStateWriter;
+using data::SerializationContext;
 
 // See documentation in ../../ops/dataset_ops.cc for a high-level
 // description of the following op.

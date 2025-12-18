@@ -62,11 +62,11 @@ def generate_data(dt, name):
 
 
 def main():
-    os.makedirs("data/2020-05-10")
+    os.makedirs("data/2020-05-10", exist_ok=True)
     generate_data("2020-05-10", "00001")
     generate_data("2020-05-10", "00002")
 
-    os.makedirs("data/2020-05-11")
+    os.makedirs("data/2020-05-11", exist_ok=True)
     generate_data("2020-05-11", "00001")
     generate_data("2020-05-11", "00002")
 

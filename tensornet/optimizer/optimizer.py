@@ -17,14 +17,13 @@ import tensornet as tn
 
 from tensornet.core import gen_dense_table_ops
 
-from tensorflow.python.keras.optimizer_v2 import optimizer_v2
-from tensorflow.python.keras.optimizer_v2 import learning_rate_schedule
+from keras.optimizer_v2 import learning_rate_schedule
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import control_flow_ops
 import numpy as np
 
 
-class Optimizer(optimizer_v2.OptimizerV2):
+class Optimizer(tf.keras.optimizers.Optimizer):
     """ """
 
     def __init__(self, dense_opt, name="TensornetOptimizer", **kwargs):
@@ -46,7 +45,7 @@ class Optimizer(optimizer_v2.OptimizerV2):
     def load_dense_table(self, filepath):
         return tn.core.load_dense_table(self.dense_table_handle, filepath)
 
-    def _distributed_apply(self, distribution, grads_and_vars, name, apply_state):
+    def _distributed_apply(self, distribution, grads_and_vars, apply_state, name):
         dense_vars = {}
 
         for grad, var in grads_and_vars:
@@ -70,7 +69,7 @@ class Optimizer(optimizer_v2.OptimizerV2):
             vars, grads, self.learning_rate_scheduler(self.iterations), table_handle=self.dense_table_handle
         )
 
-        super(Optimizer, self)._distributed_apply(distribution, grads_and_vars, name, apply_state)
+        super(Optimizer, self)._distributed_apply(distribution, grads_and_vars, apply_state, name)
 
     def _resource_apply_sparse(self, grad, var, indices, apply_state=None):
         return control_flow_ops.no_op()

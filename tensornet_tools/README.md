@@ -19,7 +19,7 @@ spark-submit3 --executor-memory 8g --driver-memory 10g --py-files utils.py merge
 
 ## sparse切换并行度
 
-现阶段生成的sparse_table目录并行度无法切换，如果前后不一致会导致数据缺失问题，无法扩缩容。通过spark读入原始数据，按照指定的并行度输出文件parttern
+现阶段生成的sparse_table目录并行度无法切换，如果前后不一致会导致数据缺失问题，无法扩缩容。通过spark读入原始数据，按照指定的并行度输出文件pattern
 
 由于使用了hdfs3来写入文件，需要打包上传环境，使用[env文件](config/tn_tool_env.yaml)
 
