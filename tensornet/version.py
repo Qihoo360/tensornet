@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-VERSION = "0.108.0.rc"
+VERSION = "1.8.0.dev"
