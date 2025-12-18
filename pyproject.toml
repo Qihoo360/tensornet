@@ -1,6 +1,6 @@
 [project]
 name = "qihoo-tensornet"
-version = "0.108.0.dev"
+version = "0.108.0.rc"
 description = "a TensorFlow-based distributed training framework optimized for large-scale sparse data"
 readme = "README.md"
 license = "Apache-2.0"
