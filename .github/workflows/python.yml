@@ -38,7 +38,7 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.8.5
         with:
           pixi-version: v0.49.0
-          environments: default py35 py36 py37
+          environments: default protoc py37 py38 py39
       - name: Build with debug profile
         run: ./pixiw run build
       - name: Verify that the dynamic libraries only requires glibc <= 2.12
@@ -59,7 +59,7 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.8.5
         with:
           pixi-version: v0.49.0
-          environments: default py35 py36 py37 tools
+          environments: default py37 py38 py39 tools
       - name: Create wheel
         run: |
           ./pixiw run create-wheel
