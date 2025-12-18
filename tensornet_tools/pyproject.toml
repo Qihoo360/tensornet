@@ -1,6 +1,6 @@
 [project]
 name = "qihoo-tensornet-tools"
-version = "0.108.0.rc"
+version = "0.208.0.dev"
 description = "multi tools for tensornet. E.g. merge/resize sparse or dense table, include external embeddings"
 readme = "README.md"
 license = { file = "LICENSE" }
