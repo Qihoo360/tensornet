@@ -20,7 +20,7 @@ classifiers = [
 ]
 dependencies = [
   # use tensorflow from pypi, with cxx11 abi = 0
-  "protobuf==3.9.2",
+  "protobuf>=3.9.2,<3.20",
   "tensorflow-cpu>=2.8,<2.9",
   "tensorflow-io<0.25",
   "opentelemetry-api",
