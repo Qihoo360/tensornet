@@ -23,6 +23,7 @@ bazel_create_wheel:
   interruptible: true
   variables:
     NEED_PREPARE_ENV: "true"
+    CONDA_OVERRIDE_GLIBC: "2.12"
   before_script:
     - rm -rf /root/.cache/bazel || true
     - pip config set global.index-url "${NEXUS3_PYPI_REPO}"
