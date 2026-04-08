@@ -138,7 +138,12 @@ class SequenceEmbeddingFeatures(Layer):
 
         fc._verify_static_batch_size_equality(sequence_lengths, self._feature_columns)
         sequence_length = _assert_all_equal_and_return(sequence_lengths)
-        return self._verify_and_concat_tensors(output_tensors), sequence_length
+
+        if self._max_seq_len > 0:
+            clipped_lengths = tf.minimum(sequence_length, self._max_seq_len)
+            return self._verify_and_concat_tensors(output_tensors), clipped_lengths
+        else:
+            return self._verify_and_concat_tensors(output_tensors), sequence_length
 
     def backwards(self, grads_and_vars):
         if self._need_stop_gradient:
@@ -193,8 +198,8 @@ class SequenceEmbeddingFeatures(Layer):
             batch_size = shape[0]
             seq_len = shape[1]
             dim = shape[2]
-            truncated = reshaped[:, : self.max_seq_len, :]
-            pad_len = math_ops.maximum(self.max_seq_len - seq_len, 0)
+            truncated = reshaped[:, : self._max_seq_len, :]
+            pad_len = math_ops.maximum(self._max_seq_len - seq_len, 0)
             padding = array_ops.zeros([batch_size, pad_len, dim], dtype=reshaped.dtype)
             result = array_ops.concat([truncated, padding], axis=1)
             return result
