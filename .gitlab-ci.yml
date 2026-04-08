@@ -24,6 +24,7 @@ bazel_create_wheel:
   variables:
     NEED_PREPARE_ENV: "true"
   before_script:
+    - rm -rf /root/.cache/bazel || true
     - pip config set global.index-url "${NEXUS3_PYPI_REPO}"
     - sed -i "s|https://github.com|${NEXUS3_HEADER}/github.com|g" WORKSPACE
     - mkdir -p .cache ~/.local/bin
@@ -36,7 +37,6 @@ bazel_create_wheel:
         cp ~/.local/bin/micromamba .cache/
       fi
   script:
-    - rm -rf /root/.cache/bazel || true
     - ./manager build
     - NEED_PREPARE_ENV=false
     - ./manager copy-libs
