@@ -36,7 +36,6 @@ bazel_create_wheel:
         cp ~/.local/bin/micromamba .cache/
       fi
   script:
-    - bazel clean --expunge
     - ./manager build
     - NEED_PREPARE_ENV=false
     - ./manager copy-libs
