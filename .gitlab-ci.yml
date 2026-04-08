@@ -25,7 +25,6 @@ bazel_create_wheel:
     NEED_PREPARE_ENV: "true"
     CONDA_OVERRIDE_GLIBC: "2.12"
   before_script:
-    - rm -rf /root/.cache/bazel || true
     - pip config set global.index-url "${NEXUS3_PYPI_REPO}"
     - sed -i "s|https://github.com|${NEXUS3_HEADER}/github.com|g" WORKSPACE
     - mkdir -p .cache ~/.local/bin
