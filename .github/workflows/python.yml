@@ -74,6 +74,7 @@ jobs:
           retention-days: 7
 
   create-wheel-bazel:
+    if: false
     name: create wheel / bazel
     runs-on: ubuntu-22.04
     env:
