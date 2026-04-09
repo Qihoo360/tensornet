@@ -52,7 +52,7 @@ jobs:
 
   create-wheel-cmake:
     name: create wheel / cmake
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Set up pixi
@@ -75,7 +75,7 @@ jobs:
 
   create-wheel-bazel:
     name: create wheel / bazel
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     env:
       NEED_ACTIVATE_ENV: "false"
     steps:
