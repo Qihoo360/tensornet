@@ -25,11 +25,12 @@ from tensorflow.python.keras.engine.base_layer import Layer
 from tensorflow.python.feature_column import feature_column_v2 as fc
 from tensorflow.python.framework import sparse_tensor as sparse_tensor_lib
 from tensorflow.python.framework import ops
-from tensorflow.python.ops import array_ops
+from tensorflow.python.ops import array_ops, math_ops
 from tensorflow.python.ops import check_ops
 from tensorflow.python.util import serialization
 from .embedding_features import StateManagerImpl
 import tensorflow as tf
+import tensornet as tn
 
 
 class SequenceEmbeddingFeatures(Layer):
@@ -43,6 +44,7 @@ class SequenceEmbeddingFeatures(Layer):
         name=None,
         embedding_share=None,
         need_stop_gradient=False,
+        max_seq_len=0,
         **kwargs,
     ):
         """create a embedding feature layer.
@@ -79,6 +81,7 @@ class SequenceEmbeddingFeatures(Layer):
         self.feature_clicks = {}
         self._need_stop_gradient = need_stop_gradient
         self._embedding_share = embedding_share
+        self._max_seq_len = max_seq_len
 
         for column in self._feature_columns:
             if not isinstance(column, fc.EmbeddingColumn):
@@ -96,10 +99,11 @@ class SequenceEmbeddingFeatures(Layer):
 
         super(SequenceEmbeddingFeatures, self).build(None)
 
-    def call(self, features, cols_to_output_tensors=None):
+    def call(self, features, cols_to_output_tensors=None, training=None):
         if not isinstance(features, dict):
             raise ValueError("We expected a dictionary here. Instead we got: ", features)
 
+        tn.core.set_sparse_init_mode(self._sparse_opt, tf.get_static_value(training))
         using_features = self.filter_not_used_features(features)
         transformation_cache = fc.FeatureTransformationCache(using_features)
 
@@ -134,7 +138,11 @@ class SequenceEmbeddingFeatures(Layer):
 
         fc._verify_static_batch_size_equality(sequence_lengths, self._feature_columns)
         sequence_length = _assert_all_equal_and_return(sequence_lengths)
-        return self._verify_and_concat_tensors(output_tensors), sequence_length
+        if self._max_seq_len > 0:
+            clipped_lengths = tf.minimum(sequence_length, self._max_seq_len)
+            return self._verify_and_concat_tensors(output_tensors), clipped_lengths
+        else:
+            return self._verify_and_concat_tensors(output_tensors), sequence_length
 
     def backwards(self, grads_and_vars):
         if self._need_stop_gradient:
@@ -162,13 +170,9 @@ class SequenceEmbeddingFeatures(Layer):
         return new_features
 
     def save_sparse_table(self, filepath, mode):
-        if self._embedding_share:
-            return
         return self._state_manager.save_sparse_table(filepath, mode)
 
     def load_sparse_table(self, filepath, mode):
-        if self._embedding_share:
-            return
         return self._state_manager.load_sparse_table(filepath, mode)
 
     def show_decay(self, delta_days):
@@ -187,7 +191,19 @@ class SequenceEmbeddingFeatures(Layer):
         """ """
         num_elements = column.variable_shape.num_elements()
         target_shape = self._target_shape(array_ops.shape(tensor), num_elements)
-        return array_ops.reshape(tensor, shape=target_shape)
+        if self._max_seq_len > 0:
+            reshaped = array_ops.reshape(tensor, shape=target_shape)
+            shape = array_ops.shape(reshaped)
+            batch_size = shape[0]
+            seq_len = shape[1]
+            dim = shape[2]
+            truncated = reshaped[:, : self._max_seq_len, :]
+            pad_len = math_ops.maximum(self._max_seq_len - seq_len, 0)
+            padding = array_ops.zeros([batch_size, pad_len, dim], dtype=reshaped.dtype)
+            result = array_ops.concat([truncated, padding], axis=1)
+            return result
+        else:
+            return array_ops.reshape(tensor, shape=target_shape)
 
     def _verify_and_concat_tensors(self, output_tensors):
         """Verifies and concatenates the dense output of several columns."""

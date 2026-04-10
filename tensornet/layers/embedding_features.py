@@ -45,6 +45,7 @@ class StateManagerImpl(fc.StateManager):
         if target_columns:
             self.use_cvm = True
 
+        self._embedding_share = embedding_share
         self.sparse_table_handle = tn.core.create_sparse_table(
             sparse_opt, name if name else "", dimension, self.use_cvm, embedding_share if embedding_share else ""
         )
@@ -168,9 +169,13 @@ class StateManagerImpl(fc.StateManager):
         return self.pulled_mapping_values[column_name]
 
     def save_sparse_table(self, filepath, mode):
+        if self._embedding_share:
+            return
         return tn.core.save_sparse_table(self.sparse_table_handle, filepath, mode)
 
     def load_sparse_table(self, filepath, mode):
+        if self._embedding_share:
+            return
         return tn.core.load_sparse_table(self.sparse_table_handle, filepath, mode)
 
     def show_decay(self, delta_days=0):
